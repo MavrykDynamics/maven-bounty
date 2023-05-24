@@ -1,0 +1,50 @@
+#!/bin/bash
+
+CONTRACTS_TEST_ARRAY=()
+COMMANDS=()
+
+# Parse arguments
+# if [ $# -eq 0 ]
+# then
+#     help
+# fi
+while [ $# -gt 0 ] ; do
+  case $1 in
+    -h | --help)
+        help
+    ;;
+    -c | --contracts)
+        CONTRACTS=$2
+        IFS=',' read -r -a CONTRACTS_TEST_ARRAY <<< "$CONTRACTS"
+    ;;
+  esac
+  shift
+done
+
+if [ ${#CONTRACTS_TEST_ARRAY[@]} -eq 0 ]
+then
+    echo "Error: You must specify at least one contract to test."
+    echo "Use -h or --help to display usage."
+    exit 1
+fi
+
+for contract_test in "${CONTRACTS_TEST_ARRAY[@]}"; do
+    case "$contract_test" in
+        dev)
+            echo "Running tests for dev"
+        
+            ;;
+        all)
+            echo "Running all tests"
+            
+            ;;
+        *)
+            echo "Unknown contract test: $contract_test"
+            ;;
+    esac
+done
+
+for cmd in "${COMMANDS[@]}"; do
+    echo "Executing command: $cmd"
+    eval $cmd
+done
