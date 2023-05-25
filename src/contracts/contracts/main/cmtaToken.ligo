@@ -10,10 +10,10 @@
 type action is
 
         // Housekeeping Entrypoints
-        Set_token_metadata        of tokenMetadataListType
-    |   Propose_administrator     of (tokenIdType, address)
+        Set_token_metadata        of list(tokenMetadataType)
+    |   Propose_administrator     of (tokenIdType * address)
     |   Set_administrator         of tokenIdType
-    |   Remove_administrator      of (tokenIdType, address)
+    |   Remove_administrator      of (tokenIdType * address)
         
         // Owner Entrypoints
     |   Initialise_token          of list(tokenIdType)
@@ -21,7 +21,7 @@ type action is
     |   Burn                      of list(tokenAmountType)
     |   Pause                     of list(tokenIdType)
     |   Unpause                   of list(tokenIdType)
-    |   Set_rule_engines          of setRuleEngineType
+    |   Set_rule_engines          of list(ruleType)
     |   Schedule_snapshot         of (tokenIdType * snapshotTimestampType)
     |   Unschedule_snapshot       of tokenIdType
     |   Delete_snapshot           of snapshotLookupKeyType
@@ -44,11 +44,38 @@ const noOperations : list (operation) = nil;
 // Constants Begin
 // ------------------------------------------------------------------------------
 
-const IS_ADMIN : nat = 1n;
-const IS_PROPOSED_ADMIN : nat = 2n;
+const is_admin : nat = 1n;
+const is_proposed_admin : nat = 2n;
 
 // ------------------------------------------------------------------------------
 // Constants End
+// ------------------------------------------------------------------------------
+
+
+
+// ------------------------------------------------------------------------------
+// Errors Begin
+// ------------------------------------------------------------------------------
+
+[@inline] const error_ADMINISTRATOR_NOT_FOUND                   = 0n;
+[@inline] const error_NOT_ADMIN                                 = 1n;
+
+[@inline] const error_TOKEN_EXISTS                              = 2n;
+[@inline] const error_TOKEN_CONTEXT_NOT_FOUND                   = 3n;
+[@inline] const error_TOKEN_UNDEFINED                           = 4n;
+[@inline] const error_TOKEN_PAUSED                              = 5n;
+
+[@inline] const error_USER_NOT_FOUND                            = 6n;
+[@inline] const error_CANNOT_TRANSFER                           = 6n;
+[@inline] const error_INSUFFICIENT_BALANCE                      = 7n;
+
+[@inline] const error_SNAPSHOT_ALREADY_SCHEDULED                = 8n;
+[@inline] const error_SNAPSHOT_IN_PAST                          = 9n;
+
+[@inline] const error_VIEW_IS_TRANSFER_VALID_NOT_FOUND          = 10n;
+
+// ------------------------------------------------------------------------------
+// Errors End
 // ------------------------------------------------------------------------------
 
 
@@ -60,12 +87,12 @@ const IS_PROPOSED_ADMIN : nat = 2n;
 function verifySenderIsAdmin(const ledgerKey : ledgerKeyType; const s : cmtaTokenStorageType) : unit is 
 block {
 
-    const administratorCheck : nat = case s.administrators of [
+    const administratorCheck : nat = case s.administrators[ledgerKey] of [
             Some (_v) -> _v
         |   None      -> failwith(error_ADMINISTRATOR_NOT_FOUND)
     ];
 
-    if administratorCheck = IS_ADMIN then skip else failwith(error_NOT_ADMIN);
+    if administratorCheck = is_admin then skip else failwith(error_NOT_ADMIN);
 
 } with unit
 
@@ -74,12 +101,12 @@ block {
 function verifySenderIsProposedAdmin(const ledgerKey : ledgerKeyType; const s : cmtaTokenStorageType) : unit is 
 block {
 
-    const administratorCheck : nat = case s.administrators of [
+    const administratorCheck : nat = case s.administrators[ledgerKey] of [
             Some (_v) -> _v
         |   None      -> failwith(error_ADMINISTRATOR_NOT_FOUND)
     ];
 
-    if administratorCheck = IS_PROPOSED_ADMIN then skip else failwith(error_NOT_ADMIN);
+    if administratorCheck = is_proposed_admin then skip else failwith(error_NOT_ADMIN);
 
 } with unit
 
@@ -164,8 +191,8 @@ block {
 function bootstrap_snapshot(const params : (tokenContextType * nat); var s : cmtaTokenStorageType) : (tokenContextType * cmtaTokenStorageType) is 
 block {
 
-    const token_context : tokenContextType = params.0;
-    const token_id      : nat              = params.1;
+    var token_context : tokenContextType := params.0;
+    const token_id      : nat             = params.1;
 
     case token_context.next_snapshot of [
             Some(next_snapshot_timestamp) -> {
@@ -218,7 +245,7 @@ block {
                     snapshot_timestamp  = current_snapshot_timestamp;
                 ];
 
-                case s.snapshot_ledger[snapshot_ledger_key] of [
+                case s.snapshotLedger[snapshot_ledger_key] of [
                         Some (_v) -> {
                             
                             const ledger_key : ledgerKeyType = record [
@@ -232,7 +259,7 @@ block {
                             ];
 
                             // set snapshot ledger value
-                            s.snapshot_ledger[snapshot_ledger_key] := ledger_value;
+                            s.snapshotLedger[snapshot_ledger_key] := ledger_value;
 
                         }
                     |   None -> skip
@@ -262,17 +289,17 @@ block {
 
                 const total_supply : nat = case s.total_supply[token_id] of [
                         Some (_v) -> _v
-                    |   None      -> 0n;
+                    |   None      -> 0n
                 ];
 
                 // set snapshot total supply
-                s.snapshot_total_supply[snapshot_lookup_key] := total_supply;
+                s.snapshotTotalSupply[snapshot_lookup_key] := total_supply;
 
             }   
         |   None -> skip
     ];
 
-}
+} with s
 
 // ------------------------------------------------------------------------------
 // Private Lambdas End
@@ -313,13 +340,13 @@ block{
 
     const owner     : ownerType     = operatorParameter.owner;
     const operator  : operatorType  = operatorParameter.operator;
-    const token_Id  : tokenIdType   = operatorParameter.token_id;
+    const token_id  : tokenIdType   = operatorParameter.token_id;
 
     verifyTokenIsDefined(token_id, s);
 
     verifyIsOwner(owner);
 
-    const operatorKey : (ownerType * operatorType * tokenIdType) = (owner, operator, tokenId)
+    const operatorKey : (ownerType * operatorType * tokenIdType) = (owner, operator, token_id)
 
 } with(Big_map.update(operatorKey, Some (unit), operators))
 
@@ -331,13 +358,13 @@ block{
 
     const owner     : ownerType     = operatorParameter.owner;
     const operator  : operatorType  = operatorParameter.operator;
-    const tokenId   : tokenIdType   = operatorParameter.token_id;
+    const token_id  : tokenIdType   = operatorParameter.token_id;
 
     verifyTokenIsDefined(token_id, s);
     
     verifyIsOwner(owner);
 
-    const operatorKey : (ownerType * operatorType * tokenIdType) = (owner, operator, tokenId)
+    const operatorKey : (ownerType * operatorType * tokenIdType) = (owner, operator, token_id)
 
 } with(Big_map.remove(operatorKey, operators))
 
@@ -363,7 +390,10 @@ block{
     - Given a token id allows the consumer to view the current total supply.
 *)
 [@view] function view_total_supply(const token_id : nat; var s : cmtaTokenStorageType) : nat is
-    s.total_supply[token_id]
+    case Big_map.find_opt(token_id, s.total_supply) of [
+            Some (_v) -> _v
+        |   None      -> 0n
+    ]
 
 
 
@@ -372,7 +402,10 @@ block{
       consumer to view the current balance.
 *)
 [@view] function view_balance_of(const ledger_key : ledgerKeyType; var s : cmtaTokenStorageType) : nat is
-    s.ledger[ledger_key]
+    case Big_map.find_opt(ledger_key, s.ledger) of [
+            Some (_v) -> _v
+        |   None      -> 0n
+    ]
 
 
 
@@ -380,7 +413,7 @@ block{
     - Given a token id allows the consumer to view the current snapshot timestamp. Can be null.
 *)
 [@view] function view_current_snapshot(const token_id : nat; var s : cmtaTokenStorageType) : option(timestamp) is
-    case Big_map.find_opt(token_id, s.ledger) of [
+    case Big_map.find_opt(token_id, s.token_context) of [
             Some (_v) -> _v.current_snapshot
         |   None      -> (None : option(timestamp))
     ]
@@ -391,7 +424,7 @@ block{
     - Given a token id allows the consumer to view the next snapshot timestamp. Can be null.
 *)
 [@view] function view_next_snapshot(const token_id : nat; var s : cmtaTokenStorageType) : option(timestamp) is
-    case Big_map.find_opt(token_id, s.ledger) of [
+    case Big_map.find_opt(token_id, s.token_context) of [
             Some (_v) -> _v.next_snapshot
         |   None      -> (None : option(timestamp))
     ]
@@ -406,14 +439,14 @@ block{
 block {
 
     var snapshot_total_supply : nat := 0n;
-    case s.snapshot_total_supply[snapshot_lookup_key] of [
+    case s.snapshotTotalSupply[snapshot_lookup_key] of [
             Some (_total_supply) -> snapshot_total_supply := _total_supply
         |   None -> block {
 
                 var keep_loop : bool := True;
                 var current_snapshot_lookup_key : snapshotLookupKeyType := snapshot_lookup_key;
 
-                while keep_look = True block {
+                while keep_loop = True block {
                     case s.snapshot_lookup[current_snapshot_lookup_key] of [
                             Some (_timestamp) -> {
 
@@ -422,7 +455,7 @@ block {
                                     snapshot_timestamp  = _timestamp
                                 ];
 
-                                case s.snapshot_total_supply[current_snapshot_lookup_key] of [
+                                case s.snapshotTotalSupply[current_snapshot_lookup_key] of [
                                         Some (_v) -> keep_loop := False
                                     |   None      -> skip
                                 ];
@@ -430,9 +463,9 @@ block {
                             }
                         |   None -> keep_loop := False
                     ]
-                }
+                };
 
-                case s.snapshot_total_supply[current_snapshot_lookup_key] of [
+                case s.snapshotTotalSupply[current_snapshot_lookup_key] of [
                         Some (_v) -> snapshot_total_supply := _v
                     |   None      -> skip
                 ];
@@ -452,7 +485,7 @@ block {
 block {
 
     var snapshot_balance_of : nat := 0n;
-    case s.snapshot_ledger[snapshot_ledger_key] of [
+    case s.snapshotLedger[snapshot_ledger_key] of [
             Some (_balance) -> snapshot_balance_of := _balance
         |   None -> block {
 
@@ -465,9 +498,9 @@ block {
                     token_id            = snapshot_ledger_key.token_id;
                     owner               = snapshot_ledger_key.owner;
                     snapshot_timestamp  = current_snapshot_lookup_key.snapshot_timestamp;
-                ]
+                ];
 
-                while keep_look = True block {
+                while keep_loop = True block {
                     case s.snapshot_lookup[current_snapshot_lookup_key] of [
                             Some (_timestamp) -> {
 
@@ -480,9 +513,9 @@ block {
                                     token_id            = snapshot_ledger_key.token_id;
                                     owner               = snapshot_ledger_key.owner;
                                     snapshot_timestamp  = current_snapshot_lookup_key.snapshot_timestamp;
-                                ]
+                                ];
 
-                                case s.snapshot_ledger[current_snapshot_ledger_key] of [
+                                case s.snapshotLedger[current_snapshot_ledger_key] of [
                                         Some (_v) -> keep_loop := False
                                     |   None      -> skip
                                 ];
@@ -490,9 +523,9 @@ block {
                             }
                         |   None -> keep_loop := False
                     ]
-                }
+                };
 
-                case s.snapshot_ledger[current_snapshot_ledger_key] of [
+                case s.snapshotLedger[current_snapshot_ledger_key] of [
                         Some (_v) -> snapshot_balance_of := _v
                     |   None      -> skip
                 ];
@@ -573,7 +606,7 @@ block {
                     // verify sender is admin
                     verifySenderIsAdmin(super_administrator_ledger_key, s);
 
-                    s.administrators[administrator_ledger_key] := IS_ADMIN;
+                    s.administrators[administrator_ledger_key] := is_admin;
                 }
         ];
 
@@ -605,7 +638,7 @@ block {
     // verify sender is admin
     verifySenderIsAdmin(administrator_ledger_key, s);
 
-    s.administrators[proposed_administrator_ledger_key] := IS_PROPOSED_ADMIN;
+    s.administrators[proposed_administrator_ledger_key] := is_proposed_admin;
 
 } with (noOperations, s)
 
@@ -625,7 +658,7 @@ block {
     // verify sender is proposed admin
     verifySenderIsProposedAdmin(administrator_ledger_key, s);
 
-    s.administrators[administrator_ledger_key] := IS_ADMIN;
+    s.administrators[administrator_ledger_key] := is_admin;
   
 } with (noOperations, s)
 
@@ -650,7 +683,7 @@ block {
     // verify sender is admin
     verifySenderIsAdmin(administrator_ledger_key, s);
 
-    remove administrator_to_remove_key from map s.administrators;
+    remove administrator_to_remove_ledger_key from map s.administrators;
 
 } with (noOperations, s)
 
@@ -668,7 +701,7 @@ block {
     - Initialise the token with the required additional token context, can only be called once per token and 
       only one of its admin can call this
  *)
-function initialise_token(const initialiseTokenParams : list(tokenIdType); const s : cmtaTokenStorageType) : return is
+function initialise_token(const initialiseTokenParams : list(tokenIdType); var s : cmtaTokenStorageType) : return is
 block{
 
     for token_id in list initialiseTokenParams block {
@@ -738,7 +771,7 @@ block {
             |   None     -> token_amount.amount
         ];
 
-        s.total_supply[token_amount.token_id] := case s.total_supply[token_id] of [
+        s.total_supply[token_amount.token_id] := case s.total_supply[token_amount.token_id] of [
                 Some (_v) -> _v + token_amount.amount
             |   None      -> token_amount.amount
         ];
@@ -789,7 +822,7 @@ block {
             |   None     -> 0n
         ];
 
-        s.total_supply[token_amount.token_id] := case s.total_supply[token_id] of [
+        s.total_supply[token_amount.token_id] := case s.total_supply[token_amount.token_id] of [
                 Some (_v) -> if _v > token_amount.amount then abs(_v - token_amount.amount) else 0n
             |   None      -> 0n
         ];
@@ -810,7 +843,7 @@ block {
 (* pause entrypoint 
     - Allows to pause tokens, only a token administrator can do this
 *)
-function pause(const pauseParams : list(tokenIdType); const s : cmtaTokenStorageType) : return is
+function pause(const pauseParams : list(tokenIdType); var s : cmtaTokenStorageType) : return is
 block{
 
     for token_id in list pauseParams block {
@@ -840,7 +873,7 @@ block{
 (* unpause entrypoint 
     - Allows to unpause tokens, only a token administrator can do this
 *)
-function unpause(const unpauseParams : list(tokenIdType); const s : cmtaTokenStorageType) : return is
+function unpause(const unpauseParams : list(tokenIdType); var s : cmtaTokenStorageType) : return is
 block{
 
     for token_id in list unpauseParams block {
@@ -870,7 +903,7 @@ block{
 (* set_rule_engines entrypoint 
     - Allows to specify the rules contract for a specific token, only a token administrator can do this
 *)
-function set_rule_engines(const setRuleEnginesParams : list(ruleType); const s : cmtaTokenStorageType) : return is
+function set_rule_engines(const setRuleEnginesParams : list(ruleType); var s : cmtaTokenStorageType) : return is
 block{
 
     for rule in list setRuleEnginesParams block {
@@ -891,7 +924,7 @@ block{
             |   None            -> failwith(error_TOKEN_CONTEXT_NOT_FOUND)
         ];
 
-        token_context.validate_transfer_rule_contract := option(rule.rule_contract);
+        token_context.validate_transfer_rule_contract := Some(rule.rule_contract);
 
         s.token_context[rule_token_id] := token_context;
         
@@ -904,7 +937,7 @@ block{
 (* schedule_snapshot entrypoint 
     - Schedules a snapshot for the future for a specific token. Only one snapshot can be scheduled, repeated call will fail, to re-schedule you need to unschedule using the `unschedule_snapshot` entry point first. Only token administrator can do this.
 *)
-function schedule_snapshot(const token_id : nat; const snapshot_timestamp : timestamp; const s : cmtaTokenStorageType) : return is
+function schedule_snapshot(const token_id : nat; const snapshot_timestamp : timestamp; var s : cmtaTokenStorageType) : return is
 block{
 
     const administrator_ledger_key : ledgerKeyType = record [
@@ -936,7 +969,7 @@ block{
 (* unschedule_snapshot entrypoint 
     - Unschedules the scheduled snapshot for the given token_id. Only token administrator can do this.
 *)
-function unschedule_snapshot(const token_id : nat; const s : cmtaTokenStorageType) : return is
+function unschedule_snapshot(const token_id : nat; var s : cmtaTokenStorageType) : return is
 block{
 
     const administrator_ledger_key : ledgerKeyType = record [
@@ -964,7 +997,7 @@ block{
 (* delete_snapshot entrypoint 
     - Deletes a snapshot for the given snapshot lookup key (consisting of token_id = sp.TNat, snapshot_timestamp = sp.TTimestamp). Only token administrator can do this.
 *)
-function delete_snapshot(const snapshot_lookup_key : snapshotLookupKeyType; const s : cmtaTokenStorageType) : return is
+function delete_snapshot(const snapshot_lookup_key : snapshotLookupKeyType; var s : cmtaTokenStorageType) : return is
 block{
 
     const administrator_ledger_key : ledgerKeyType = record [
@@ -984,7 +1017,7 @@ block{
 (* kill entrypoint 
     - Wipes irreversibly the storage and ultimately kills the contract such that it can no longer be used. All tokens on it will be affected. Only special admin of token id 0 can do this.
 *)
-function kill(const s : cmtaTokenStorageType) : return is
+function kill(var s : cmtaTokenStorageType) : return is
 block{
 
     const administrator_ledger_key : ledgerKeyType = record [
@@ -997,10 +1030,10 @@ block{
 
     s.ledger            := (big_map[] : ledgerType);
     s.administrators    := (big_map[] : administratorsType);
-    s.token_metadata    := (big_map[] : metadataType);
+    s.token_metadata    := (big_map[] : tokenMetadataLedgerType);
     s.total_supply      := (big_map[] : totalSupplyType);
     s.operators         := (big_map[] : operatorsType);
-    s.token_context     := (big_map[] : tokenContextType);
+    s.token_context     := (big_map[] : tokenContextLedgerType);
     s.identities        := (big_map[] : identityType);
 
 } with (noOperations, s)
@@ -1018,17 +1051,17 @@ block{
 (* set_identity entrypoint 
     - Allows a user to set the own identity
 *)
-function set_identity(const identity : bytes; const s : cmtaTokenStorageType) : return is
+function set_identity(const identity : bytes; var s : cmtaTokenStorageType) : return is
 block{
 
-    s.identities[Tezos.get_sender] := identity;
+    s.identities[Tezos.get_sender()] := identity;
 
 } with (noOperations, s)
 
 
 
 (* transfer entrypoint *)
-function transfer(const transfers : fa2TransferType; const s : cmtaTokenStorageType) : return is
+function transfer(const transfers : fa2TransferType; var s : cmtaTokenStorageType) : return is
 block{
 
     function makeTransfer(const account : return; const transfer : transferType) : return is
@@ -1037,7 +1070,7 @@ block{
             const owner : ownerType  = transfer.from_;
             const txs : list(txType) = transfer.txs;
             
-            function transferTokens(const accumulator : cmtaTokenStorageType; const tx : txType) : cmtaTokenStorageType is
+            function transferTokens(var accumulator : cmtaTokenStorageType; const tx : txType) : cmtaTokenStorageType is
             block {
 
                 const token_id      : tokenIdType       = tx.token_id;
@@ -1054,7 +1087,7 @@ block{
                     token_id    = token_id;
                 ];
 
-                const token_context : tokenContextType = case accumulator.token_context[token_id] of [
+                var token_context : tokenContextType := case accumulator.token_context[token_id] of [
                         Some(_v) -> _v
                     |   None     -> failwith(error_TOKEN_CONTEXT_NOT_FOUND)
                 ];
@@ -1071,12 +1104,12 @@ block{
                             ];
 
                             const is_transfer_valid_view : option (bool) = Tezos.call_view ("view_is_transfer_valid", validation_transfer, _rule_contract);
-                            const is_transfer_valid : bool = case is_transfer_valid_view of [
-                                    Some (_bool) -> if _bool = True then skip else failwith(error_CANNOT_TRANSFER)
+                            const _is_transfer_valid : bool = case is_transfer_valid_view of [
+                                    Some (_bool) -> if _bool = False then failwith(error_CANNOT_TRANSFER) else True
                                 |   None         -> failwith (error_VIEW_IS_TRANSFER_VALID_NOT_FOUND)
                             ];
                         }
-                    |   None     -> failwith()
+                    |   None     -> skip
                 ];
 
                 verifySenderIsOwnerOrOperator(owner, token_id, account.1.operators);
@@ -1093,32 +1126,32 @@ block{
                     token_context  := bootstrap_snapshot.0;
                     accumulator    := bootstrap_snapshot.1;
 
-                    accumulator    := set_snapshot_ledger((token_context, token_id, receiver), s);
-                    accumulator    := set_snapshot_ledger((token_context, token_id, owner), s);
+                    accumulator    := set_snapshot_ledger((token_context, token_id, receiver), accumulator);
+                    accumulator    := set_snapshot_ledger((token_context, token_id, owner), accumulator);
 
                     if token_amount >= 0n then block {
                         
                         accumulator.ledger[from_user] := case accumulator.ledger[from_user] of [
-                            Some (_balance) -> abs(_balance - tx.amount)
-                            None            -> failwith(error_USER_NOT_FOUND)
+                                Some (_balance) -> abs(_balance - tx.amount)
+                            |   None            -> failwith(error_USER_NOT_FOUND)
                         ]; 
 
                         accumulator.ledger[to_user] := case accumulator.ledger[to_user] of [
-                            Some (_balance) -> abs(_balance + tx.amount)
-                            None            -> tx.amount
+                                Some (_balance) -> _balance + tx.amount
+                            |   None            -> tx.amount
                         ]; 
-                    }
+                    };
 
                     const from_user_balance : nat = case accumulator.ledger[from_user] of [
-                        Some (_balance) -> _balance
-                        None            -> 0n
+                            Some (_balance) -> _balance
+                        |   None            -> 0n
                     ]; 
 
                     if from_user_balance = 0n then remove from_user from map accumulator.ledger else skip;
 
                 } else skip;
 
-            } with accumulator with record[ledger = updatedLedger];
+            } with accumulator with record[ledger = accumulator.ledger];
 
             const updatedOperations : list(operation) = (nil: list(operation));
             const updatedStorage : cmtaTokenStorageType = List.fold(transferTokens, txs, account.1);
@@ -1147,11 +1180,11 @@ block{
             const ledger_key : ledgerKeyType = record [
                 token_id    = request.token_id;
                 owner       = request.owner;
-            ]
+            ];
 
             verifyTokenIsDefined(request.token_id, s);
 
-            const token_balance : tokenBalanceType = case Big_map.find_opt(request.owner, s.ledger) of [
+            const token_balance : tokenBalanceType = case Big_map.find_opt(ledger_key, s.ledger) of [
                     Some (b) -> b
                 |   None     -> 0n
             ];
@@ -1203,19 +1236,14 @@ block{
 
 (* main entrypoint *)
 function main (const action : action; const s : cmtaTokenStorageType) : return is
-block{
 
-    verifyNoAmountSent(Unit); // // entrypoints should not receive any tez amount  
-
-} with(
-    
     case action of [
 
             // Housekeeping Entrypoints
             Set_token_metadata (params)         -> set_token_metadata(params, s)
-        |   Propose_administrator (params)      -> propose_administrator(params, s)
+        |   Propose_administrator (params)      -> propose_administrator(params.0, params.1, s)
         |   Set_administrator (params)          -> set_administrator(params, s)
-        |   Remove_administrator (params)       -> remove_administrator(params, s)
+        |   Remove_administrator (params)       -> remove_administrator(params.0, params.1, s)
         
             // Owner Entrypoints
         |   Initialise_token (params)           -> initialise_token(params, s)
@@ -1224,7 +1252,7 @@ block{
         |   Pause (params)                      -> pause(params, s)
         |   Unpause (params)                    -> unpause(params, s)
         |   Set_rule_engines (params)           -> set_rule_engines(params, s)
-        |   Schedule_snapshot (params)          -> schedule_snapshot(params, s)
+        |   Schedule_snapshot (params)          -> schedule_snapshot(params.0, params.1, s)
         |   Unschedule_snapshot (params)        -> unschedule_snapshot(params, s)
         |   Delete_snapshot (params)            -> delete_snapshot(params, s)
         |   Kill (_params)                      -> kill(s)
@@ -1238,4 +1266,3 @@ block{
         |   Balance_of (params)                 -> balance_of(params, s)
     ]
 
-)

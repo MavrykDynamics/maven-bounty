@@ -8,7 +8,7 @@ type snapshotTimestampType  is timestamp
 type operatorType           is address;
 type ownerType              is address;
 
-type tokenAmountType is record [
+type tokenAmountType is [@layout:comb] record [
     token_id        : nat;
     amount          : nat;
     address         : address; 
@@ -72,48 +72,48 @@ type tokenMetadataType is [@layout:comb] record [
 ]
 
 
-type reassignmentType is record [
+type reassignmentType is [@layout:comb] record [
     token_id            : nat;
     original_holder     : address;
     replacement_holder  : address;
 ]
 
-type redemptionType is record [
+type redemptionType is [@layout:comb] record [
     token_id            : nat;
     amount              : nat;
 ]
 
 
-type destructionType is record [
+type destructionType is [@layout:comb] record [
     token_id            : nat;
     holders             : list(address);
 ]
 
-type ruleType is record [
+type ruleType is [@layout:comb] record [
     token_id        : nat;
     rule_contract   : address; 
 ]
 
-type snapshotLookupKeyType is record [
+type snapshotLookupKeyType is [@layout:comb] record [
     token_id            : nat;
     snapshot_timestamp  : timestamp;
 ]
 
-type snapshotLedgerKeyType is record [
+type snapshotLedgerKeyType is [@layout:comb] record [
     token_id            : nat;
     owner               : address;
     snapshot_timestamp  : timestamp;
 ]
 
 
-type tokenContextType is record [
+type tokenContextType is [@layout:comb] record [
     is_paused                           : bool;
     validate_transfer_rule_contract     : option(address);
     current_snapshot                    : option(timestamp);
     next_snapshot                       : option(timestamp);
 ]
 
-type validationTransferType is record [
+type validationTransferType is [@layout:comb] record [
     from_       : address;
     to_         : address;
     token_id    : nat;
@@ -151,7 +151,7 @@ type operatorsType is big_map((ownerType * operatorType * tokenIdType), unit)
 // ------------------------------------------------------------------------------
 
 
-type cmtaTokenStorageType is record [
+type cmtaTokenStorageType is [@layout:comb] record [
     
     administrators          : administratorsType;
 
