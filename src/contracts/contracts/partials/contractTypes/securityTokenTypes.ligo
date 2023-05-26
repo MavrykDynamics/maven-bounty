@@ -72,11 +72,11 @@ type tokenMetadataType is [@layout:comb] record [
 ]
 
 
-type reassignmentType is [@layout:comb] record [
-    token_id            : nat;
-    original_holder     : address;
-    replacement_holder  : address;
-]
+// type reassignmentType is [@layout:comb] record [
+//     token_id            : nat;
+//     original_holder     : address;
+//     replacement_holder  : address;
+// ]
 
 type redemptionType is [@layout:comb] record [
     token_id            : nat;
@@ -91,26 +91,26 @@ type destructionType is [@layout:comb] record [
 
 type ruleType is [@layout:comb] record [
     token_id        : nat;
-    rule_contract   : address; 
+    ruleContract    : address; 
 ]
 
 type snapshotLookupKeyType is [@layout:comb] record [
     token_id            : nat;
-    snapshot_timestamp  : timestamp;
+    snapshotTimestamp   : timestamp;
 ]
 
 type snapshotLedgerKeyType is [@layout:comb] record [
     token_id            : nat;
     owner               : address;
-    snapshot_timestamp  : timestamp;
+    snapshotTimestamp   : timestamp;
 ]
 
 
 type tokenContextType is [@layout:comb] record [
-    is_paused                           : bool;
-    validate_transfer_rule_contract     : option(address);
-    current_snapshot                    : option(timestamp);
-    next_snapshot                       : option(timestamp);
+    isPaused                           : bool;
+    validateTransferRuleContract       : option(address);
+    currentSnapshot                    : option(timestamp);
+    nextSnapshot                       : option(timestamp);
 ]
 
 type validationTransferType is [@layout:comb] record [
@@ -156,10 +156,11 @@ type securityTokenStorageType is [@layout:comb] record [
     administrators          : administratorsType;
 
     token_metadata          : tokenMetadataLedgerType;
-    total_supply            : totalSupplyType;
+    
+    totalSupply             : totalSupplyType;
 
     snapshotLedger          : snapshotLedgerType;
-    snapshot_lookup         : snapshotLookupType;
+    snapshotLookup          : snapshotLookupType;
     snapshotTotalSupply     : snapshotTotalSupplyType;
     token_context           : tokenContextLedgerType;
     identities              : identityType;

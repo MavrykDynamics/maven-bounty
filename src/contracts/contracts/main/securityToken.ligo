@@ -1,4 +1,18 @@
 // ------------------------------------------------------------------------------
+// Error Codes
+// ------------------------------------------------------------------------------
+
+// Error Codes
+#include "../partials/errors.ligo"
+
+// ------------------------------------------------------------------------------
+// Shared Helpers and Types
+// ------------------------------------------------------------------------------
+
+// Shared Helpers
+#include "../partials/shared/sharedHelpers.ligo"
+
+// ------------------------------------------------------------------------------
 // Contract Types
 // ------------------------------------------------------------------------------
 
@@ -14,6 +28,9 @@ type action is
     |   ProposeAdministrator      of (tokenIdType * address)
     |   SetAdministrator          of tokenIdType
     |   RemoveAdministrator       of (tokenIdType * address)
+    |   SetGovernance             of address
+    |   UpdateWhitelistContracts  of updateWhitelistContractsType
+    |   MistakenTransfer          of transferActionType
         
         // Owner Entrypoints
     |   InitialiseToken           of list(tokenIdType)
@@ -54,33 +71,6 @@ const is_proposed_admin : nat = 2n;
 
 
 // ------------------------------------------------------------------------------
-// Errors Begin
-// ------------------------------------------------------------------------------
-
-[@inline] const error_ADMINISTRATOR_NOT_FOUND                   = 0n;
-[@inline] const error_NOT_ADMIN                                 = 1n;
-
-[@inline] const error_TOKEN_EXISTS                              = 2n;
-[@inline] const error_TOKEN_CONTEXT_NOT_FOUND                   = 3n;
-[@inline] const error_TOKEN_UNDEFINED                           = 4n;
-[@inline] const error_TOKEN_PAUSED                              = 5n;
-
-[@inline] const error_USER_NOT_FOUND                            = 6n;
-[@inline] const error_CANNOT_TRANSFER                           = 6n;
-[@inline] const error_INSUFFICIENT_BALANCE                      = 7n;
-
-[@inline] const error_SNAPSHOT_ALREADY_SCHEDULED                = 8n;
-[@inline] const error_SNAPSHOT_IN_PAST                          = 9n;
-
-[@inline] const error_VIEW_IS_TRANSFER_VALID_NOT_FOUND          = 10n;
-
-// ------------------------------------------------------------------------------
-// Errors End
-// ------------------------------------------------------------------------------
-
-
-
-// ------------------------------------------------------------------------------
 // Admin Helper Functions Begin
 // ------------------------------------------------------------------------------
 
@@ -115,7 +105,7 @@ block {
 function verifyTokenDoesNotExist(const token_id : nat; const s : securityTokenStorageType) : unit is
 block {
 
-    case s.token_context[token_id] of [
+    case s.tokenContext[token_id] of [
             Some(_v) -> failwith(error_TOKEN_EXISTS)
         |   None     -> skip
     ];
@@ -124,10 +114,10 @@ block {
 
 
 
-function verifyNoScheduledSnapshot(const token_context : tokenContextType) : unit is 
+function verifyNoScheduledSnapshot(const tokenContext : tokenContextType) : unit is 
 block {
 
-    case token_context.next_snapshot of [
+    case tokenContext.nextSnapshot of [
             Some (_v) -> failwith(error_SNAPSHOT_ALREADY_SCHEDULED)
         |   None      -> skip
     ];
@@ -136,10 +126,10 @@ block {
 
 
 
-function verifySnapshotInFuture(const snapshot_timestamp : timestamp) : unit is
+function verifySnapshotInFuture(const snapshotTimestamp : timestamp) : unit is
 block {
 
-    if Tezos.get_now() < snapshot_timestamp then skip else failwith(error_SNAPSHOT_IN_PAST);
+    if Tezos.get_now() < snapshotTimestamp then skip else failwith(error_SNAPSHOT_IN_PAST);
 
 } with unit
 
@@ -157,19 +147,19 @@ block {
 
 
 
-function verifyTokenContextIsNotPaused(const token_context : tokenContextType) : unit is 
+function verifyTokenContextIsNotPaused(const tokenContext : tokenContextType) : unit is 
 block {
 
-    if token_context.is_paused = True then failwith(error_TOKEN_PAUSED) else skip;
+    if tokenContext.isPaused = True then failwith(error_TOKEN_PAUSED) else skip;
 
 } with unit
 
 
 
-function verifySufficientBalance(const ledger_key : ledgerKeyType; const amount : nat; const s : securityTokenStorageType) : unit is
+function verifySufficientBalance(const ledgerKey : ledgerKeyType; const amount : nat; const s : securityTokenStorageType) : unit is
 block {
 
-    const ledger_balance : nat = case s.ledger[ledger_key] of [
+    const ledger_balance : nat = case s.ledger[ledgerKey] of [
             Some(_v) -> _v
         |   None     -> 0n
     ];
@@ -191,75 +181,75 @@ block {
 function bootstrapSnapshot(const params : (tokenContextType * nat); var s : securityTokenStorageType) : (tokenContextType * securityTokenStorageType) is 
 block {
 
-    var token_context : tokenContextType := params.0;
+    var tokenContext : tokenContextType := params.0;
     const token_id      : nat             = params.1;
 
-    case token_context.next_snapshot of [
-            Some(next_snapshot_timestamp) -> {
+    case tokenContext.nextSnapshot of [
+            Some(nextSnapshotTimestamp) -> {
 
-                if next_snapshot_timestamp < Tezos.get_now() then block {
+                if nextSnapshotTimestamp < Tezos.get_now() then block {
 
                     // check if there is a current snapshot set, if there is, set it to the next snapshot timestamp
-                    case token_context.current_snapshot of [
-                            Some(current_snapshot_timestamp) -> {
+                    case tokenContext.currentSnapshot of [
+                            Some(currentSnapshotTimestamp) -> {
 
-                                const snapshot_lookup_key : snapshotLookupKeyType = record [
+                                const snapshotLookupKey : snapshotLookupKeyType = record [
                                     token_id            = token_id;
-                                    snapshot_timestamp  = current_snapshot_timestamp;
+                                    snapshotTimestamp  = currentSnapshotTimestamp;
                                 ];
 
-                                s.snapshot_lookup[snapshot_lookup_key] := next_snapshot_timestamp;
+                                s.snapshotLookup[snapshotLookupKey] := nextSnapshotTimestamp;
 
                             }
                         |   None -> skip
                     ];
 
-                    token_context.current_snapshot  := Some(next_snapshot_timestamp);
-                    token_context.next_snapshot     := (None : option(timestamp));
+                    tokenContext.currentSnapshot  := Some(nextSnapshotTimestamp);
+                    tokenContext.nextSnapshot     := (None : option(timestamp));
 
                     // update token context
-                    s.token_context[token_id] := token_context;
+                    s.tokenContext[token_id] := tokenContext;
 
                 }    
             }
         |   None -> skip
     ];
 
-} with (token_context, s)
+} with (tokenContext, s)
 
 
 
 function setSnapshotLedger(const params : (tokenContextType * nat * address); var s : securityTokenStorageType) : securityTokenStorageType is
 block {
 
-    const token_context  : tokenContextType = params.0;
+    const tokenContext  : tokenContextType = params.0;
     const token_id       : nat              = params.1;
     const ownerAddress   : address          = params.2;
 
-    case token_context.current_snapshot of [
-            Some (current_snapshot_timestamp) -> {
+    case tokenContext.currentSnapshot of [
+            Some (currentSnapshotTimestamp) -> {
 
-                const snapshot_ledger_key : snapshotLedgerKeyType = record [
+                const snapshot_ledgerKey : snapshotLedgerKeyType = record [
                     token_id            = token_id;
                     owner               = ownerAddress;
-                    snapshot_timestamp  = current_snapshot_timestamp;
+                    snapshotTimestamp  = currentSnapshotTimestamp;
                 ];
 
-                case s.snapshotLedger[snapshot_ledger_key] of [
+                case s.snapshotLedger[snapshot_ledgerKey] of [
                         Some (_v) -> {
                             
-                            const ledger_key : ledgerKeyType = record [
+                            const ledgerKey : ledgerKeyType = record [
                                 owner       = ownerAddress;
                                 token_id    = token_id;
                             ];
 
-                            const ledger_value : nat = case s.ledger[ledger_key] of [
+                            const ledger_value : nat = case s.ledger[ledgerKey] of [
                                     Some (_v) -> _v
                                 |   None      -> 0n
                             ];
 
                             // set snapshot ledger value
-                            s.snapshotLedger[snapshot_ledger_key] := ledger_value;
+                            s.snapshotLedger[snapshot_ledgerKey] := ledger_value;
 
                         }
                     |   None -> skip
@@ -276,24 +266,24 @@ block {
 function setSnapshotTotalSupply(const params : (tokenContextType * nat); var s : securityTokenStorageType) : securityTokenStorageType is
 block {
 
-    const token_context : tokenContextType = params.0;
+    const tokenContext : tokenContextType = params.0;
     const token_id      : nat              = params.1;
 
-    case token_context.current_snapshot of [
-            Some (current_snapshot_timestamp) -> {
+    case tokenContext.currentSnapshot of [
+            Some (currentSnapshotTimestamp) -> {
 
-                const snapshot_lookup_key : snapshotLookupKeyType = record [
+                const snapshotLookupKey : snapshotLookupKeyType = record [
                     token_id            = token_id;
-                    snapshot_timestamp  = current_snapshot_timestamp;
+                    snapshotTimestamp  = currentSnapshotTimestamp;
                 ];
 
-                const total_supply : nat = case s.total_supply[token_id] of [
+                const totalSupply : nat = case s.totalSupply[token_id] of [
                         Some (_v) -> _v
                     |   None      -> 0n
                 ];
 
                 // set snapshot total supply
-                s.snapshotTotalSupply[snapshot_lookup_key] := total_supply;
+                s.snapshotTotalSupply[snapshotLookupKey] := totalSupply;
 
             }   
         |   None -> skip
@@ -386,11 +376,11 @@ block{
 //
 // ------------------------------------------------------------------------------
 
-(* view_total_supply
+(* view_totalSupply
     - Given a token id allows the consumer to view the current total supply.
 *)
-[@view] function view_total_supply(const token_id : nat; var s : securityTokenStorageType) : nat is
-    case Big_map.find_opt(token_id, s.total_supply) of [
+[@view] function view_totalSupply(const token_id : nat; var s : securityTokenStorageType) : nat is
+    case Big_map.find_opt(token_id, s.totalSupply) of [
             Some (_v) -> _v
         |   None      -> 0n
     ]
@@ -401,61 +391,61 @@ block{
     - Given a ledger key (consisting of token_id = sp.TNat, owner = sp.TAddress) allows the 
       consumer to view the current balance.
 *)
-[@view] function view_balance_of(const ledger_key : ledgerKeyType; var s : securityTokenStorageType) : nat is
-    case Big_map.find_opt(ledger_key, s.ledger) of [
+[@view] function view_balance_of(const ledgerKey : ledgerKeyType; var s : securityTokenStorageType) : nat is
+    case Big_map.find_opt(ledgerKey, s.ledger) of [
             Some (_v) -> _v
         |   None      -> 0n
     ]
 
 
 
-(* view_current_snapshot
+(* view_currentSnapshot
     - Given a token id allows the consumer to view the current snapshot timestamp. Can be null.
 *)
-[@view] function view_current_snapshot(const token_id : nat; var s : securityTokenStorageType) : option(timestamp) is
-    case Big_map.find_opt(token_id, s.token_context) of [
-            Some (_v) -> _v.current_snapshot
+[@view] function view_currentSnapshot(const token_id : nat; var s : securityTokenStorageType) : option(timestamp) is
+    case Big_map.find_opt(token_id, s.tokenContext) of [
+            Some (_v) -> _v.currentSnapshot
         |   None      -> (None : option(timestamp))
     ]
 
 
 
-(* view_next_snapshot
+(* view_nextSnapshot
     - Given a token id allows the consumer to view the next snapshot timestamp. Can be null.
 *)
-[@view] function view_next_snapshot(const token_id : nat; var s : securityTokenStorageType) : option(timestamp) is
-    case Big_map.find_opt(token_id, s.token_context) of [
-            Some (_v) -> _v.next_snapshot
+[@view] function view_nextSnapshot(const token_id : nat; var s : securityTokenStorageType) : option(timestamp) is
+    case Big_map.find_opt(token_id, s.tokenContext) of [
+            Some (_v) -> _v.nextSnapshot
         |   None      -> (None : option(timestamp))
     ]
 
 
 
-(* view_snapshot_total_supply
-    - Given the snapshot lookup key (consisting of token_id = sp.TNat, snapshot_timestamp = sp.TTimestamp) allows 
+(* view_snapshot_totalSupply
+    - Given the snapshot lookup key (consisting of token_id = sp.TNat, snapshotTimestamp = sp.TTimestamp) allows 
       the consumer to retrieve the total supply in nat of a given snapshot.
 *)
-[@view] function view_snapshot_total_supply(const snapshot_lookup_key : snapshotLookupKeyType; var s : securityTokenStorageType) : nat is
+[@view] function view_snapshot_totalSupply(const snapshotLookupKey : snapshotLookupKeyType; var s : securityTokenStorageType) : nat is
 block {
 
-    var snapshot_total_supply : nat := 0n;
-    case s.snapshotTotalSupply[snapshot_lookup_key] of [
-            Some (_total_supply) -> snapshot_total_supply := _total_supply
+    var snapshot_totalSupply : nat := 0n;
+    case s.snapshotTotalSupply[snapshotLookupKey] of [
+            Some (_totalSupply) -> snapshot_totalSupply := _totalSupply
         |   None -> block {
 
                 var keep_loop : bool := True;
-                var current_snapshot_lookup_key : snapshotLookupKeyType := snapshot_lookup_key;
+                var currentSnapshotLookupKey : snapshotLookupKeyType := snapshotLookupKey;
 
                 while keep_loop = True block {
-                    case s.snapshot_lookup[current_snapshot_lookup_key] of [
+                    case s.snapshotLookup[currentSnapshotLookupKey] of [
                             Some (_timestamp) -> {
 
-                                current_snapshot_lookup_key := record [
-                                    token_id            = current_snapshot_lookup_key.token_id;
-                                    snapshot_timestamp  = _timestamp
+                                currentSnapshotLookupKey := record [
+                                    token_id            = currentSnapshotLookupKey.token_id;
+                                    snapshotTimestamp  = _timestamp
                                 ];
 
-                                case s.snapshotTotalSupply[current_snapshot_lookup_key] of [
+                                case s.snapshotTotalSupply[currentSnapshotLookupKey] of [
                                         Some (_v) -> keep_loop := False
                                     |   None      -> skip
                                 ];
@@ -465,57 +455,57 @@ block {
                     ]
                 };
 
-                case s.snapshotTotalSupply[current_snapshot_lookup_key] of [
-                        Some (_v) -> snapshot_total_supply := _v
+                case s.snapshotTotalSupply[currentSnapshotLookupKey] of [
+                        Some (_v) -> snapshot_totalSupply := _v
                     |   None      -> skip
                 ];
 
             }
     ];
 
-} with snapshot_total_supply
+} with snapshot_totalSupply
 
 
 
 (* view_snapshot_balance_of
-    - Given the snapshot ledger key (consisting of token_id = sp.TNat, owner = sp.TAddress, snapshot_timestamp = sp.TTimestamp) allows 
+    - Given the snapshot ledger key (consisting of token_id = sp.TNat, owner = sp.TAddress, snapshotTimestamp = sp.TTimestamp) allows 
       the consumer to retrieve the balance in nat of a given snapshot.
 *)
-[@view] function view_snapshot_balance_of(const snapshot_ledger_key : snapshotLedgerKeyType; var s : securityTokenStorageType) : nat is
+[@view] function view_snapshot_balance_of(const snapshot_ledgerKey : snapshotLedgerKeyType; var s : securityTokenStorageType) : nat is
 block {
 
     var snapshot_balance_of : nat := 0n;
-    case s.snapshotLedger[snapshot_ledger_key] of [
+    case s.snapshotLedger[snapshot_ledgerKey] of [
             Some (_balance) -> snapshot_balance_of := _balance
         |   None -> block {
 
                 var keep_loop : bool := True;
-                var current_snapshot_lookup_key : snapshotLookupKeyType := record [
-                    token_id            = snapshot_ledger_key.token_id;
-                    snapshot_timestamp  = snapshot_ledger_key.snapshot_timestamp;
+                var currentSnapshotLookupKey : snapshotLookupKeyType := record [
+                    token_id            = snapshot_ledgerKey.token_id;
+                    snapshotTimestamp  = snapshot_ledgerKey.snapshotTimestamp;
                 ];
-                var current_snapshot_ledger_key : snapshotLedgerKeyType := record [
-                    token_id            = snapshot_ledger_key.token_id;
-                    owner               = snapshot_ledger_key.owner;
-                    snapshot_timestamp  = current_snapshot_lookup_key.snapshot_timestamp;
+                var currentSnapshot_ledgerKey : snapshotLedgerKeyType := record [
+                    token_id            = snapshot_ledgerKey.token_id;
+                    owner               = snapshot_ledgerKey.owner;
+                    snapshotTimestamp  = currentSnapshotLookupKey.snapshotTimestamp;
                 ];
 
                 while keep_loop = True block {
-                    case s.snapshot_lookup[current_snapshot_lookup_key] of [
+                    case s.snapshotLookup[currentSnapshotLookupKey] of [
                             Some (_timestamp) -> {
 
-                                current_snapshot_lookup_key := record [
-                                    token_id            = snapshot_ledger_key.token_id;
-                                    snapshot_timestamp  = _timestamp
+                                currentSnapshotLookupKey := record [
+                                    token_id            = snapshot_ledgerKey.token_id;
+                                    snapshotTimestamp  = _timestamp
                                 ];
 
-                                current_snapshot_ledger_key := record [
-                                    token_id            = snapshot_ledger_key.token_id;
-                                    owner               = snapshot_ledger_key.owner;
-                                    snapshot_timestamp  = current_snapshot_lookup_key.snapshot_timestamp;
+                                currentSnapshot_ledgerKey := record [
+                                    token_id            = snapshot_ledgerKey.token_id;
+                                    owner               = snapshot_ledgerKey.owner;
+                                    snapshotTimestamp  = currentSnapshotLookupKey.snapshotTimestamp;
                                 ];
 
-                                case s.snapshotLedger[current_snapshot_ledger_key] of [
+                                case s.snapshotLedger[currentSnapshot_ledgerKey] of [
                                         Some (_v) -> keep_loop := False
                                     |   None      -> skip
                                 ];
@@ -525,7 +515,7 @@ block {
                     ]
                 };
 
-                case s.snapshotLedger[current_snapshot_ledger_key] of [
+                case s.snapshotLedger[currentSnapshot_ledgerKey] of [
                         Some (_v) -> snapshot_balance_of := _v
                     |   None      -> skip
                 ];
@@ -538,24 +528,26 @@ block {
 
 
 (* get: operator *)
-// [@view] function getOperatorOpt(const operator : (ownerType * operatorType * nat); const s : securityTokenStorageType) : option(unit) is
-//     Big_map.find_opt(operator, s.operators)
+[@view] function getOperatorOpt(const operator : (ownerType * operatorType * nat); const s : securityTokenStorageType) : option(unit) is
+    Big_map.find_opt(operator, s.operators)
+
 
 
 // (* check if operator *)
-// [@view] function is_operator(const operator : (ownerType * operatorType * nat); const s : securityTokenStorageType) : bool is
-//     Big_map.mem(operator, s.operators)
+[@view] function is_operator(const operator : (ownerType * operatorType * nat); const s : securityTokenStorageType) : bool is
+    Big_map.mem(operator, s.operators)
 
 
-// (* get: metadata *)
-// [@view] function token_metadata(const tokenId : nat; const s : securityTokenStorageType) : tokenMetadataInfoType is
-//     case Big_map.find_opt(tokenId, s.token_metadata) of [
-//             Some (_metadata)  -> _metadata
-//         |   None -> record[
-//                 token_id    = tokenId;
-//                 token_info  = map[]
-//             ]
-//     ]
+
+(* get: metadata *)
+[@view] function token_metadata(const tokenId : nat; const s : securityTokenStorageType) : tokenMetadataInfoType is
+    case Big_map.find_opt(tokenId, s.token_metadata) of [
+            Some (_metadata)  -> _metadata
+        |   None -> record[
+                token_id    = tokenId;
+                token_info  = map[]
+            ]
+    ]
 
 // ------------------------------------------------------------------------------
 //
@@ -586,7 +578,7 @@ block {
 
     for token_metadata in list tokenMetadataList block {
 
-        const administrator_ledger_key : ledgerKeyType = record [
+        const administratorLedgerKey : ledgerKeyType = record [
             owner       = Tezos.get_sender();
             token_id    = token_metadata.token_id;
         ];
@@ -594,19 +586,19 @@ block {
         case s.token_metadata[token_metadata.token_id] of [
                 Some(_v) -> {
                     // verify sender is admin
-                    verifySenderIsAdmin(administrator_ledger_key, s);
+                    verifySenderIsAdmin(administratorLedgerKey, s);
                 }
             |   None -> {
 
-                    const super_administrator_ledger_key : ledgerKeyType = record [
+                    const super_administratorLedgerKey : ledgerKeyType = record [
                         owner       = Tezos.get_sender();
                         token_id    = 0n;
                     ];
 
                     // verify sender is admin
-                    verifySenderIsAdmin(super_administrator_ledger_key, s);
+                    verifySenderIsAdmin(super_administratorLedgerKey, s);
 
-                    s.administrators[administrator_ledger_key] := is_admin;
+                    s.administrators[administratorLedgerKey] := is_admin;
                 }
         ];
 
@@ -625,20 +617,20 @@ block {
 function proposeAdministrator(const token_id : nat; const proposed_administrator : address; var s : securityTokenStorageType) : return is
 block {
 
-    const administrator_ledger_key : ledgerKeyType = record [
+    const administratorLedgerKey : ledgerKeyType = record [
         owner       = Tezos.get_sender();
         token_id    = token_id;
     ];    
 
-    const proposed_administrator_ledger_key : ledgerKeyType = record [
+    const proposed_administratorLedgerKey : ledgerKeyType = record [
         owner       = proposed_administrator;
         token_id    = token_id;
     ];    
 
     // verify sender is admin
-    verifySenderIsAdmin(administrator_ledger_key, s);
+    verifySenderIsAdmin(administratorLedgerKey, s);
 
-    s.administrators[proposed_administrator_ledger_key] := is_proposed_admin;
+    s.administrators[proposed_administratorLedgerKey] := is_proposed_admin;
 
 } with (noOperations, s)
 
@@ -650,15 +642,15 @@ block {
 function setAdministrator(const token_id : nat; var s : securityTokenStorageType) : return is
 block {
     
-    const administrator_ledger_key : ledgerKeyType = record [
+    const administratorLedgerKey : ledgerKeyType = record [
         owner       = Tezos.get_sender();
         token_id    = token_id;
     ];    
 
     // verify sender is proposed admin
-    verifySenderIsProposedAdmin(administrator_ledger_key, s);
+    verifySenderIsProposedAdmin(administratorLedgerKey, s);
 
-    s.administrators[administrator_ledger_key] := is_admin;
+    s.administrators[administratorLedgerKey] := is_admin;
   
 } with (noOperations, s)
 
@@ -670,22 +662,64 @@ block {
 function removeAdministrator(const token_id : nat; const administrator_to_remove : address; var s : securityTokenStorageType) : return is
 block {
     
-    const administrator_ledger_key : ledgerKeyType = record [
+    const administratorLedgerKey : ledgerKeyType = record [
         owner       = Tezos.get_sender();
         token_id    = token_id;
     ];    
 
-    const administrator_to_remove_ledger_key : ledgerKeyType = record [
+    const administrator_to_remove_ledgerKey : ledgerKeyType = record [
         owner       = administrator_to_remove;
         token_id    = token_id;
     ];    
 
     // verify sender is admin
-    verifySenderIsAdmin(administrator_ledger_key, s);
+    verifySenderIsAdmin(administratorLedgerKey, s);
 
-    remove administrator_to_remove_ledger_key from map s.administrators;
+    remove administrator_to_remove_ledgerKey from map s.administrators;
 
 } with (noOperations, s)
+
+
+
+(*  setGovernance entrypoint *)
+function setGovernance(const newGovernanceAddress : address; var store : mvkTokenStorageType) : return is
+block {
+    
+  checkSenderIsAllowed(store);
+  store.governanceAddress := newGovernanceAddress;
+
+} with (noOperations, store)
+
+
+
+(*  updateWhitelistContracts entrypoint *)
+function updateWhitelistContracts(const updateWhitelistContractsParams : updateWhitelistContractsType; var s : mvkTokenStorageType) : return is
+block {
+
+    checkSenderIsAdmin(s);
+    s.whitelistContracts := updateWhitelistContractsMap(updateWhitelistContractsParams, s.whitelistContracts);
+  
+} with (noOperations, s)
+
+
+
+(*  mistakenTransfer entrypoint *)
+function mistakenTransfer(const destinationParams : transferActionType; var store : mvkTokenStorageType) : return is
+block {
+
+    // Steps Overview:    
+    // 1. Check that sender is admin 
+    // 2. Create and execute transfer operations based on the params sent
+
+    checkSenderIsAdmin(s);
+
+    // Operations list
+    var operations : list(operation) := nil;
+
+    // Create transfer operations (transferOperationFold in transferHelpers)
+    operations := List.fold_right(transferOperationFold, destinationParams, operations)
+
+} with (operations, store)
 
 // ------------------------------------------------------------------------------
 // Housekeeping Entrypoints End
@@ -708,23 +742,23 @@ block{
 
         verifyTokenDoesNotExist(token_id, s);
 
-        const administrator_ledger_key : ledgerKeyType = record [
+        const administratorLedgerKey : ledgerKeyType = record [
             owner       = Tezos.get_sender();
             token_id    = token_id;
         ];
 
         // verify sender is admin
-        verifySenderIsAdmin(administrator_ledger_key, s);
+        verifySenderIsAdmin(administratorLedgerKey, s);
 
         // add new token context
-        const new_token_context : tokenContextType = record [
-            is_paused                       = False;
-            validate_transfer_rule_contract = (None : option(address));
-            current_snapshot                = (None : option(timestamp));
-            next_snapshot                   = (None : option(timestamp));
+        const newTokenContext : tokenContextType = record [
+            isPaused                       = False;
+            validateTransferRuleContract   = (None : option(address));
+            currentSnapshot                = (None : option(timestamp));
+            nextSnapshot                   = (None : option(timestamp));
         ];
 
-        s.token_context[token_id] := new_token_context;
+        s.tokenContext[token_id] := newTokenContext;
     }
 
 } with (noOperations, s)
@@ -734,46 +768,46 @@ block{
 (* mint entrypoint 
    - Allows to mint new tokens to the defined recipient address, only a token administrator can do this
 *)
-function mint(const token_amounts : list(tokenAmountType); var s : securityTokenStorageType) : return is
+function mint(const tokenAmounts : list(tokenAmountType); var s : securityTokenStorageType) : return is
 block {
 
 
-    for token_amount in list token_amounts block {
+    for tokenAmount in list tokenAmounts block {
 
-        const administrator_ledger_key : ledgerKeyType = record [
+        const administratorLedgerKey : ledgerKeyType = record [
             owner       = Tezos.get_sender();
-            token_id    = token_amount.token_id;
+            token_id    = tokenAmount.token_id;
         ];
 
-        const recipient_ledger_key : ledgerKeyType = record [
-            owner       = token_amount.address;
-            token_id    = token_amount.token_id;
+        const recipientLedgerKey : ledgerKeyType = record [
+            owner       = tokenAmount.address;
+            token_id    = tokenAmount.token_id;
         ];
 
-        verifySenderIsAdmin(administrator_ledger_key, s);
+        verifySenderIsAdmin(administratorLedgerKey, s);
 
-        verifyTokenIsDefined(token_amount.token_id, s);
+        verifyTokenIsDefined(tokenAmount.token_id, s);
 
-        var token_context : tokenContextType := case s.token_context[token_amount.token_id] of [
+        var tokenContext : tokenContextType := case s.tokenContext[tokenAmount.token_id] of [
                 Some (_v) -> _v
-            |   None      -> failwith(error_TOKEN_CONTEXT_NOT_FOUND)
+            |   None      -> failwith(error_tokenContext_NOT_FOUND)
         ];
 
-        const bootstrap_snapshot : (tokenContextType * securityTokenStorageType) = bootstrap_snapshot((token_context, token_amount.token_id), s);
-        token_context  := bootstrap_snapshot.0;
-        s              := bootstrap_snapshot.1;
+        const bootstrapSnapshot : (tokenContextType * securityTokenStorageType) = bootstrapSnapshot((tokenContext, tokenAmount.token_id), s);
+        tokenContext  := bootstrapSnapshot.0;
+        s              := bootstrapSnapshot.1;
 
-        s := set_snapshot_total_supply((token_context, token_amount.token_id), s);
-        s := set_snapshot_ledger((token_context, token_amount.token_id, token_amount.address), s);
+        s := set_snapshot_totalSupply((tokenContext, tokenAmount.token_id), s);
+        s := set_snapshot_ledger((tokenContext, tokenAmount.token_id, tokenAmount.address), s);
 
-        s.ledger[recipient_ledger_key] := case s.ledger[recipient_ledger_key] of [
-                Some(_v) -> _v + token_amount.amount
-            |   None     -> token_amount.amount
+        s.ledger[recipientLedgerKey] := case s.ledger[recipientLedgerKey] of [
+                Some(_v) -> _v + tokenAmount.amount
+            |   None     -> tokenAmount.amount
         ];
 
-        s.total_supply[token_amount.token_id] := case s.total_supply[token_amount.token_id] of [
-                Some (_v) -> _v + token_amount.amount
-            |   None      -> token_amount.amount
+        s.totalSupply[tokenAmount.token_id] := case s.totalSupply[tokenAmount.token_id] of [
+                Some (_v) -> _v + tokenAmount.amount
+            |   None      -> tokenAmount.amount
         ];
 
     }
@@ -785,54 +819,54 @@ block {
 (* burn entrypoint 
     - Allows to burn tokens on the defined recipient address, only a token administrator can do this
 *)
-function burn(const token_amounts : list(tokenAmountType); var s : securityTokenStorageType) : return is
+function burn(const tokenAmounts : list(tokenAmountType); var s : securityTokenStorageType) : return is
 block {
 
 
-    for token_amount in list token_amounts block {
+    for tokenAmount in list tokenAmounts block {
 
-        const administrator_ledger_key : ledgerKeyType = record [
+        const administratorLedgerKey : ledgerKeyType = record [
             owner       = Tezos.get_sender();
-            token_id    = token_amount.token_id;
+            token_id    = tokenAmount.token_id;
         ];
 
-        const recipient_ledger_key : ledgerKeyType = record [
-            owner       = token_amount.address;
-            token_id    = token_amount.token_id;
+        const recipientLedgerKey : ledgerKeyType = record [
+            owner       = tokenAmount.address;
+            token_id    = tokenAmount.token_id;
         ];
 
-        verifySenderIsAdmin(administrator_ledger_key, s);
+        verifySenderIsAdmin(administratorLedgerKey, s);
 
-        verifySufficientBalance(recipient_ledger_key, token_amount.amount, s);
+        verifySufficientBalance(recipientLedgerKey, tokenAmount.amount, s);
 
-        var token_context : tokenContextType := case s.token_context[token_amount.token_id] of [
+        var tokenContext : tokenContextType := case s.tokenContext[tokenAmount.token_id] of [
                 Some (_v) -> _v
-            |   None      -> failwith(error_TOKEN_CONTEXT_NOT_FOUND)
+            |   None      -> failwith(error_tokenContext_NOT_FOUND)
         ];
 
-        const bootstrap_snapshot : (tokenContextType * securityTokenStorageType) = bootstrap_snapshot((token_context, token_amount.token_id), s);
-        token_context  := bootstrap_snapshot.0;
-        s              := bootstrap_snapshot.1;
+        const bootstrapSnapshot : (tokenContextType * securityTokenStorageType) = bootstrapSnapshot((tokenContext, tokenAmount.token_id), s);
+        tokenContext  := bootstrapSnapshot.0;
+        s              := bootstrapSnapshot.1;
 
-        s := set_snapshot_total_supply((token_context, token_amount.token_id), s);
-        s := set_snapshot_ledger((token_context, token_amount.token_id, token_amount.address), s);
+        s := set_snapshot_totalSupply((tokenContext, tokenAmount.token_id), s);
+        s := set_snapshot_ledger((tokenContext, tokenAmount.token_id, tokenAmount.address), s);
 
-        s.ledger[recipient_ledger_key] := case s.ledger[recipient_ledger_key] of [
-                Some(_v) -> if _v > token_amount.amount then abs(_v - token_amount.amount) else 0n
+        s.ledger[recipientLedgerKey] := case s.ledger[recipientLedgerKey] of [
+                Some(_v) -> if _v > tokenAmount.amount then abs(_v - tokenAmount.amount) else 0n
             |   None     -> 0n
         ];
 
-        s.total_supply[token_amount.token_id] := case s.total_supply[token_amount.token_id] of [
-                Some (_v) -> if _v > token_amount.amount then abs(_v - token_amount.amount) else 0n
+        s.totalSupply[tokenAmount.token_id] := case s.totalSupply[tokenAmount.token_id] of [
+                Some (_v) -> if _v > tokenAmount.amount then abs(_v - tokenAmount.amount) else 0n
             |   None      -> 0n
         ];
 
-        const recipient_balance : nat = case s.ledger[recipient_ledger_key] of [
+        const recipient_balance : nat = case s.ledger[recipientLedgerKey] of [
                 Some(_v) -> _v
             |   None     -> 0n
         ];
 
-        if recipient_balance = 0n then remove recipient_ledger_key from map s.ledger else skip;
+        if recipient_balance = 0n then remove recipientLedgerKey from map s.ledger else skip;
 
     }
 
@@ -848,22 +882,22 @@ block{
 
     for token_id in list pauseParams block {
 
-        const administrator_ledger_key : ledgerKeyType = record [
+        const administratorLedgerKey : ledgerKeyType = record [
             owner       = Tezos.get_sender();
             token_id    = token_id;
         ];
 
         // verify sender is admin
-        verifySenderIsAdmin(administrator_ledger_key, s);
+        verifySenderIsAdmin(administratorLedgerKey, s);
 
-        var token_context : tokenContextType := case s.token_context[token_id] of [
+        var tokenContext : tokenContextType := case s.tokenContext[token_id] of [
                 Some (_context) -> _context
-            |   None            -> failwith(error_TOKEN_CONTEXT_NOT_FOUND)
+            |   None            -> failwith(error_tokenContext_NOT_FOUND)
         ];
 
-        token_context.is_paused := True;
+        tokenContext.isPaused := True;
 
-        s.token_context[token_id] := token_context;
+        s.tokenContext[token_id] := tokenContext;
     }
 
 } with (noOperations, s)
@@ -878,22 +912,22 @@ block{
 
     for token_id in list unpauseParams block {
 
-        const administrator_ledger_key : ledgerKeyType = record [
+        const administratorLedgerKey : ledgerKeyType = record [
             owner       = Tezos.get_sender();
             token_id    = token_id;
         ];
 
         // verify sender is admin
-        verifySenderIsAdmin(administrator_ledger_key, s);
+        verifySenderIsAdmin(administratorLedgerKey, s);
 
-        var token_context : tokenContextType := case s.token_context[token_id] of [
+        var tokenContext : tokenContextType := case s.tokenContext[token_id] of [
                 Some (_context) -> _context
-            |   None            -> failwith(error_TOKEN_CONTEXT_NOT_FOUND)
+            |   None            -> failwith(error_tokenContext_NOT_FOUND)
         ];
 
-        token_context.is_paused := False;
+        tokenContext.isPaused := False;
 
-        s.token_context[token_id] := token_context;
+        s.tokenContext[token_id] := tokenContext;
     }
 
 } with (noOperations, s)
@@ -908,25 +942,25 @@ block{
 
     for rule in list setRuleEnginesParams block {
 
-        const rule_token_id : nat = rule.token_id;
+        const ruleTokenId : nat = rule.token_id;
 
-        const administrator_ledger_key : ledgerKeyType = record [
+        const administratorLedgerKey : ledgerKeyType = record [
             owner       = Tezos.get_sender();
-            token_id    = rule_token_id;
+            token_id    = ruleTokenId;
         ];
 
         // verify sender is admin
-        verifySenderIsAdmin(administrator_ledger_key, s);
+        verifySenderIsAdmin(administratorLedgerKey, s);
 
         // get and update token context
-        var token_context : tokenContextType := case s.token_context[rule_token_id] of [
+        var tokenContext : tokenContextType := case s.tokenContext[ruleTokenId] of [
                 Some (_context) -> _context
-            |   None            -> failwith(error_TOKEN_CONTEXT_NOT_FOUND)
+            |   None            -> failwith(error_tokenContext_NOT_FOUND)
         ];
 
-        token_context.validate_transfer_rule_contract := Some(rule.rule_contract);
+        tokenContext.validateTransferRuleContract := Some(rule.ruleContract);
 
-        s.token_context[rule_token_id] := token_context;
+        s.tokenContext[ruleTokenId] := tokenContext;
         
     };
 
@@ -937,30 +971,30 @@ block{
 (* scheduleSnapshot entrypoint 
     - Schedules a snapshot for the future for a specific token. Only one snapshot can be scheduled, repeated call will fail, to re-schedule you need to unschedule using the `unschedule_snapshot` entry point first. Only token administrator can do this.
 *)
-function scheduleSnapshot(const token_id : nat; const snapshot_timestamp : timestamp; var s : securityTokenStorageType) : return is
+function scheduleSnapshot(const token_id : nat; const snapshotTimestamp : timestamp; var s : securityTokenStorageType) : return is
 block{
 
-    const administrator_ledger_key : ledgerKeyType = record [
+    const administratorLedgerKey : ledgerKeyType = record [
         owner       = Tezos.get_sender();
         token_id    = token_id;
     ];
 
     // verify sender is admin
-    verifySenderIsAdmin(administrator_ledger_key, s);
+    verifySenderIsAdmin(administratorLedgerKey, s);
 
     // get token context
-    var token_context : tokenContextType := case s.token_context[token_id] of [
+    var tokenContext : tokenContextType := case s.tokenContext[token_id] of [
             Some (_context) -> _context
-        |   None            -> failwith(error_TOKEN_CONTEXT_NOT_FOUND)
+        |   None            -> failwith(error_tokenContext_NOT_FOUND)
     ];
 
-    verifyNoScheduledSnapshot(token_context);
+    verifyNoScheduledSnapshot(tokenContext);
 
-    verifySnapshotInFuture(snapshot_timestamp);
+    verifySnapshotInFuture(snapshotTimestamp);
 
-    token_context.next_snapshot := Some(snapshot_timestamp);
+    tokenContext.nextSnapshot := Some(snapshotTimestamp);
 
-    s.token_context[token_id] := token_context;
+    s.tokenContext[token_id] := tokenContext;
 
 } with (noOperations, s)
 
@@ -972,43 +1006,43 @@ block{
 function unscheduleSnapshot(const token_id : nat; var s : securityTokenStorageType) : return is
 block{
 
-    const administrator_ledger_key : ledgerKeyType = record [
+    const administratorLedgerKey : ledgerKeyType = record [
         owner       = Tezos.get_sender();
         token_id    = token_id;
     ];
 
     // verify is admin
-    verifySenderIsAdmin(administrator_ledger_key, s);
+    verifySenderIsAdmin(administratorLedgerKey, s);
 
     // get token context
-    var token_context : tokenContextType := case s.token_context[token_id] of [
+    var tokenContext : tokenContextType := case s.tokenContext[token_id] of [
             Some (_context) -> _context
-        |   None            -> failwith(error_TOKEN_CONTEXT_NOT_FOUND)
+        |   None            -> failwith(error_tokenContext_NOT_FOUND)
     ];
 
-    token_context.next_snapshot := (None : option(timestamp));
+    tokenContext.nextSnapshot := (None : option(timestamp));
 
-    s.token_context[token_id] := token_context;
+    s.tokenContext[token_id] := tokenContext;
 
 } with (noOperations, s)
 
 
 
 (* deleteSnapshot entrypoint 
-    - Deletes a snapshot for the given snapshot lookup key (consisting of token_id = sp.TNat, snapshot_timestamp = sp.TTimestamp). Only token administrator can do this.
+    - Deletes a snapshot for the given snapshot lookup key (consisting of token_id = sp.TNat, snapshotTimestamp = sp.TTimestamp). Only token administrator can do this.
 *)
-function deleteSnapshot(const snapshot_lookup_key : snapshotLookupKeyType; var s : securityTokenStorageType) : return is
+function deleteSnapshot(const snapshotLookupKey : snapshotLookupKeyType; var s : securityTokenStorageType) : return is
 block{
 
-    const administrator_ledger_key : ledgerKeyType = record [
+    const administratorLedgerKey : ledgerKeyType = record [
         owner       = Tezos.get_sender();
-        token_id    = snapshot_lookup_key.token_id;
+        token_id    = snapshotLookupKey.token_id;
     ];
 
     // verify is admin
-    verifySenderIsAdmin(administrator_ledger_key, s);
+    verifySenderIsAdmin(administratorLedgerKey, s);
 
-    remove snapshot_lookup_key from map s.snapshot_lookup
+    remove snapshotLookupKey from map s.snapshotLookup
 
 } with (noOperations, s)
 
@@ -1020,20 +1054,20 @@ block{
 function kill(var s : securityTokenStorageType) : return is
 block{
 
-    const administrator_ledger_key : ledgerKeyType = record [
+    const administratorLedgerKey : ledgerKeyType = record [
         owner       = Tezos.get_sender();
         token_id    = 0n;
     ];
 
     // verify is admin
-    verifySenderIsAdmin(administrator_ledger_key, s);
+    verifySenderIsAdmin(administratorLedgerKey, s);
 
     s.ledger            := (big_map[] : ledgerType);
     s.administrators    := (big_map[] : administratorsType);
     s.token_metadata    := (big_map[] : tokenMetadataLedgerType);
-    s.total_supply      := (big_map[] : totalSupplyType);
+    s.totalSupply       := (big_map[] : totalSupplyType);
     s.operators         := (big_map[] : operatorsType);
-    s.token_context     := (big_map[] : tokenContextLedgerType);
+    s.tokenContext      := (big_map[] : tokenContextLedgerType);
     s.identities        := (big_map[] : identityType);
 
 } with (noOperations, s)
@@ -1074,7 +1108,7 @@ block{
             block {
 
                 const token_id      : tokenIdType       = tx.token_id;
-                const token_amount  : tokenBalanceType  = tx.amount;
+                const tokenAmount  : tokenBalanceType  = tx.amount;
                 const receiver      : ownerType         = tx.to_;
 
                 const from_user : ledgerKeyType = record [
@@ -1087,24 +1121,24 @@ block{
                     token_id    = token_id;
                 ];
 
-                var token_context : tokenContextType := case accumulator.token_context[token_id] of [
+                var tokenContext : tokenContextType := case accumulator.tokenContext[token_id] of [
                         Some(_v) -> _v
-                    |   None     -> failwith(error_TOKEN_CONTEXT_NOT_FOUND)
+                    |   None     -> failwith(error_tokenContext_NOT_FOUND)
                 ];
 
                 // verify if transfer is valid based on rule contract
-                case token_context.validate_transfer_rule_contract of [
-                        Some(_rule_contract) -> {
+                case tokenContext.validateTransferRuleContract of [
+                        Some(_ruleContract) -> {
                             
-                            const validation_transfer : validationTransferType = record [
+                            const validationTransfer : validationTransferType = record [
                                 from_       = owner;
                                 to_         = receiver;
                                 token_id    = token_id;
-                                amount      = token_amount;
+                                amount      = tokenAmount;
                             ];
 
-                            const is_transfer_valid_view : option (bool) = Tezos.call_view ("view_is_transfer_valid", validation_transfer, _rule_contract);
-                            const _is_transfer_valid : bool = case is_transfer_valid_view of [
+                            const isTransferValidView : option (bool) = Tezos.call_view ("view_is_transfer_valid", validationTransfer, _ruleContract);
+                            const _isTransferValid : bool = case isTransferValidView of [
                                     Some (_bool) -> if _bool = False then failwith(error_CANNOT_TRANSFER) else True
                                 |   None         -> failwith (error_VIEW_IS_TRANSFER_VALID_NOT_FOUND)
                             ];
@@ -1116,20 +1150,20 @@ block{
 
                 verifyTokenIsDefined(token_id, accumulator);
 
-                verifyTokenContextIsNotPaused(token_context);
+                verifyTokenContextIsNotPaused(tokenContext);
 
-                if token_amount > 0n then block {
+                if tokenAmount > 0n then block {
                     
-                    verifySufficientBalance(from_user, token_amount, accumulator);
+                    verifySufficientBalance(from_user, tokenAmount, accumulator);
 
-                    const bootstrap_snapshot : (tokenContextType * securityTokenStorageType) = bootstrap_snapshot((token_context, token_id), accumulator);
-                    token_context  := bootstrap_snapshot.0;
-                    accumulator    := bootstrap_snapshot.1;
+                    const bootstrapSnapshot : (tokenContextType * securityTokenStorageType) = bootstrapSnapshot((tokenContext, token_id), accumulator);
+                    tokenContext  := bootstrapSnapshot.0;
+                    accumulator    := bootstrapSnapshot.1;
 
-                    accumulator    := set_snapshot_ledger((token_context, token_id, receiver), accumulator);
-                    accumulator    := set_snapshot_ledger((token_context, token_id, owner), accumulator);
+                    accumulator    := set_snapshot_ledger((tokenContext, token_id, receiver), accumulator);
+                    accumulator    := set_snapshot_ledger((tokenContext, token_id, owner), accumulator);
 
-                    if token_amount >= 0n then block {
+                    if tokenAmount >= 0n then block {
                         
                         accumulator.ledger[from_user] := case accumulator.ledger[from_user] of [
                                 Some (_balance) -> abs(_balance - tx.amount)
@@ -1142,12 +1176,12 @@ block{
                         ]; 
                     };
 
-                    const from_user_balance : nat = case accumulator.ledger[from_user] of [
+                    const fromUserBalance : nat = case accumulator.ledger[from_user] of [
                             Some (_balance) -> _balance
                         |   None            -> 0n
                     ]; 
 
-                    if from_user_balance = 0n then remove from_user from map accumulator.ledger else skip;
+                    if fromUserBalance = 0n then remove from_user from map accumulator.ledger else skip;
 
                 } else skip;
 
@@ -1177,21 +1211,21 @@ block{
     function retrieveBalance(const request : balanceOfRequestType) : balanceOfResponse is
         block{
 
-            const ledger_key : ledgerKeyType = record [
+            const ledgerKey : ledgerKeyType = record [
                 token_id    = request.token_id;
                 owner       = request.owner;
             ];
 
             verifyTokenIsDefined(request.token_id, s);
 
-            const token_balance : tokenBalanceType = case Big_map.find_opt(ledger_key, s.ledger) of [
+            const tokenBalance : tokenBalanceType = case Big_map.find_opt(ledgerKey, s.ledger) of [
                     Some (b) -> b
                 |   None     -> 0n
             ];
 
             const response : balanceOfResponse = record[
                 request = request;
-                balance = token_balance
+                balance = tokenBalance
             ];
 
         } with (response);
@@ -1244,6 +1278,9 @@ function main (const action : action; const s : securityTokenStorageType) : retu
         |   ProposeAdministrator (params)       -> proposeAdministrator(params.0, params.1, s)
         |   SetAdministrator (params)           -> setAdministrator(params, s)
         |   RemoveAdministrator (params)        -> removeAdministrator(params.0, params.1, s)
+        |   SetGovernance (params)              -> setGovernance(params, store)
+        |   UpdateWhitelistContracts (params)   -> updateWhitelistContracts(params, store)
+        |   MistakenTransfer (params)           -> mistakenTransfer(params, store)
         
             // Owner Entrypoints
         |   InitialiseToken (params)            -> initialiseToken(params, s)
