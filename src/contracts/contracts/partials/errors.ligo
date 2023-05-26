@@ -35,5 +35,28 @@
 [@inline] const error_TRANSFER_ENTRYPOINT_IN_FA12_CONTRACT_NOT_FOUND                                                    = 24n;
 [@inline] const error_TRANSFER_ENTRYPOINT_IN_FA2_CONTRACT_NOT_FOUND                                                     = 25n;
 
+// ------------------------------------------------------------------------------
+//
+// Security Token Error
+//
+// ------------------------------------------------------------------------------
+
+[@inline] const error_ADMINISTRATOR_NOT_FOUND                                                                           = 0n;
+[@inline] const error_NOT_ADMIN                                                                                         = 1n;
+
+[@inline] const error_TOKEN_EXISTS                                                                                      = 2n;
+[@inline] const error_tokenContext_NOT_FOUND                                                                            = 3n;
+[@inline] const error_TOKEN_UNDEFINED                                                                                   = 4n;
+[@inline] const error_TOKEN_PAUSED                                                                                      = 5n;
+
+[@inline] const error_USER_NOT_FOUND                                                                                    = 6n;
+[@inline] const error_CANNOT_TRANSFER                                                                                   = 6n;
+[@inline] const error_INSUFFICIENT_BALANCE                                                                              = 7n;
+
+[@inline] const error_SNAPSHOT_ALREADY_SCHEDULED                                                                        = 8n;
+[@inline] const error_SNAPSHOT_IN_PAST                                                                                  = 9n;
+
+[@inline] const error_VIEW_IS_TRANSFER_VALID_NOT_FOUND                                                                  = 10n;
+
 
 
