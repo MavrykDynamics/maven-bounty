@@ -38,12 +38,12 @@ type action is
     |   TogglePauseEntrypoint       of marketplaceTogglePauseEntrypointType
 
         // Marketplace Entrypoints
-    |   List                        of (nat)
-    |   Delist                      of (nat)
-    |   Purchase                    of (nat)
-    |   Offer                       of (nat)
-    |   AcceptOffer                 of (nat)
-    |   RemoveOffer                 of (nat)
+    |   List                        of listActionType
+    |   Delist                      of delistActionType
+    |   Purchase                    of purchaseActionType
+    |   Offer                       of offerActionType
+    |   AcceptOffer                 of acceptOfferActionType
+    |   RemoveOffer                 of removeOfferActionType
     
         // Lambda Entrypoints
     |   SetLambda                   of setLambdaType

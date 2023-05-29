@@ -194,7 +194,7 @@ block{
 // ------------------------------------------------------------------------------
 
 (*  list entrypoint *)
-function list(const listParams : nat; var s : marketplaceStorageType) : return is
+function list(const listParams : listActionType; var s : marketplaceStorageType) : return is
 block {
 
     // get lambda bytes
@@ -211,7 +211,7 @@ block {
 
 
 (*  delist entrypoint *)
-function delist(const delistParams : nat; var s : marketplaceStorageType) : return is
+function delist(const delistParams : delistActionType; var s : marketplaceStorageType) : return is
 block {
 
     // get lambda bytes
@@ -245,7 +245,7 @@ block {
 
 
 (*  offer entrypoint *)
-function offer(const offerParams : nat; var s : marketplaceStorageType) : return is
+function offer(const offerParams : offerActionType; var s : marketplaceStorageType) : return is
 block {
 
     // get lambda bytes
@@ -262,7 +262,7 @@ block {
 
 
 (*  acceptOffer entrypoint *)
-function acceptOffer(const acceptOfferParams : address; var s : marketplaceStorageType) : return is
+function acceptOffer(const acceptOfferParams : nat; var s : marketplaceStorageType) : return is
 block{
     
     // get lambda bytes
@@ -279,7 +279,7 @@ block{
 
 
 (*  removeOffer entrypoint *)
-function removeOffer(const removeOfferParams : address; var s : marketplaceStorageType) : return is
+function removeOffer(const removeOfferParams : removeOfferActionType; var s : marketplaceStorageType) : return is
 block{
     
     // get lambda bytes
@@ -296,6 +296,7 @@ block{
 // ------------------------------------------------------------------------------
 // Marketplace Entrypoints End
 // ------------------------------------------------------------------------------
+
 
 
 // ------------------------------------------------------------------------------

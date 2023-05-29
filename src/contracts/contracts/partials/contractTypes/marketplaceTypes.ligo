@@ -2,22 +2,64 @@
 // Storage Types
 // ------------------------------------------------------------------------------
 
+// only FA12 or FA2, no Tez
+type listTokenType is 
+    |   Fa12   of fa12TokenType   // address
+    |   Fa2    of fa2TokenType    // record [ tokenContractAddress : address; tokenId : nat; ]
+
 
 type marketplaceBreakGlassConfigType is [@layout:comb] record [
     listIsPaused             : bool;
+    delistIsPaused           : bool;
     purchaseIsPaused         : bool;
     offerIsPaused            : bool;
     acceptOfferIsPaused      : bool;
+    removeOfferIsPaused      : bool;
 ]
 
 type marketplaceConfigType is [@layout:comb] record [
     minOfferAmount   : nat;
-    empty            : unit
+    royalty          : nat;
 ];
+
+type listRecordType is [@layout:comb] record [
+    token       : listTokenType;
+    amount      : nat; 
+    expiryTime  : option(timestamp);
+    currency    : tokenType;
+]
+type listLedgerType is big_map(nat, listRecordType)
+
+type offerRecordType is [@layout:comb] record [
+    listId      : nat;
+    token       : tokenType;
+    amount      : nat;
+    expiryTime  : option(timestamp);
+]
+type offerLedgerType is big_map(nat, offerRecordType)
 
 // ------------------------------------------------------------------------------
 // Action Types
 // ------------------------------------------------------------------------------
+
+type delistActionType is nat
+type purchaseActionType is nat
+
+type acceptOfferActionType is nat
+type removeOfferActionType is nat
+
+type listActionType is [@layout:comb] record [
+    token       : listTokenType;
+    amount      : nat;
+    expiryTime  : option(timestamp);
+    currency    : tokenType;
+]
+
+type offerActionType is [@layout:comb] record [
+    listId      : nat;
+    amount      : nat;
+    expiryTime  : option(timestamp);
+]
 
 type marketplaceUpdateConfigNewValueType is nat
 type marketplaceUpdateConfigActionType is 
@@ -32,9 +74,11 @@ type marketplaceUpdateConfigParamsType is [@layout:comb] record [
 
 type marketplacePausableEntrypointType is
         List                         of bool
+    |   Delist                       of bool
     |   Purchase                     of bool
     |   Offer                        of bool
     |   AcceptOffer                  of bool
+    |   RemoveOffer                  of bool
     
 type marketplaceTogglePauseEntrypointType is [@layout:comb] record [
     targetEntrypoint  : marketplacePausableEntrypointType;
@@ -82,13 +126,14 @@ type marketplaceStorageType is [@layout:comb] record [
     metadata                  : metadataType;
     config                    : marketplaceConfigType;
 
-    mvkTokenAddress           : address;
-    governanceAddress         : address;
-    
+    nextListId                : nat;
+    nextOfferId               : nat;
+
+    listLedger                : listLedgerType;
+    offerLedger               : offerLedgerType;
+
     whitelistContracts        : whitelistContractsType;    
     generalContracts          : generalContractsType;
-    
-    breakGlassConfig          : marketplaceBreakGlassConfigType;
     
     lambdaLedger              : lambdaLedgerType;
 ]
