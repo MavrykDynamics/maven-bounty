@@ -790,7 +790,7 @@ block {
 
         var tokenContext : tokenContextType := case s.tokenContext[tokenAmount.token_id] of [
                 Some (_v) -> _v
-            |   None      -> failwith(error_tokenContext_NOT_FOUND)
+            |   None      -> failwith(error_TOKEN_CONTEXT_NOT_FOUND)
         ];
 
         const bootstrapSnapshot : (tokenContextType * securityTokenStorageType) = bootstrapSnapshot((tokenContext, tokenAmount.token_id), s);
@@ -841,7 +841,7 @@ block {
 
         var tokenContext : tokenContextType := case s.tokenContext[tokenAmount.token_id] of [
                 Some (_v) -> _v
-            |   None      -> failwith(error_tokenContext_NOT_FOUND)
+            |   None      -> failwith(error_TOKEN_CONTEXT_NOT_FOUND)
         ];
 
         const bootstrapSnapshot : (tokenContextType * securityTokenStorageType) = bootstrapSnapshot((tokenContext, tokenAmount.token_id), s);
@@ -892,7 +892,7 @@ block{
 
         var tokenContext : tokenContextType := case s.tokenContext[token_id] of [
                 Some (_context) -> _context
-            |   None            -> failwith(error_tokenContext_NOT_FOUND)
+            |   None            -> failwith(error_TOKEN_CONTEXT_NOT_FOUND)
         ];
 
         tokenContext.isPaused := True;
@@ -922,7 +922,7 @@ block{
 
         var tokenContext : tokenContextType := case s.tokenContext[token_id] of [
                 Some (_context) -> _context
-            |   None            -> failwith(error_tokenContext_NOT_FOUND)
+            |   None            -> failwith(error_TOKEN_CONTEXT_NOT_FOUND)
         ];
 
         tokenContext.isPaused := False;
@@ -955,7 +955,7 @@ block{
         // get and update token context
         var tokenContext : tokenContextType := case s.tokenContext[ruleTokenId] of [
                 Some (_context) -> _context
-            |   None            -> failwith(error_tokenContext_NOT_FOUND)
+            |   None            -> failwith(error_TOKEN_CONTEXT_NOT_FOUND)
         ];
 
         tokenContext.validateTransferRuleContract := Some(rule.ruleContract);
@@ -985,7 +985,7 @@ block{
     // get token context
     var tokenContext : tokenContextType := case s.tokenContext[token_id] of [
             Some (_context) -> _context
-        |   None            -> failwith(error_tokenContext_NOT_FOUND)
+        |   None            -> failwith(error_TOKEN_CONTEXT_NOT_FOUND)
     ];
 
     verifyNoScheduledSnapshot(tokenContext);
@@ -1017,7 +1017,7 @@ block{
     // get token context
     var tokenContext : tokenContextType := case s.tokenContext[token_id] of [
             Some (_context) -> _context
-        |   None            -> failwith(error_tokenContext_NOT_FOUND)
+        |   None            -> failwith(error_TOKEN_CONTEXT_NOT_FOUND)
     ];
 
     tokenContext.nextSnapshot := (None : option(timestamp));
@@ -1123,7 +1123,7 @@ block{
 
                 var tokenContext : tokenContextType := case accumulator.tokenContext[token_id] of [
                         Some(_v) -> _v
-                    |   None     -> failwith(error_tokenContext_NOT_FOUND)
+                    |   None     -> failwith(error_TOKEN_CONTEXT_NOT_FOUND)
                 ];
 
                 // verify if transfer is valid based on rule contract
