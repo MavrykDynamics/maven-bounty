@@ -12,6 +12,9 @@
 // Shared Helpers
 #include "../partials/shared/sharedHelpers.ligo"
 
+// Transfer Helpers
+#include "../partials/shared/transferHelpers4.ligo"
+
 // ------------------------------------------------------------------------------
 // Contract Types
 // ------------------------------------------------------------------------------
@@ -36,6 +39,10 @@ type action is
     |   PauseAll                    of (unit)
     |   UnpauseAll                  of (unit)
     |   TogglePauseEntrypoint       of marketplaceTogglePauseEntrypointType
+
+        // Marketplace Admin Entrypoints
+    |   SetCurrency                 of setCurrencyActionType
+    |   RemoveCurrency              of removeCurrencyActionType
 
         // Marketplace Entrypoints
     |   List                        of listActionType
@@ -105,6 +112,10 @@ function main (const action : action; const s : marketplaceStorageType) : return
         |   PauseAll(_parameters)                 -> pauseAll(s)
         |   UnpauseAll(_parameters)               -> unpauseAll(s)
         |   TogglePauseEntrypoint(parameters)     -> togglePauseEntrypoint(parameters, s)
+
+            // Marketplace Admin Entrypoints
+        |   SetCurrency(parameters)               -> setCurrency(parameters, s)
+        |   RemoveCurrency(parameters)            -> removeCurrency(parameters, s)
 
             // Marketplace Entrypoints
         |   List(parameters)                      -> list(parameters, s)  

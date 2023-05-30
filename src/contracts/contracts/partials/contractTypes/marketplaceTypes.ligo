@@ -38,6 +38,12 @@ type offerRecordType is [@layout:comb] record [
 ]
 type offerLedgerType is big_map(nat, offerRecordType)
 
+type currencyRecordType is [@layout:comb] record [
+    tokenType   : string;
+    tokenIds    : set(nat);
+]
+type currencyLedgerType is big_map(address, currencyRecordType)
+
 // ------------------------------------------------------------------------------
 // Action Types
 // ------------------------------------------------------------------------------
@@ -49,6 +55,7 @@ type acceptOfferActionType is nat
 type removeOfferActionType is nat
 
 type listActionType is [@layout:comb] record [
+    initiator   : address;
     token       : listTokenType;
     amount      : nat;
     expiryTime  : option(timestamp);
@@ -59,7 +66,11 @@ type offerActionType is [@layout:comb] record [
     listId      : nat;
     amount      : nat;
     expiryTime  : option(timestamp);
+    currency    : tokenType;
 ]
+
+type setCurrencyActionType is tokenType
+type removeCurrencyActionType is tokenType
 
 type marketplaceUpdateConfigNewValueType is nat
 type marketplaceUpdateConfigActionType is 
@@ -107,6 +118,10 @@ type marketplaceLambdaActionType is
     |   LambdaUnpauseAll                  of (unit)
     |   LambdaTogglePauseEntrypoint       of marketplaceTogglePauseEntrypointType
 
+        // Marketplace Admin Lambdas
+    |   LambdaSetCurrency                 of setCurrencyActionType
+    |   LambdaRemoveCurrency              of removeCurrencyActionType
+        
         // Marketplace Lambdas
     |   LambdaList                        of (nat)
     |   LambdaDelist                      of (nat)
@@ -131,6 +146,7 @@ type marketplaceStorageType is [@layout:comb] record [
 
     listLedger                : listLedgerType;
     offerLedger               : offerLedgerType;
+    currencyLedger            : currencyLedgerType;
 
     whitelistContracts        : whitelistContractsType;    
     generalContracts          : generalContractsType;

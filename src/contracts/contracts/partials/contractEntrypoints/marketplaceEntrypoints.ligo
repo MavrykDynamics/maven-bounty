@@ -190,6 +190,48 @@ block{
 
 
 // ------------------------------------------------------------------------------
+// Marketplace Admin Entrypoints Begin
+// ------------------------------------------------------------------------------
+
+(*  setCurrency entrypoint *)
+function setCurrency(const setCurrencyParams : setCurrencyActionType; var s : marketplaceStorageType) : return is
+block {
+
+    // get lambda bytes
+    const lambdaBytes : bytes = getLambdaBytes("lambdaSetCurrency", s.lambdaLedger);
+
+    // init marketplace lambda action
+    const marketplaceLambdaAction : marketplaceLambdaActionType = LambdaSetCurrency(setCurrencyParams);
+
+    // init response
+    const response : return = unpackLambda(lambdaBytes, marketplaceLambdaAction, s);  
+
+} with response
+
+
+
+(*  removeCurrency entrypoint *)
+function removeCurrency(const removeCurrencyParams : removeCurrencyActionType; var s : marketplaceStorageType) : return is
+block {
+
+    // get lambda bytes
+    const lambdaBytes : bytes = getLambdaBytes("lambdaRemoveCurrency", s.lambdaLedger);
+
+    // init marketplace lambda action
+    const marketplaceLambdaAction : marketplaceLambdaActionType = LambdaRemoveCurrency(removeurrencyParams);
+
+    // init response
+    const response : return = unpackLambda(lambdaBytes, marketplaceLambdaAction, s);  
+
+} with response
+
+// ------------------------------------------------------------------------------
+// Marketplace Admin Entrypoints End
+// ------------------------------------------------------------------------------
+
+
+
+// ------------------------------------------------------------------------------
 // Marketplace Entrypoints Begin
 // ------------------------------------------------------------------------------
 

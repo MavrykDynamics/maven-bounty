@@ -99,6 +99,20 @@ function getTransferEntrypointFromTokenAddress(const tokenAddress : address) : c
 // General Helper Functions Begin
 // ------------------------------------------------------------------------------
 
+function verifyValidCurrency(const currency : tokenType; const s : marketplaceStorageType) : unit is 
+block {
+
+    skip
+
+} with unit
+
+
+function verifyListOwnership(const listInitiator : address; const sender : address) : unit is 
+block {
+
+    if listInitiator = sender then skip else failwith(error_SENDER_IS_NOT_LIST_INITIATOR);
+
+} with unit
 
 // ------------------------------------------------------------------------------
 // Contract Helper Functions End
