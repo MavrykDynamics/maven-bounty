@@ -76,6 +76,6 @@
 
 [@inline] const error_ADD_TOKEN_ENTRYPOINT_IN_TOKEN_REGISTRY_CONTRACT_PAUSED                                             = 2n;
 [@inline] const error_REMOVE_TOKEN_ENTRYPOINT_IN_TOKEN_REGISTRY_CONTRACT_PAUSED                                          = 2n;
-
+[@inline] const error_FA2_TOKEN_RECORD_NOT_FOUND_TO_BE_REMOVED                                                           = 2n;
 
 

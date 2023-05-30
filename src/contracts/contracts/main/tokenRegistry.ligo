@@ -15,6 +15,8 @@
 // Transfer Helpers
 #include "../partials/shared/transferHelpers4.ligo"
 
+// Constants
+#include "../partials/shared/constants.ligo"
 
 // ------------------------------------------------------------------------------
 // Contract Types

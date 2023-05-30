@@ -6,21 +6,12 @@ type tokenRegistryBreakGlassConfigType is [@layout:comb] record [
     setTokenIsPaused          : bool;
     removeTokenIsPaused       : bool;
 ]
-
-// type tokenOverrideType is [@layout:comb] record [
-//     beneficiaryOverride     : option(address);
-//     feeOverride             : option(nat);
-// ]
-// type fa12TokenLedgerType is big_map(address, tokenOverrideType);        // token contract address
-// type fa2TokenLedgerType is big_map((address * nat), tokenOverrideType); // token contract address * token id
-
-// type tokenCustomType is 
-//         Fa12        of address
-//     |   Fa2         of set(nat)
+type tokenCustomType is 
+        Fa12Token        of address
+    |   Fa2Token         of set(nat)
 
 type tokenRecordType is [@layout:comb] record [
-    tokenType               : string;
-    tokenIds                : set(nat);
+    tokenType               : tokenCustomType;
     beneficiaryOverride     : option(address);
     feeOverride             : option(nat);
 ]

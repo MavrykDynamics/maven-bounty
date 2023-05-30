@@ -247,22 +247,40 @@ block {
                 const token         : listTokenType     = setTokenParams.token;
                 const beneficiary   : option(address)   = setTokenParams.beneficiary;
                 const fee           : option(nat)       = setTokenParams.fee;
-                
-                var tokenRecord : tokenRecordType := record [
-                    tokenType           = "null";
-                    tokenIds            = set[];
-                    beneficiaryOverride = beneficiary;
-                    feeOverride         = fee;
-                ];
 
                 case token of [
                         Fa12 (fa12TokenAddress) -> {
-                            tokenRecord.tokenType  := "FA12";
-                            s.tokenLedger[fa12TokenAddress] := tokenRecord;
+                            s.tokenLedger[fa12TokenAddress] := record [
+                                tokenType           = Fa12Token(fa12TokenAddress);
+                                beneficiaryOverride = beneficiary;
+                                feeOverride         = fee;
+                            ];
                         }
                     |   Fa2(fa2Token) -> {
-                            tokenRecord.tokenType  := "FA2";
-                            tokenRecord.tokenIds   := Set.add(fa2Token.tokenId, tokenRecord.tokenIds);
+
+                            var tokenRecord : tokenRecordType := case s.tokenLedger[fa2Token.tokenContractAddress] of [
+
+                                    Some (_tokenRecord) -> block {
+
+                                        var _record : tokenRecordType := _tokenRecord;
+
+                                        _record.tokenType := case _record.tokenType of [
+                                                Fa2Token(_set) -> Fa2Token(Set.add(fa2Token.tokenId, _set))
+                                            |   _              -> Fa2Token(set[fa2Token.tokenId]) // should not be reached
+                                        ];
+
+                                        _record.beneficiaryOverride  := beneficiary;
+                                        _record.feeOverride          := fee;
+
+                                    } with _record
+
+                                |   None -> record [
+                                        tokenType           = Fa2Token(set[fa2Token.tokenId]);
+                                        beneficiaryOverride = beneficiary;
+                                        feeOverride         = fee;
+                                    ]   
+                            ];
+
                             s.tokenLedger[fa2Token.tokenContractAddress] := tokenRecord;
                         }
                 ];
@@ -286,21 +304,31 @@ block {
 
                 verifySenderIsAdmin(s.admin); // check that sender is admin 
 
-                // case removeTokenParams of [
-                //         Fa12 (fa12TokenAddress) -> {
-                //             remove fa12TokenAddress from map s.fa12TokenLedger;
-                //         }
-                //     |   Fa2(fa2Token) -> {
-                //             remove (fa2Token.tokenContractAddress, fa2Token.tokenId) from map s.fa2TokenLedger;
-                //         }
-                // ];
-
                 case removeTokenParams of [
-                        Fa12 (fa12TokenAddress) -> {
-                            remove fa12TokenAddress from map s.tokenLedger;
-                        }
-                    |   Fa2(fa2Token) -> {
-                            remove fa2Token.tokenContractAddress from map s.tokenLedger;
+                        Fa12 (fa12TokenAddress) -> remove fa12TokenAddress from map s.tokenLedger
+                    |   Fa2 (fa2Token) -> {
+
+                            // remove token id from Fa2Token set of tokenIds
+                            var tokenRecord : tokenRecordType := case s.tokenLedger[fa2Token.tokenContractAddress] of [
+                                    Some (_tokenRecord) -> block {
+                                        var _record : tokenRecordType := _tokenRecord;
+                                        _record.tokenType := case _record.tokenType of [
+                                                Fa2Token(_set) -> Fa2Token(Set.remove(fa2Token.tokenId, _set))
+                                            |   _              -> Fa2Token(set[]) // should not be reached
+                                        ];
+                                    } with _record
+                                |   None -> failwith(error_FA2_TOKEN_RECORD_NOT_FOUND_TO_BE_REMOVED)
+                            ];
+                            s.tokenLedger[fa2Token.tokenContractAddress] := tokenRecord;
+
+                            // remove token record if there are no more token ids for the Fa2 Token
+                            const cardinal : nat = case tokenRecord.tokenType of [
+                                    Fa2Token(_set) -> Set.size(_set)
+                                |   _              -> 0n
+                            ];
+                            
+                            if cardinal = 0n then remove fa2Token.tokenContractAddress from map s.tokenLedger;
+                            
                         }
                 ];
 
