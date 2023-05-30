@@ -59,23 +59,6 @@ block {
 
 
 
-(* updateConfig entrypoint *)
-function updateConfig(const updateConfigParams : tokenRegistryUpdateConfigParamsType; var s : tokenRegistryStorageType) : return is 
-block {
-
-    // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaUpdateConfig", s.lambdaLedger);
-
-    // init delegation lambda action
-    const tokenRegistryLambdaAction : tokenRegistryLambdaActionType = LambdaUpdateConfig(updateConfigParams);
-
-    // init response
-    const response : return = unpackLambda(lambdaBytes, tokenRegistryLambdaAction, s);
-
-} with response
-
-
-
 (*  updateWhitelistContracts entrypoint *)
 function updateWhitelistContracts(const updateWhitelistContractsParams : updateWhitelistContractsType; var s : tokenRegistryStorageType) : return is
 block {
@@ -128,6 +111,7 @@ block {
 // ------------------------------------------------------------------------------
 // Housekeeping Entrypoints End
 // ------------------------------------------------------------------------------
+
 
 
 // ------------------------------------------------------------------------------
@@ -193,15 +177,15 @@ block{
 // Token Registry Entrypoints Begin
 // ------------------------------------------------------------------------------
 
-(*  addToken entrypoint *)
-function addToken(const addTokenParams : nat; var s : tokenRegistryStorageType) : return is
+(*  setToken entrypoint *)
+function setToken(const setTokenParams : setTokenActionType; var s : tokenRegistryStorageType) : return is
 block {
 
     // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaAddToken", s.lambdaLedger);
+    const lambdaBytes : bytes = getLambdaBytes("lambdaSetToken", s.lambdaLedger);
 
     // init tokenRegistry lambda action
-    const tokenRegistryLambdaAction : tokenRegistryLambdaActionType = LambdaAddToken(addTokenParams);
+    const tokenRegistryLambdaAction : tokenRegistryLambdaActionType = LambdaSetToken(setTokenParams);
 
     // init response
     const response : return = unpackLambda(lambdaBytes, tokenRegistryLambdaAction, s);  
@@ -211,7 +195,7 @@ block {
 
 
 (*  removeToken entrypoint *)
-function removeToken(const removeTokenParams : nat; var s : tokenRegistryStorageType) : return is
+function removeToken(const removeTokenParams : removeTokenActionType; var s : tokenRegistryStorageType) : return is
 block {
 
     // get lambda bytes

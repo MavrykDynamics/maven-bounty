@@ -2,58 +2,67 @@
 // Storage Types
 // ------------------------------------------------------------------------------
 
-type launchpadBreakGlassConfigType is [@layout:comb] record [
-    launchNewTokenIsPaused          : bool;
-    startNewSaleIsPaused            : bool;
-    setSaleWhitelistIsPaused        : bool;
-    editSaleIsPaused                : bool;
-    pauseSaleIsPaused               : bool;
-    unpauseSaleIsPaused             : bool;
-    distributeTokensIsPaused        : bool;
+type tokenRegistryBreakGlassConfigType is [@layout:comb] record [
+    setTokenIsPaused          : bool;
+    removeTokenIsPaused       : bool;
 ]
 
-type launchpadConfigType is [@layout:comb] record [
-    minOfferAmount   : nat;
-    empty            : unit
-];
+// type tokenOverrideType is [@layout:comb] record [
+//     beneficiaryOverride     : option(address);
+//     feeOverride             : option(nat);
+// ]
+// type fa12TokenLedgerType is big_map(address, tokenOverrideType);        // token contract address
+// type fa2TokenLedgerType is big_map((address * nat), tokenOverrideType); // token contract address * token id
+
+// type tokenCustomType is 
+//         Fa12        of address
+//     |   Fa2         of set(nat)
+
+type tokenRecordType is [@layout:comb] record [
+    tokenType               : string;
+    tokenIds                : set(nat);
+    beneficiaryOverride     : option(address);
+    feeOverride             : option(nat);
+]
+type tokenLedgerType is big_map(address, tokenRecordType);
 
 // ------------------------------------------------------------------------------
 // Action Types
 // ------------------------------------------------------------------------------
 
-type tokenRegistryUpdateConfigNewValueType is nat
-type tokenRegistryUpdateConfigActionType is 
-        ConfigMiOfferAmount          of unit
-    |   Empty                       of unit
-
-type tokenRegistryUpdateConfigParamsType is [@layout:comb] record [
-    updateConfigNewValue    : tokenRegistryUpdateConfigNewValueType; 
-    updateConfigAction      : tokenRegistryUpdateConfigActionType;
-]
-
-
 type tokenRegistryPausableEntrypointType is
-        AddToken              of bool
-    |   RemoveToken                of bool
+        SetToken              of bool
+    |   RemoveToken           of bool
     
 type tokenRegistryTogglePauseEntrypointType is [@layout:comb] record [
     targetEntrypoint  : tokenRegistryPausableEntrypointType;
     empty             : unit
 ];
 
+// only FA12 or FA2, no Tez
+type listTokenType is 
+    |   Fa12   of fa12TokenType   // address
+    |   Fa2    of fa2TokenType    // record [ tokenContractAddress : address; tokenId : nat; ]
+
+type setTokenActionType is [@layout:comb] record [
+    token           : listTokenType; 
+    beneficiary     : option(address);
+    fee             : option(nat);
+];
+
+type removeTokenActionType is listTokenType
 
 // ------------------------------------------------------------------------------
 // Lambda Action Types
 // ------------------------------------------------------------------------------
 
 
-type launchpadLambdaActionType is 
+type tokenRegistryLambdaActionType is 
 
         // Housekeeping Lambdas
         LambdaSetAdmin                    of address
     |   LambdaSetGovernance               of (address)
     |   LambdaUpdateMetadata              of updateMetadataType
-    |   LambdaUpdateConfig                of tokenRegistryUpdateConfigParamsType
     |   LambdaUpdateWhitelistContracts    of updateWhitelistContractsType
     |   LambdaUpdateGeneralContracts      of updateGeneralContractsType
     |   LambdaMistakenTransfer            of transferActionType
@@ -64,8 +73,8 @@ type launchpadLambdaActionType is
     |   LambdaTogglePauseEntrypoint       of tokenRegistryTogglePauseEntrypointType
 
         // TokenRegistry Lambdas
-    |   LambdaAddToken                    of (nat)
-    |   LambdaRemoveSale                  of (nat)
+    |   LambdaSetToken                    of setTokenActionType
+    |   LambdaRemoveToken                 of removeTokenActionType
 
 // ------------------------------------------------------------------------------
 // Storage
@@ -76,8 +85,12 @@ type tokenRegistryStorageType is [@layout:comb] record [
     
     admin                     : address;
     metadata                  : metadataType;
-    config                    : tokenRegistryConfigType;
+    breakGlassConfig          : tokenRegistryBreakGlassConfigType;
 
+    defaultFee                : nat;
+    defaultBeneficiary        : address;
+
+    tokenLedger               : tokenLedgerType;
 
     whitelistContracts        : whitelistContractsType;    
     generalContracts          : generalContractsType;

@@ -12,6 +12,10 @@
 // Shared Helpers
 #include "../partials/shared/sharedHelpers.ligo"
 
+// Transfer Helpers
+#include "../partials/shared/transferHelpers4.ligo"
+
+
 // ------------------------------------------------------------------------------
 // Contract Types
 // ------------------------------------------------------------------------------
@@ -25,9 +29,8 @@ type action is
 
         // Housekeeping Entrypoints
         SetAdmin                    of (address)
-    |   SetGovernance               of (address)
+    // |   SetGovernance               of (address)
     |   UpdateMetadata              of updateMetadataType
-    |   UpdateConfig                of tokenRegistryUpdateConfigParamsType
     |   UpdateWhitelistContracts    of updateWhitelistContractsType
     |   UpdateGeneralContracts      of updateGeneralContractsType
     |   MistakenTransfer            of transferActionType
@@ -38,7 +41,7 @@ type action is
     |   TogglePauseEntrypoint       of tokenRegistryTogglePauseEntrypointType
 
         // TokenRegistry Entrypoints
-    |   AddToken                    of addTokenActionType
+    |   SetToken                    of setTokenActionType
     |   RemoveToken                 of removeTokenActionType
     
         // Lambda Entrypoints
@@ -85,14 +88,18 @@ type tokenRegistryUnpackLambdaFunctionType is (tokenRegistryLambdaActionType * t
 
 (* main entrypoint *)
 function main (const action : action; const s : tokenRegistryStorageType) : return is
+block {
+    
+    verifyNoAmountSent(Unit); // entrypoints should not receive any tez amount  
+
+} with (
 
     case action of [
 
             // Housekeeping Entrypoints
             SetAdmin(parameters)                  -> setAdmin(parameters, s)
-        |   SetGovernance(parameters)             -> setGovernance(parameters, s)
+        // |   SetGovernance(parameters)             -> setGovernance(parameters, s)
         |   UpdateMetadata(parameters)            -> updateMetadata(parameters, s)
-        |   UpdateConfig(parameters)              -> updateConfig(parameters, s)
         |   UpdateWhitelistContracts(parameters)  -> updateWhitelistContracts(parameters, s)
         |   UpdateGeneralContracts(parameters)    -> updateGeneralContracts(parameters, s)
         |   MistakenTransfer(parameters)          -> mistakenTransfer(parameters, s)
@@ -103,10 +110,11 @@ function main (const action : action; const s : tokenRegistryStorageType) : retu
         |   TogglePauseEntrypoint(parameters)     -> togglePauseEntrypoint(parameters, s)
 
             // TokenRegistry Entrypoints
-        |   AddToken(parameters)                  -> addToken(parameters, s)  
+        |   SetToken(parameters)                  -> setToken(parameters, s)  
         |   RemoveToken(parameters)               -> removeToken(parameters, s)  
         
             // Lambda Entrypoints
         |   SetLambda(parameters)                 -> setLambda(parameters, s)
     ]
 
+)
