@@ -35,9 +35,17 @@
 [@inline] const error_TRANSFER_ENTRYPOINT_IN_FA12_CONTRACT_NOT_FOUND                                                    = 24n;
 [@inline] const error_TRANSFER_ENTRYPOINT_IN_FA2_CONTRACT_NOT_FOUND                                                     = 25n;
 
+
+// missing shared helpers errors
+[@inline] const error_GET_GENERAL_CONTRACT_OPT_VIEW_IN_GOVERNANCE_CONTRACT_NOT_FOUND                                    = 25n;
+[@inline] const error_ONLY_ADMINISTRATOR_OR_GOVERNANCE_ALLOWED                                                          = 25n;
+[@inline] const error_ONLY_SELF_OR_SPECIFIED_ADDRESS_ALLOWED                                                            = 25n;
+
+
+
 // ------------------------------------------------------------------------------
 //
-// Security Token Error
+// Security Token Errors
 //
 // ------------------------------------------------------------------------------
 
@@ -45,7 +53,7 @@
 [@inline] const error_NOT_ADMIN                                                                                         = 1n;
 
 [@inline] const error_TOKEN_EXISTS                                                                                      = 2n;
-[@inline] const error_tokenContext_NOT_FOUND                                                                            = 3n;
+[@inline] const error_TOKEN_CONTEXT_NOT_FOUND                                                                            = 3n;
 [@inline] const error_TOKEN_UNDEFINED                                                                                   = 4n;
 [@inline] const error_TOKEN_PAUSED                                                                                      = 5n;
 
@@ -57,6 +65,17 @@
 [@inline] const error_SNAPSHOT_IN_PAST                                                                                  = 9n;
 
 [@inline] const error_VIEW_IS_TRANSFER_VALID_NOT_FOUND                                                                  = 10n;
+
+
+// ------------------------------------------------------------------------------
+//
+// Token Registry Errors
+//
+// ------------------------------------------------------------------------------
+
+
+[@inline] const error_ADD_TOKEN_ENTRYPOINT_IN_TOKEN_REGISTRY_CONTRACT_PAUSED                                             = 2n;
+[@inline] const error_REMOVE_TOKEN_ENTRYPOINT_IN_TOKEN_REGISTRY_CONTRACT_PAUSED                                          = 2n;
 
 
 

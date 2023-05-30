@@ -1,3 +1,16 @@
 {
-  
+    "tokenRegistry": [
+        "lambdaSetAdmin",
+        "lambdaUpdateMetadata",
+        "lambdaUpdateWhitelistContracts",
+        "lambdaUpdateGeneralContracts",
+        "lambdaMistakenTransfer",
+    
+        "lambdaPauseAll",
+        "lambdaUnpauseAll",
+        "lambdaTogglePauseEntrypoint",
+    
+        "lambdaSetToken",
+        "lambdaRemoveToken"
+      ]
 }
