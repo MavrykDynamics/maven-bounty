@@ -1108,7 +1108,7 @@ block{
             block {
 
                 const token_id      : tokenIdType       = tx.token_id;
-                const tokenAmount  : tokenBalanceType  = tx.amount;
+                const tokenAmount  : tokenBalanceType   = tx.amount;
                 const receiver      : ownerType         = tx.to_;
 
                 const from_user : ledgerKeyType = record [

@@ -788,7 +788,6 @@ block {
 function burn(const token_amounts : list(tokenAmountType); var s : cmtaTokenStorageType) : return is
 block {
 
-
     for token_amount in list token_amounts block {
 
         const administrator_ledger_key : ledgerKeyType = record [
