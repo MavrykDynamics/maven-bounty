@@ -1,6 +1,10 @@
 {
     "tokenRegistry": [
+        "lambdaSetSuperAdmin",
+        "lambdaClaimSuperAdmin",
         "lambdaSetAdmin",
+        "lambdaRemoveAdmin",
+
         "lambdaUpdateMetadata",
         "lambdaUpdateWhitelistContracts",
         "lambdaUpdateGeneralContracts",
@@ -12,5 +16,55 @@
     
         "lambdaSetToken",
         "lambdaRemoveToken"
-      ]
+    ],
+    "marketplace": [
+        "lambdaSetSuperAdmin",
+        "lambdaClaimSuperAdmin",
+        "lambdaSetAdmin",
+        "lambdaRemoveAdmin",
+
+        "lambdaUpdateMetadata",
+        "lambdaUpdateConfig",
+        "lambdaUpdateWhitelistContracts",
+        "lambdaUpdateGeneralContracts",
+        "lambdaMistakenTransfer",
+    
+        "lambdaPauseAll",
+        "lambdaUnpauseAll",
+        "lambdaTogglePauseEntrypoint",
+    
+        "lambdaSetCurrency",
+        "lambdaRemoveCurrency",
+
+        "lambdaList",
+        "lambdaDelist",
+        "lambdaPurchase",
+        "lambdaOffer",
+        "lambdaAcceptOffer",
+        "lambdaRemoveOffer"
+    ],
+    "launchpad": [
+        "lambdaSetSuperAdmin",
+        "lambdaClaimSuperAdmin",
+        "lambdaSetAdmin",
+        "lambdaRemoveAdmin",
+
+        "lambdaUpdateMetadata",
+        "lambdaUpdateConfig",
+        "lambdaUpdateWhitelistContracts",
+        "lambdaUpdateGeneralContracts",
+        "lambdaMistakenTransfer",
+    
+        "lambdaPauseAll",
+        "lambdaUnpauseAll",
+        "lambdaTogglePauseEntrypoint",
+    
+        "lambdaLaunchNewToken",
+        "lambdaStartNewSale",
+        "lambdaSetSaleWhitelist",
+        "lambdaEditSale",
+        "lambdaPauseSale",
+        "lambdaUnpauseSale",
+        "lambdaDistributeTokens"
+    ]
 }

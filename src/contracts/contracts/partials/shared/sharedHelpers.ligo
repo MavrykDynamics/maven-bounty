@@ -233,11 +233,22 @@ block {
 // ------------------------------------------------------------------------------
 
 
-// verify sender is admin
-function verifySenderIsAdmin(const adminAddress : address) : unit is
+// verify sender is super admin
+function verifySenderIsSuperAdmin(const superAdminAddress : address) : unit is
 block {
 
-    const senderIsAdmin : bool = adminAddress = Tezos.get_sender();
+    const senderIsSuperAdmin : bool = superAdminAddress = Tezos.get_sender();
+    if senderIsSuperAdmin then skip else failwith(error_ONLY_SUPER_ADMINISTRATOR_ALLOWED);
+
+} with unit
+
+
+
+// verify sender is admin
+function verifySenderIsAdmin(const admins : set(address)) : unit is
+block {
+
+    const senderIsAdmin : bool = admins contains Tezos.get_sender();
     if senderIsAdmin then skip else failwith(error_ONLY_ADMINISTRATOR_ALLOWED);
 
 } with unit

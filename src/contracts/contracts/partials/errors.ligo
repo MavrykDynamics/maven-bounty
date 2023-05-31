@@ -21,6 +21,7 @@
 [@inline] const error_WRONG_TOKEN_TYPE_PROVIDED                                                                         = 12n;
 [@inline] const error_TOKEN_NOT_WHITELISTED                                                                             = 13n;
 
+[@inline] const error_ONLY_SUPER_ADMINISTRATOR_ALLOWED                                                                  = 14n;
 [@inline] const error_ONLY_ADMINISTRATOR_ALLOWED                                                                        = 14n;
 [@inline] const error_ONLY_SELF_ALLOWED                                                                                 = 15n;
 
@@ -77,5 +78,18 @@
 [@inline] const error_ADD_TOKEN_ENTRYPOINT_IN_TOKEN_REGISTRY_CONTRACT_PAUSED                                             = 2n;
 [@inline] const error_REMOVE_TOKEN_ENTRYPOINT_IN_TOKEN_REGISTRY_CONTRACT_PAUSED                                          = 2n;
 [@inline] const error_FA2_TOKEN_RECORD_NOT_FOUND_TO_BE_REMOVED                                                           = 2n;
+[@inline] const error_TOKEN_RECORD_NOT_FOUND                                                                             = 2n;
+
+[@inline] const error_NO_NEW_SUPER_ADMIN_FOUND                                                                           = 2n;
+[@inline] const error_SENDER_IS_NOT_NEW_SUPER_ADMIN                                                                      = 2n;
 
 
+// ------------------------------------------------------------------------------
+//
+// Marketplace Errors
+//
+// ------------------------------------------------------------------------------
+
+[@inline] const error_SENDER_IS_NOT_LISTING_INITIATOR                                                                    = 2n;
+[@inline] const error_SET_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 2n;
+[@inline] const error_REMOVE_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                          = 2n;
