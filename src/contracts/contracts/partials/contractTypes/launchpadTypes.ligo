@@ -17,11 +17,19 @@ type launchpadConfigType is [@layout:comb] record [
     empty            : unit
 ];
 
+type whitelistAccessType is 
+
+type saleRecordType is [@layout:comb] record [
+    name            : string;
+    whitelist       : map(address, nat);
+    isPaused        : bool;
+    pricing         : map(string, nat);
+]
+type saleLedgerType is big_map(nat, saleRecordType);
+
 // ------------------------------------------------------------------------------
 // Action Types
 // ------------------------------------------------------------------------------
-
-
 
 type launchpadUpdateConfigNewValueType is nat
 type launchpadUpdateConfigActionType is 
@@ -55,9 +63,13 @@ type launchpadTogglePauseEntrypointType is [@layout:comb] record [
 
 type launchpadLambdaActionType is 
 
+        // Admin Lambdas
+        LambdaSetSuperAdmin               of (address)
+    |   LambdaClaimSuperAdmin             of (unit)
+    |   LambdaSetAdmin                    of (address)
+    |   LambdaRemoveAdmin                 of (address)
+
         // Housekeeping Lambdas
-        LambdaSetAdmin                    of address
-    |   LambdaSetGovernance               of (address)
     |   LambdaUpdateMetadata              of updateMetadataType
     |   LambdaUpdateConfig                of launchpadUpdateConfigParamsType
     |   LambdaUpdateWhitelistContracts    of updateWhitelistContractsType
@@ -70,8 +82,8 @@ type launchpadLambdaActionType is
     |   LambdaTogglePauseEntrypoint       of launchpadTogglePauseEntrypointType
 
         // Launchpad Lambdas
-    |   LambdaLaunchNewToken              of (nat)
-    |   LambdaStartNewSale                of (nat)
+    |   LambdaCreateTokenSale             of (nat)
+    |   LambdaStartSale                   of (nat)
     |   LambdaSetSaleWhitelist            of (nat)
     |   LambdaEditSale                    of (unit)
     |   LambdaPauseSale                   of (address)
@@ -85,13 +97,17 @@ type launchpadLambdaActionType is
 
 type launchpadStorageType is [@layout:comb] record [
     
-    admin                     : address;
+    superAdmin                : address;
+    newSuperAdmin             : option(address);
+    admins                    : set(address);
+
     metadata                  : metadataType;
     config                    : launchpadConfigType;
 
-
     whitelistContracts        : whitelistContractsType;    
     generalContracts          : generalContractsType;
+
+    saleLedger                : saleLedgerType;
     
     lambdaLedger              : lambdaLedgerType;
 ]

@@ -193,15 +193,15 @@ block{
 // Launchpad Entrypoints Begin
 // ------------------------------------------------------------------------------
 
-(*  launchNewToken entrypoint *)
-function launchNewToken(const listParams : nat; var s : launchpadStorageType) : return is
+(*  createTokenSale entrypoint *)
+function createTokenSale(const createTokenSaleParams : nat; var s : launchpadStorageType) : return is
 block {
 
     // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaLaunchNewToken", s.lambdaLedger);
+    const lambdaBytes : bytes = getLambdaBytes("lambdaCreateTokenSale", s.lambdaLedger);
 
     // init launchpad lambda action
-    const launchpadLambdaAction : launchpadLambdaActionType = LambdaLaunchNewToken(listParams);
+    const launchpadLambdaAction : launchpadLambdaActionType = LambdaCreateTokenSale(createTokenSaleParams);
 
     // init response
     const response : return = unpackLambda(lambdaBytes, launchpadLambdaAction, s);  
@@ -210,15 +210,15 @@ block {
 
 
 
-(*  startNewSale entrypoint *)
-function startNewSale(const startNewSaleParams : nat; var s : launchpadStorageType) : return is
+(*  startSale entrypoint *)
+function startSale(const startSaleParams : nat; var s : launchpadStorageType) : return is
 block {
 
     // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaStartNewSale", s.lambdaLedger);
+    const lambdaBytes : bytes = getLambdaBytes("lambdaStartSale", s.lambdaLedger);
 
     // init launchpad lambda action
-    const launchpadLambdaAction : launchpadLambdaActionType = LambdaStartNewSale(startNewSaleParams);
+    const launchpadLambdaAction : launchpadLambdaActionType = LambdaStartSale(startSaleParams);
 
     // init response
     const response : return = unpackLambda(lambdaBytes, launchpadLambdaAction, s);  

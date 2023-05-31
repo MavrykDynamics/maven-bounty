@@ -23,9 +23,13 @@
 
 type action is
 
+        // Admin Entrypoints
+        SetSuperAdmin               of (address)
+    |   ClaimSuperAdmin             of (unit)
+    |   SetAdmin                    of (address)
+    |   RemoveAdmin                 of (address)
+
         // Housekeeping Entrypoints
-        SetAdmin                    of (address)
-    |   SetGovernance               of (address)
     |   UpdateMetadata              of updateMetadataType
     |   UpdateConfig                of launchpadUpdateConfigParamsType
     |   UpdateWhitelistContracts    of updateWhitelistContractsType
@@ -38,13 +42,13 @@ type action is
     |   TogglePauseEntrypoint       of launchpadTogglePauseEntrypointType
 
         // Launchpad Entrypoints
-    |   LaunchNewToken              of launchNewTokenActionType
-    |   StartNewSale                of startNewSaleActionType 
+    |   CreateTokenSale             of createTokenSaleActionType
     |   SetSaleWhitelist            of setSaleWhitelistActionType
+    |   StartSale                   of startSaleActionType 
+    |   CloseSale                   of closeSaleActionType
     |   EditSale                    of editSaleActionType
     |   PauseSale                   of pauseSaleActionType
     |   UnpauseSale                 of unpauseSaleActionType
-    |   CloseSale                   of closeSaleActionType
     |   DistributeTokens            of distributeTokensActionType
     
         // Lambda Entrypoints
@@ -94,9 +98,13 @@ function main (const action : action; const s : launchpadStorageType) : return i
 
     case action of [
 
+            // Admin Entrypoints
+            SetSuperAdmin(parameters)             -> setSuperAdmin(parameters, s)
+        |   ClaimSuperAdmin(_parameters)          -> claimSuperAdmin(s)
+        |   SetAdmin(parameters)                  -> setAdmin(parameters, s)
+        |   RemoveAdmin(parameters)               -> removeAdmin(parameters, s)
+
             // Housekeeping Entrypoints
-            SetAdmin(parameters)                  -> setAdmin(parameters, s)
-        |   SetGovernance(parameters)             -> setGovernance(parameters, s)
         |   UpdateMetadata(parameters)            -> updateMetadata(parameters, s)
         |   UpdateConfig(parameters)              -> updateConfig(parameters, s)
         |   UpdateWhitelistContracts(parameters)  -> updateWhitelistContracts(parameters, s)
@@ -109,9 +117,10 @@ function main (const action : action; const s : launchpadStorageType) : return i
         |   TogglePauseEntrypoint(parameters)     -> togglePauseEntrypoint(parameters, s)
 
             // Launchpad Entrypoints
-        |   LaunchNewToken(parameters)            -> launchNewToken(parameters, s)  
-        |   StartNewSale(parameters)              -> startNewSale(parameters, s)  
+        |   CreateTokenSale(parameters)           -> createTokenSale(parameters, s)  
         |   SetSaleWhitelist(parameters)          -> setSaleWhitelist(parameters, s)  
+        |   StartSale(parameters)                 -> startSale(parameters, s)  
+        |   CloseSale(parameters)                 -> closeSale(parameters, s)  
         |   EditSale(parameters)                  -> editSale(parameters, s)
         |   PauseSale(parameters)                 -> pauseSale(parameters, s)
         |   UnpauseSale(parameters)               -> unpauseSale(parameters, s)
