@@ -6,12 +6,10 @@ type tokenRegistryBreakGlassConfigType is [@layout:comb] record [
     setTokenIsPaused          : bool;
     removeTokenIsPaused       : bool;
 ]
-type tokenCustomType is 
-        Fa12Token        of address
-    |   Fa2Token         of set(nat)
 
 type tokenRecordType is [@layout:comb] record [
-    tokenType               : tokenCustomType;
+    tokenType               : string;
+    tokenIds                : set(nat);
     beneficiaryOverride     : option(address);
     feeOverride             : option(nat);
 ]
@@ -50,9 +48,13 @@ type removeTokenActionType is listTokenType
 
 type tokenRegistryLambdaActionType is 
 
+        // Admin Lambdas
+        LambdaSetSuperAdmin               of (address)
+    |   LambdaClaimSuperAdmin             of (unit)
+    |   LambdaSetAdmin                    of (address)
+    |   LambdaRemoveAdmin                 of (address)
+
         // Housekeeping Lambdas
-        LambdaSetAdmin                    of address
-    |   LambdaSetGovernance               of (address)
     |   LambdaUpdateMetadata              of updateMetadataType
     |   LambdaUpdateWhitelistContracts    of updateWhitelistContractsType
     |   LambdaUpdateGeneralContracts      of updateGeneralContractsType
@@ -74,18 +76,21 @@ type tokenRegistryLambdaActionType is
 
 type tokenRegistryStorageType is [@layout:comb] record [
     
-    admin                     : address;
+    superAdmin                : address;
+    newSuperAdmin             : option(address);
+    admins                    : set(address);
+
     metadata                  : metadataType;
     breakGlassConfig          : tokenRegistryBreakGlassConfigType;
+
+    whitelistContracts        : whitelistContractsType;    
+    generalContracts          : generalContractsType;
 
     defaultFee                : nat;
     defaultBeneficiary        : address;
 
     tokenLedger               : tokenLedgerType;
 
-    whitelistContracts        : whitelistContractsType;    
-    generalContracts          : generalContractsType;
-    
     lambdaLedger              : lambdaLedgerType;
 ]
 

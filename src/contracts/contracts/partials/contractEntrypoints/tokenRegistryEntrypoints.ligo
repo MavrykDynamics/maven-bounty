@@ -5,8 +5,42 @@
 // ------------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------
-// Housekeeping Entrypoints Begin
+// Admin Entrypoints Begin
 // ------------------------------------------------------------------------------
+
+(*  setSuperAdmin entrypoint *)
+function setSuperAdmin(const newAdminAddress : address; var s : tokenRegistryStorageType) : return is
+block {
+
+    // get lambda bytes
+    const lambdaBytes : bytes = getLambdaBytes("lambdaSetSuperAdmin", s.lambdaLedger);
+
+    // init tokenRegistry lambda action
+    const tokenRegistryLambdaAction : tokenRegistryLambdaActionType = LambdaSetSuperAdmin(newAdminAddress);
+
+    // init response
+    const response : return = unpackLambda(lambdaBytes, tokenRegistryLambdaAction, s);  
+    
+} with response
+
+
+
+(*  claimSuperAdmin entrypoint *)
+function claimSuperAdmin(var s : tokenRegistryStorageType) : return is
+block {
+
+    // get lambda bytes
+    const lambdaBytes : bytes = getLambdaBytes("lambdaClaimSuperAdmin", s.lambdaLedger);
+
+    // init tokenRegistry lambda action
+    const tokenRegistryLambdaAction : tokenRegistryLambdaActionType = LambdaClaimSuperAdmin(unit);
+
+    // init response
+    const response : return = unpackLambda(lambdaBytes, tokenRegistryLambdaAction, s);  
+    
+} with response
+
+
 
 (*  setAdmin entrypoint *)
 function setAdmin(const newAdminAddress : address; var s : tokenRegistryStorageType) : return is
@@ -24,22 +58,30 @@ block {
 } with response
 
 
-
-(*  setGovernance entrypoint *)
-function setGovernance(const newGovernanceAddress : address; var s : tokenRegistryStorageType) : return is
+(*  removeAdmin entrypoint *)
+function removeAdmin(const adminAddress : address; var s : tokenRegistryStorageType) : return is
 block {
-    
+
     // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaSetGovernance", s.lambdaLedger);
+    const lambdaBytes : bytes = getLambdaBytes("lambdaRemoveAdmin", s.lambdaLedger);
 
     // init tokenRegistry lambda action
-    const tokenRegistryLambdaAction : tokenRegistryLambdaActionType = LambdaSetGovernance(newGovernanceAddress);
+    const tokenRegistryLambdaAction : tokenRegistryLambdaActionType = LambdaRemoveAdmin(adminAddress);
 
     // init response
-    const response : return = unpackLambda(lambdaBytes, tokenRegistryLambdaAction, s);
-
+    const response : return = unpackLambda(lambdaBytes, tokenRegistryLambdaAction, s);  
+    
 } with response
 
+// ------------------------------------------------------------------------------
+// Admin Entrypoints End
+// ------------------------------------------------------------------------------
+
+
+
+// ------------------------------------------------------------------------------
+// Housekeeping Entrypoints Begin
+// ------------------------------------------------------------------------------
 
 
 (*  updateMetadata entrypoint: update the metadata at a given key *)
@@ -223,7 +265,8 @@ block {
 function setLambda(const setLambdaParams : setLambdaType; var s : tokenRegistryStorageType) : return is
 block{
     
-    verifySenderIsAdmin(s.admin); // verify that sender is admin 
+    
+    verifySenderIsAdmin(s.admins); // verify that sender is admin 
     
     // assign params to constants for better code readability
     const lambdaName    = setLambdaParams.name;

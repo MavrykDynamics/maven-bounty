@@ -5,7 +5,7 @@
 // ------------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------
-// Housekeeping Lambdas Begin
+// Admin Lambdas Begin
 // ------------------------------------------------------------------------------
 
 (*  setSuperAdmin lambda *)
@@ -15,8 +15,36 @@ block {
     verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
     
     case tokenRegistryLambdaAction of [
-        |   LambdaSetAdmin(newAdminAddress) -> {
-                s.superAdmin := newAdminAddress;
+        |   LambdaSetSuperAdmin(newAdminAddress) -> {
+                s.newSuperAdmin := Some(newAdminAddress);
+            }
+        |   _ -> skip
+    ];
+
+} with (noOperations, s)
+
+
+
+(*  claimSuperAdmin lambda *)
+function lambdaClaimSuperAdmin(const tokenRegistryLambdaAction : tokenRegistryLambdaActionType; var s : tokenRegistryStorageType) : return is
+block {
+
+    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
+    
+    case tokenRegistryLambdaAction of [
+        |   LambdaClaimSuperAdmin(_params) -> {
+                
+                // get sender and new super admin address 
+                const sender : address = Tezos.get_sender();
+                const newSuperAdmin : address = case s.newSuperAdmin of [
+                        Some(_address) -> _address
+                    |   None           -> failwith(error_NO_NEW_SUPER_ADMIN_FOUND)
+                ];
+
+                // check if sender is not new super admin 
+                if sender =/= newSuperAdmin then failwith(error_SENDER_IS_NOT_NEW_SUPER_ADMIN) else skip;
+                s.superAdmin := newSuperAdmin;
+
             }
         |   _ -> skip
     ];
@@ -33,7 +61,7 @@ block {
     
     case tokenRegistryLambdaAction of [
         |   LambdaSetAdmin(newAdminAddress) -> {
-                s.admin := newAdminAddress;
+                s.admins := Set.add(newAdminAddress, s.admins);
             }
         |   _ -> skip
     ];
@@ -41,6 +69,31 @@ block {
 } with (noOperations, s)
 
 
+
+(*  removeAdmin lambda *)
+function lambdaRemoveAdmin(const tokenRegistryLambdaAction : tokenRegistryLambdaActionType; var s : tokenRegistryStorageType) : return is
+block {
+
+    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
+    
+    case tokenRegistryLambdaAction of [
+        |   LambdaRemoveAdmin(adminAddress) -> {
+                s.admins := Set.remove(adminAddress, s.admins);
+            }
+        |   _ -> skip
+    ];
+
+} with (noOperations, s)
+
+// ------------------------------------------------------------------------------
+// Admin Lambdas End
+// ------------------------------------------------------------------------------
+
+
+
+// ------------------------------------------------------------------------------
+// Housekeeping Lambdas Begin
+// ------------------------------------------------------------------------------
 
 (*  updateMetadata lambda - update the metadata at a given key *)
 function lambdaUpdateMetadata(const tokenRegistryLambdaAction : tokenRegistryLambdaActionType; var s : tokenRegistryStorageType) : return is

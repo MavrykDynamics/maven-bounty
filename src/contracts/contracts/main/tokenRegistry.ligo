@@ -13,7 +13,7 @@
 #include "../partials/shared/sharedHelpers.ligo"
 
 // Transfer Helpers
-#include "../partials/shared/transferHelpers4.ligo"
+#include "../partials/shared/transferHelpers.ligo"
 
 // Constants
 #include "../partials/shared/constants.ligo"
@@ -29,9 +29,13 @@
 
 type action is
 
+        // Admin Entrypoints
+        SetSuperAdmin               of (address)
+    |   ClaimSuperAdmin             of (unit)
+    |   SetAdmin                    of (address)
+    |   RemoveAdmin                 of (address)
+
         // Housekeeping Entrypoints
-        SetAdmin                    of (address)
-    // |   SetGovernance               of (address)
     |   UpdateMetadata              of updateMetadataType
     |   UpdateWhitelistContracts    of updateWhitelistContractsType
     |   UpdateGeneralContracts      of updateGeneralContractsType
@@ -98,9 +102,13 @@ block {
 
     case action of [
 
+            // Admin Entrypoints
+            SetSuperAdmin(parameters)             -> setSuperAdmin(parameters, s)
+        |   ClaimSuperAdmin(_parameters)          -> claimSuperAdmin(s)
+        |   SetAdmin(parameters)                  -> setAdmin(parameters, s)
+        |   RemoveAdmin(parameters)               -> removeAdmin(parameters, s)
+
             // Housekeeping Entrypoints
-            SetAdmin(parameters)                  -> setAdmin(parameters, s)
-        // |   SetGovernance(parameters)             -> setGovernance(parameters, s)
         |   UpdateMetadata(parameters)            -> updateMetadata(parameters, s)
         |   UpdateWhitelistContracts(parameters)  -> updateWhitelistContracts(parameters, s)
         |   UpdateGeneralContracts(parameters)    -> updateGeneralContracts(parameters, s)
