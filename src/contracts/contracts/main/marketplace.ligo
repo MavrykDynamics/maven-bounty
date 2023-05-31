@@ -13,7 +13,7 @@
 #include "../partials/shared/sharedHelpers.ligo"
 
 // Transfer Helpers
-#include "../partials/shared/transferHelpers4.ligo"
+#include "../partials/shared/transferHelpers.ligo"
 
 // ------------------------------------------------------------------------------
 // Contract Types
@@ -26,9 +26,13 @@
 
 type action is
 
+        // Admin Entrypoints
+        SetSuperAdmin               of (address)
+    |   ClaimSuperAdmin             of (unit)
+    |   SetAdmin                    of (address)
+    |   RemoveAdmin                 of (address)
+
         // Housekeeping Entrypoints
-        SetAdmin                    of (address)
-    |   SetGovernance               of (address)
     |   UpdateMetadata              of updateMetadataType
     |   UpdateConfig                of marketplaceUpdateConfigParamsType
     |   UpdateWhitelistContracts    of updateWhitelistContractsType
@@ -45,8 +49,8 @@ type action is
     |   RemoveCurrency              of removeCurrencyActionType
 
         // Marketplace Entrypoints
-    |   List                        of listActionType
-    |   Delist                      of delistActionType
+    |   CreateListing               of createListingActionType
+    |   RemoveListing               of removeListingActionType
     |   Purchase                    of purchaseActionType
     |   Offer                       of offerActionType
     |   AcceptOffer                 of acceptOfferActionType
@@ -99,9 +103,13 @@ function main (const action : action; const s : marketplaceStorageType) : return
 
     case action of [
 
+            // Admin Entrypoints
+            SetSuperAdmin(parameters)             -> setSuperAdmin(parameters, s)
+        |   ClaimSuperAdmin(_parameters)          -> claimSuperAdmin(s)
+        |   SetAdmin(parameters)                  -> setAdmin(parameters, s)
+        |   RemoveAdmin(parameters)               -> removeAdmin(parameters, s)
+        
             // Housekeeping Entrypoints
-            SetAdmin(parameters)                  -> setAdmin(parameters, s)
-        |   SetGovernance(parameters)             -> setGovernance(parameters, s)
         |   UpdateMetadata(parameters)            -> updateMetadata(parameters, s)
         |   UpdateConfig(parameters)              -> updateConfig(parameters, s)
         |   UpdateWhitelistContracts(parameters)  -> updateWhitelistContracts(parameters, s)
@@ -118,8 +126,8 @@ function main (const action : action; const s : marketplaceStorageType) : return
         |   RemoveCurrency(parameters)            -> removeCurrency(parameters, s)
 
             // Marketplace Entrypoints
-        |   List(parameters)                      -> list(parameters, s)  
-        |   Delist(parameters)                    -> delist(parameters, s)  
+        |   CreateListing(parameters)             -> createListing(parameters, s)  
+        |   RemoveListiing(parameters)            -> removeListing(parameters, s)  
         |   Purchase(parameters)                  -> purchase(parameters, s)
         |   Offer(parameters)                     -> offer(parameters, s)
         |   AcceptOffer(parameters)               -> acceptOffer(parameters, s)

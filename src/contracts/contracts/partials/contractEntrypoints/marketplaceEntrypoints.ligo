@@ -235,15 +235,15 @@ block {
 // Marketplace Entrypoints Begin
 // ------------------------------------------------------------------------------
 
-(*  list entrypoint *)
-function list(const listParams : listActionType; var s : marketplaceStorageType) : return is
+(*  createListing entrypoint *)
+function createListing(const createListingParams : createListingActionType; var s : marketplaceStorageType) : return is
 block {
 
     // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaList", s.lambdaLedger);
+    const lambdaBytes : bytes = getLambdaBytes("lambdaCreateListing", s.lambdaLedger);
 
     // init marketplace lambda action
-    const marketplaceLambdaAction : marketplaceLambdaActionType = LambdaList(listParams);
+    const marketplaceLambdaAction : marketplaceLambdaActionType = LambdaCreateListing(createListingParams);
 
     // init response
     const response : return = unpackLambda(lambdaBytes, marketplaceLambdaAction, s);  
@@ -252,15 +252,15 @@ block {
 
 
 
-(*  delist entrypoint *)
-function delist(const delistParams : delistActionType; var s : marketplaceStorageType) : return is
+(*  removelist entrypoint *)
+function removeListing(const removeListingParams : removeListingActionType; var s : marketplaceStorageType) : return is
 block {
 
     // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaDelist", s.lambdaLedger);
+    const lambdaBytes : bytes = getLambdaBytes("lambdaRemovelisting", s.lambdaLedger);
 
     // init marketplace lambda action
-    const marketplaceLambdaAction : marketplaceLambdaActionType = LambdaDelist(delistParams);
+    const marketplaceLambdaAction : marketplaceLambdaActionType = LambdaRemoveListing(removeListingParams);
 
     // init response
     const response : return = unpackLambda(lambdaBytes, marketplaceLambdaAction, s);  

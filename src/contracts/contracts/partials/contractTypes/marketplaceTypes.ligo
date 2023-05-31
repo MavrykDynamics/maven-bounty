@@ -9,12 +9,14 @@ type listTokenType is
 
 
 type marketplaceBreakGlassConfigType is [@layout:comb] record [
-    listIsPaused             : bool;
-    delistIsPaused           : bool;
+    createListingIsPaused    : bool;
+    removeListingIsPaused    : bool;
     purchaseIsPaused         : bool;
     offerIsPaused            : bool;
     acceptOfferIsPaused      : bool;
     removeOfferIsPaused      : bool;
+    setCurrencyIsPaused      : bool;
+    removeCurrencyIsPaused   : bool;
 ]
 
 type marketplaceConfigType is [@layout:comb] record [
@@ -22,13 +24,14 @@ type marketplaceConfigType is [@layout:comb] record [
     royalty          : nat;
 ];
 
-type listRecordType is [@layout:comb] record [
+type listingRecordType is [@layout:comb] record [
+    initiator   : address;
     token       : listTokenType;
     amount      : nat; 
     expiryTime  : option(timestamp);
     currency    : tokenType;
 ]
-type listLedgerType is big_map(nat, listRecordType)
+type listingLedgerType is big_map(nat, listingRecordType)
 
 type offerRecordType is [@layout:comb] record [
     listId      : nat;
@@ -48,13 +51,13 @@ type currencyLedgerType is big_map(address, currencyRecordType)
 // Action Types
 // ------------------------------------------------------------------------------
 
-type delistActionType is nat
+type removeListingActionType is nat
 type purchaseActionType is nat
 
 type acceptOfferActionType is nat
 type removeOfferActionType is nat
 
-type listActionType is [@layout:comb] record [
+type createListingActionType is [@layout:comb] record [
     initiator   : address;
     token       : listTokenType;
     amount      : nat;
@@ -74,8 +77,8 @@ type removeCurrencyActionType is tokenType
 
 type marketplaceUpdateConfigNewValueType is nat
 type marketplaceUpdateConfigActionType is 
-        ConfigMiOfferAmount          of unit
-    |   Empty                       of unit
+        ConfigMinOfferAmount          of unit
+    |   ConfigRoyalty                 of unit
 
 type marketplaceUpdateConfigParamsType is [@layout:comb] record [
     updateConfigNewValue    : marketplaceUpdateConfigNewValueType; 
@@ -84,12 +87,14 @@ type marketplaceUpdateConfigParamsType is [@layout:comb] record [
 
 
 type marketplacePausableEntrypointType is
-        List                         of bool
-    |   Delist                       of bool
+        CreateListing                of bool
+    |   RemoveListing                of bool
     |   Purchase                     of bool
     |   Offer                        of bool
     |   AcceptOffer                  of bool
     |   RemoveOffer                  of bool
+    |   SetCurrency                  of bool
+    |   RemoveCurrency               of bool
     
 type marketplaceTogglePauseEntrypointType is [@layout:comb] record [
     targetEntrypoint  : marketplacePausableEntrypointType;
@@ -104,9 +109,13 @@ type marketplaceTogglePauseEntrypointType is [@layout:comb] record [
 
 type marketplaceLambdaActionType is 
 
+        // Admin Lambdas
+        LambdaSetSuperAdmin               of (address)
+    |   LambdaClaimSuperAdmin             of (unit)
+    |   LambdaSetAdmin                    of (address)
+    |   LambdaRemoveAdmin                 of (address)
+
         // Housekeeping Lambdas
-        LambdaSetAdmin                    of address
-    |   LambdaSetGovernance               of (address)
     |   LambdaUpdateMetadata              of updateMetadataType
     |   LambdaUpdateConfig                of marketplaceUpdateConfigParamsType
     |   LambdaUpdateWhitelistContracts    of updateWhitelistContractsType
@@ -123,8 +132,8 @@ type marketplaceLambdaActionType is
     |   LambdaRemoveCurrency              of removeCurrencyActionType
         
         // Marketplace Lambdas
-    |   LambdaList                        of (nat)
-    |   LambdaDelist                      of (nat)
+    |   LambdaCreateListing               of (nat)
+    |   LambdaRemoveListing               of (nat)
     |   LambdaPurchase                    of (nat)
     |   LambdaOffer                       of (unit)
     |   LambdaAcceptOffer                 of (address)
@@ -137,20 +146,24 @@ type marketplaceLambdaActionType is
 
 type marketplaceStorageType is [@layout:comb] record [
     
-    admin                     : address;
+    superAdmin                : address;
+    newSuperAdmin             : option(address);
+    admins                    : set(address);
+
     metadata                  : metadataType;
     config                    : marketplaceConfigType;
-
-    nextListId                : nat;
-    nextOfferId               : nat;
-
-    listLedger                : listLedgerType;
-    offerLedger               : offerLedgerType;
-    currencyLedger            : currencyLedgerType;
+    breakGlassConfig          : marketplaceBreakGlassConfigType;
 
     whitelistContracts        : whitelistContractsType;    
     generalContracts          : generalContractsType;
-    
+
+    nextListingId             : nat;
+    nextOfferId               : nat;
+
+    listingLedger             : listingLedgerType;
+    offerLedger               : offerLedgerType;
+    currencyLedger            : currencyLedgerType;
+
     lambdaLedger              : lambdaLedgerType;
 ]
 

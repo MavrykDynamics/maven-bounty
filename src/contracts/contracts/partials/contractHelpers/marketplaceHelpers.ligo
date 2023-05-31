@@ -24,8 +24,11 @@ function pauseAllMarketplaceEntrypoints(var s : marketplaceStorageType) : market
 block {
 
     // set all pause configs to True
-    if s.breakGlassConfig.listIsPaused then skip
-    else s.breakGlassConfig.listIsPaused := True;
+    if s.breakGlassConfig.createListingIsPaused then skip
+    else s.breakGlassConfig.createListingIsPaused := True;
+
+    if s.breakGlassConfig.removeListingIsPaused then skip
+    else s.breakGlassConfig.removeListingIsPaused := True;
 
     if s.breakGlassConfig.purchaseIsPaused then skip
     else s.breakGlassConfig.purchaseIsPaused := True;
@@ -36,16 +39,28 @@ block {
     if s.breakGlassConfig.acceptOfferIsPaused then skip
     else s.breakGlassConfig.acceptOfferIsPaused := True;
 
+    if s.breakGlassConfig.removeOfferIsPaused then skip
+    else s.breakGlassConfig.removeOfferIsPaused := True;
+
+    if s.breakGlassConfig.setCurrencyIsPaused then skip
+    else s.breakGlassConfig.setCurrencyIsPaused := True;
+
+    if s.breakGlassConfig.removeCurrencyIsPaused then skip
+    else s.breakGlassConfig.removeCurrencyIsPaused := True;
+
 } with s
 
 
 
 // helper function to unpause all entrypoints
-function unpauseAllMarketplceEntrypoints(var s : marketplaceStorageType) : marketplaceStorageType is 
+function unpauseAllMarketplaceEntrypoints(var s : marketplaceStorageType) : marketplaceStorageType is 
 block {
 
     // set all pause configs to False
-    if s.breakGlassConfig.listIsPaused then s.breakGlassConfig.listIsPaused := False
+    if s.breakGlassConfig.createListingIsPaused then s.breakGlassConfig.createListingIsPaused := False
+    else skip;
+
+    if s.breakGlassConfig.removeListingIsPaused then s.breakGlassConfig.removeListingIsPaused := False
     else skip;
 
     if s.breakGlassConfig.purchaseIsPaused then s.breakGlassConfig.purchaseIsPaused := False
@@ -55,6 +70,15 @@ block {
     else skip;
     
     if s.breakGlassConfig.acceptOfferIsPaused then s.breakGlassConfig.acceptOfferIsPaused := False
+    else skip;
+
+    if s.breakGlassConfig.removeOfferIsPaused then s.breakGlassConfig.removeOfferIsPaused := False
+    else skip;
+
+    if s.breakGlassConfig.setCurrencyIsPaused then s.breakGlassConfig.setCurrencyIsPaused := False
+    else skip;
+
+    if s.breakGlassConfig.removeCurrencyIsPaused then s.breakGlassConfig.removeCurrencyIsPaused := False
     else skip;
 
 } with s
@@ -107,10 +131,10 @@ block {
 } with unit
 
 
-function verifyListOwnership(const listInitiator : address; const sender : address) : unit is 
+function verifyListingOwnership(const listInitiator : address; const sender : address) : unit is 
 block {
 
-    if listInitiator = sender then skip else failwith(error_SENDER_IS_NOT_LIST_INITIATOR);
+    if listInitiator = sender then skip else failwith(error_SENDER_IS_NOT_LISTING_INITIATOR);
 
 } with unit
 

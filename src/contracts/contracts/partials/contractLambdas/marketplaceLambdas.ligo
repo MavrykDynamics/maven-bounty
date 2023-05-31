@@ -5,21 +5,63 @@
 // ------------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------
-// Housekeeping Lambdas Begin
+// Admin Lambdas Begin
 // ------------------------------------------------------------------------------
+
+(*  setSuperAdmin lambda *)
+function lambdaSetSuperAdmin(const marketplaceLambdaAction : marketplaceLambdaActionType; var s : marketplaceStorageType) : return is
+block {
+
+    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
+    
+    case marketplaceLambdaAction of [
+        |   LambdaSetSuperAdmin(newAdminAddress) -> {
+                s.newSuperAdmin := Some(newAdminAddress);
+            }
+        |   _ -> skip
+    ];
+
+} with (noOperations, s)
+
+
+
+(*  claimSuperAdmin lambda *)
+function lambdaClaimSuperAdmin(const marketplaceLambdaAction : marketplaceLambdaActionType; var s : marketplaceStorageType) : return is
+block {
+
+    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
+    
+    case marketplaceLambdaAction of [
+        |   LambdaClaimSuperAdmin(_params) -> {
+                
+                // get sender and new super admin address 
+                const sender : address = Tezos.get_sender();
+                const newSuperAdmin : address = case s.newSuperAdmin of [
+                        Some(_address) -> _address
+                    |   None           -> failwith(error_NO_NEW_SUPER_ADMIN_FOUND)
+                ];
+
+                // check if sender is not new super admin 
+                if sender =/= newSuperAdmin then failwith(error_SENDER_IS_NOT_NEW_SUPER_ADMIN) else skip;
+                s.superAdmin := newSuperAdmin;
+
+            }
+        |   _ -> skip
+    ];
+
+} with (noOperations, s)
+
+
 
 (*  setAdmin lambda *)
 function lambdaSetAdmin(const marketplaceLambdaAction : marketplaceLambdaActionType; var s : marketplaceStorageType) : return is
 block {
 
-    // verify that sender is admin or the Governance Contract address
-    // verifySenderIsAdminOrGovernance(s.admin, s.governanceAddress);
-
-    verifySenderIsAdmin(s.admin); // check that sender is admin 
+    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
     
     case marketplaceLambdaAction of [
         |   LambdaSetAdmin(newAdminAddress) -> {
-                s.admin := newAdminAddress;
+                s.admins := Set.add(newAdminAddress, s.admins);
             }
         |   _ -> skip
     ];
@@ -28,32 +70,37 @@ block {
 
 
 
-(*  setGovernance lambda *)
-function lambdaSetGovernance(const marketplaceLambdaAction : marketplaceLambdaActionType; var s : marketplaceStorageType) : return is
+(*  removeAdmin lambda *)
+function lambdaRemoveAdmin(const marketplaceLambdaAction : marketplaceLambdaActionType; var s : marketplaceStorageType) : return is
 block {
+
+    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
     
-    // verify that sender is admin or the Governance Contract address
-    // verifySenderIsAdminOrGovernance(s.admin, s.governanceAddress);
-
-    verifySenderIsAdmin(s.admin); // check that sender is admin 
-
     case marketplaceLambdaAction of [
-        |   LambdaSetGovernance(newGovernanceAddress) -> {
-                s.governanceAddress := newGovernanceAddress;
+        |   LambdaRemoveAdmin(adminAddress) -> {
+                s.admins := Set.remove(adminAddress, s.admins);
             }
         |   _ -> skip
     ];
 
 } with (noOperations, s)
 
+// ------------------------------------------------------------------------------
+// Admin Lambdas End
+// ------------------------------------------------------------------------------
 
+
+
+// ------------------------------------------------------------------------------
+// Housekeeping Lambdas Begin
+// ------------------------------------------------------------------------------
 
 (*  updateMetadata lambda - update the metadata at a given key *)
 function lambdaUpdateMetadata(const marketplaceLambdaAction : marketplaceLambdaActionType; var s : marketplaceStorageType) : return is
 block {
     
     // verify that sender is admin (i.e. Governance Proxy Contract address)
-    verifySenderIsAdmin(s.admin); 
+    verifySenderIsAdmin(s.admins); 
 
     case marketplaceLambdaAction of [
         |   LambdaUpdateMetadata(updateMetadataParams) -> {
@@ -75,7 +122,7 @@ function lambdaUpdateConfig(const marketplaceLambdaAction : marketplaceLambdaAct
 block {
 
     // verify that sender is admin (i.e. Governance Proxy Contract address)
-    verifySenderIsAdmin(s.admin); 
+    verifySenderIsAdmin(s.admins); 
 
     case marketplaceLambdaAction of [
         |   LambdaUpdateConfig(updateConfigParams) -> {
@@ -85,7 +132,7 @@ block {
 
                 case updateConfigAction of [
                     |   ConfigMinOfferAmount (_v)  -> s.config.minOfferAmount         := updateConfigNewValue
-                    |   Empty (_v)                 -> skip
+                    |   ConfigRoyalty (_v)         -> s.config.royalty                := updateConfigNewValue
                 ];
             }
         |   _ -> skip
@@ -100,7 +147,7 @@ function lambdaUpdateWhitelistContracts(const marketplaceLambdaAction : marketpl
 block {
 
     // verify that sender is admin
-    verifySenderIsAdmin(s.admin); 
+    verifySenderIsAdmin(s.admins); 
 
     case marketplaceLambdaAction of [
         |   LambdaUpdateWhitelistContracts(updateWhitelistContractsParams) -> {
@@ -118,7 +165,7 @@ function lambdaUpdateGeneralContracts(const marketplaceLambdaAction : marketplac
 block {
 
     // verify that sender is admin (i.e. Governance Proxy Contract address)
-    verifySenderIsAdmin(s.admin); 
+    verifySenderIsAdmin(s.admins); 
 
     case marketplaceLambdaAction of [
         |   LambdaUpdateGeneralContracts(updateGeneralContractsParams) -> {
@@ -140,10 +187,7 @@ block {
     case marketplaceLambdaAction of [
         |   LambdaMistakenTransfer(destinationParams) -> {
 
-                // Verify that the sender is admin or the Governance Satellite Contract
-                // verifySenderIsAdminOrGovernanceSatelliteContract(s);
-                
-                verifySenderIsAdmin(s.admin); // check that sender is admin 
+                verifySenderIsAdmin(s.admins); // check that sender is admin 
 
                 // Create transfer operations (transferOperationFold in transferHelpers)
                 operations := List.fold_right(transferOperationFold, destinationParams, operations)
@@ -168,8 +212,7 @@ block {
 function lambdaPauseAll(const marketplaceLambdaAction : marketplaceLambdaActionType; var s : marketplaceStorageType) : return is
 block {
 
-    // verify that sender is admin or the Governance Contract address
-    verifySenderIsAdminOrGovernance(s.admin, s.governanceAddress);
+    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
 
     case marketplaceLambdaAction of [
         |   LambdaPauseAll(_parameters) -> {
@@ -189,8 +232,7 @@ block {
 function lambdaUnpauseAll(const marketplaceLambdaAction : marketplaceLambdaActionType; var s : marketplaceStorageType) : return is
 block {
 
-    // verify that sender is admin or the Governance Contract address
-    verifySenderIsAdminOrGovernance(s.admin, s.governanceAddress);
+    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
 
     case marketplaceLambdaAction of [
         |   LambdaUnpauseAll(_parameters) -> {
@@ -211,16 +253,20 @@ function lambdaTogglePauseEntrypoint(const marketplaceLambdaAction : marketplace
 block {
 
     verifyNoAmountSent(Unit);     // entrypoint should not receive any tez amount  
-    verifySenderIsAdmin(s.admin); // check that sender is admin 
+    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
 
     case marketplaceLambdaAction of [
         |   LambdaTogglePauseEntrypoint(params) -> {
 
                 case params.targetEntrypoint of [
-                        List (_v)              -> s.breakGlassConfig.listIsPaused         := _v
-                    |   Purchase (_v)          -> s.breakGlassConfig.purchaseIsPaused     := _v
-                    |   Offer (_v)             -> s.breakGlassConfig.offerIsPaused        := _v
-                    |   AcceptOffer (_v)       -> s.breakGlassConfig.acceptOfferIsPaused  := _v
+                        CreateListing (_v)     -> s.breakGlassConfig.createListingIsPaused      := _v
+                    |   RemoveListing (_v)     -> s.breakGlassConfig.removeListingIsPaused      := _v
+                    |   Purchase (_v)          -> s.breakGlassConfig.purchaseIsPaused           := _v
+                    |   Offer (_v)             -> s.breakGlassConfig.offerIsPaused              := _v
+                    |   AcceptOffer (_v)       -> s.breakGlassConfig.acceptOfferIsPaused        := _v
+                    |   RemoveOffer (_v)       -> s.breakGlassConfig.removeOfferIsPaused        := _v
+                    |   SetCurrency (_v)       -> s.breakGlassConfig.setCurrencyIsPaused        := _v
+                    |   RemoveCurrency (_v)    -> s.breakGlassConfig.removeCurrencyIsPaused     := _v
                 ]
                 
             }
@@ -248,7 +294,7 @@ block {
     case marketplaceLambdaAction of [
         |   LambdaSetCurrency(token) -> {
 
-                verifySenderIsAdmin(s.admin); // check that sender is admin 
+                verifySenderIsAdmin(s.admins); // check that sender is admin 
 
                 case token of [
                         Fa12(fa12TokenAddress) -> {
@@ -262,15 +308,18 @@ block {
                         }
                     |   Fa2(fa2Token) -> {
 
-                            const currencyRecord : currencyRecordType = case s.currencyLedger[fa2Token.tokenContractAddress] of [
-                                    Some(_record) -> {
+                            var currencyRecord : currencyRecordType := case s.currencyLedger[fa2Token.tokenContractAddress] of [
+                                    Some(_record) -> block {
+                                        
                                         _record.tokenIds := Set.add(fa2Token.tokenId, _record.tokenIds);
+
                                     } with _record
+
                                 |   None -> record [
                                         tokenType = "FA2";
                                         tokenIds  = set[fa2Token.tokenId];
-                                    ];
-                            ]
+                                    ]
+                            ];
 
                             s.currencyLedger[fa2Token.tokenContractAddress] := currencyRecord;
 
@@ -293,8 +342,28 @@ block {
     case marketplaceLambdaAction of [
         |   LambdaRemoveCurrency(token) -> {
 
-                verifySenderIsAdmin(s.admin); // check that sender is admin 
+                verifySenderIsAdmin(s.admins); // check that sender is admin 
 
+                case token of [
+                        Fa12(fa12TokenAddress) -> {
+                            remove fa12TokenAddress from map s.currencyLedger;
+                        }
+                    |   Fa2(fa2Token) -> {
+
+                            var currencyRecord : currencyRecordType := case s.currencyLedger[fa2Token.tokenContractAddress] of [
+                                    Some(_record) -> _record
+                                |   None          -> failwith(error_CURRENCY_RECORD_NOT_FOUND)
+                            ];
+
+                            currencyRecord.tokenIds := Set.remove(fa2Token.tokenId, currencyRecord.tokenIds);
+                            s.currencyLedger[fa2Token.tokenContractAddress] := currencyRecord;
+
+                            // remove token record if there are no more token ids in the set
+                            const cardinal : nat = Set.size(currencyRecord.tokenIds);
+                            if cardinal = 0n then remove fa2Token.tokenContractAddress from map s.currencyLedger else skip;
+
+                        }
+                ]
             }
         |   _ -> skip
     ];
@@ -311,16 +380,16 @@ block {
 // Marketplace Lambdas Begin
 // ------------------------------------------------------------------------------
 
-(*  list lambda *)
-function lambdaList(const marketplaceLambdaAction : marketplaceLambdaActionType; var s : marketplaceStorageType) : return is
+(*  createListing lambda *)
+function lambdaCreateListing(const marketplaceLambdaAction : marketplaceLambdaActionType; var s : marketplaceStorageType) : return is
 block {
 
-    verifyEntrypointIsNotPaused(s.breakGlassConfig.listIsPaused, error_LIST_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED);
+    verifyEntrypointIsNotPaused(s.breakGlassConfig.createListingIsPaused, error_CREATE_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED);
 
     var operations : list(operation) := nil;
 
     case marketplaceLambdaAction of [
-        |   LambdaList(listParams) -> {
+        |   LambdaCreateListing(listParams) -> {
 
                 const token : listTokenType          = listParams.token;
                 const amount : nat                   = listParams.amount;
@@ -332,7 +401,7 @@ block {
                 // verify that currency is accepted
                 verifyValidCurrency(currency);
 
-                const listRecord : listRecordType = record [
+                const listingRecord : listingRecordType = record [
                     initiator   = sender;
                     token       = token; 
                     amount      = amount;
@@ -341,7 +410,7 @@ block {
                 ];                
 
                 // create new listing
-                s.listLedger[nextListId] := listRecord;
+                s.listLedger[nextListId] := listingRecord;
 
                 // transfer token to contract (custodial solution)
                 operations := case token of [
@@ -357,25 +426,25 @@ block {
 
 
 
-(*  delist lambda *)
-function lambdaDelist(const marketplaceLambdaAction : marketplaceLambdaActionType; var s : marketplaceStorageType) : return is
+(*  removeListing lambda *)
+function lambdaRemoveListing(const marketplaceLambdaAction : marketplaceLambdaActionType; var s : marketplaceStorageType) : return is
 block {
 
-    verifyEntrypointIsNotPaused(s.breakGlassConfig.delistIsPaused, error_DELIST_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED);
+    verifyEntrypointIsNotPaused(s.breakGlassConfig.removeListingIsPaused, error_REMOVE_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED);
 
     var operations : list(operation) := nil;
 
     case marketplaceLambdaAction of [
-        |   LambdaDelist(listId) -> {
+        |   LambdaRemoveListing(listId) -> {
 
                 const sender : address  = Tezos.get_sender();
 
-                const listRecord : listRecordType = case s.listLedger[listId] of [
+                const listingRecord : listingRecordType = case s.listLedger[listId] of [
                         Some(_record) -> _record
                     |   None          -> failwith(error_LIST_RECORD_NOT_FOUND)
                 ];
 
-                verifyListOwnership(listRecord.initiator, sender);
+                verifyListingOwnership(listingRecord.initiator, sender);
 
                 remove listId from map s.listLedger;
 
