@@ -15,15 +15,27 @@ import { confirmOperation } from "../../scripts/confirmation"
 import { OnChainView } from "@taquito/taquito/dist/types/contract/contract-methods/contract-on-chain-view"
 
 // Contracts Storage Type
+import { launchpadStorageType }             from "../../storage/storageTypes/launchpadStorageType"
+import { marketplaceStorageType }           from "../../storage/storageTypes/marketplaceStorageType"
+import { tokenRegistryStorageType }         from "../../storage/storageTypes/tokenRegistryStorageType"
+
+// Contract Lambdas
+import launchpadLambdas                     from "../../build/lambdas/launchpadLambdas.json"
+import marketplaceLambdas                   from "../../build/lambdas/marketplaceLambdas.json"
+import tokenRegistryLambdas                 from "../../build/lambdas/tokenRegistryLambdas.json"
 
 const generalContractLambdas = {
-    
+    "launchpad"             : launchpadLambdas,
+    "marketplace"           : marketplaceLambdas,
+    "tokenRegistry"         : tokenRegistryLambdas,
 }
 
-type generalContractStorageType = ""
+type generalContractStorageType = 
 
     // contracts
-    
+    launchpadStorageType |    
+    marketplaceStorageType |    
+    tokenRegistryStorageType 
     
     // tokens
     
