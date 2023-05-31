@@ -8,14 +8,28 @@
 // Housekeeping Lambdas Begin
 // ------------------------------------------------------------------------------
 
+(*  setSuperAdmin lambda *)
+function lambdaSetSuperAdmin(const tokenRegistryLambdaAction : tokenRegistryLambdaActionType; var s : tokenRegistryStorageType) : return is
+block {
+
+    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
+    
+    case tokenRegistryLambdaAction of [
+        |   LambdaSetAdmin(newAdminAddress) -> {
+                s.superAdmin := newAdminAddress;
+            }
+        |   _ -> skip
+    ];
+
+} with (noOperations, s)
+
+
+
 (*  setAdmin lambda *)
 function lambdaSetAdmin(const tokenRegistryLambdaAction : tokenRegistryLambdaActionType; var s : tokenRegistryStorageType) : return is
 block {
 
-    // verify that sender is admin or the Governance Contract address
-    // verifySenderIsAdminOrGovernance(s.admin, s.governanceAddress);
-
-    verifySenderIsAdmin(s.admin); // check that sender is admin 
+    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
     
     case tokenRegistryLambdaAction of [
         |   LambdaSetAdmin(newAdminAddress) -> {
@@ -28,32 +42,12 @@ block {
 
 
 
-// (*  setGovernance lambda *)
-// function lambdaSetGovernance(const tokenRegistryLambdaAction : tokenRegistryLambdaActionType; var s : tokenRegistryStorageType) : return is
-// block {
-    
-//     // verify that sender is admin or the Governance Contract address
-//     // verifySenderIsAdminOrGovernance(s.admin, s.governanceAddress);
-
-//     verifySenderIsAdmin(s.admin); // check that sender is admin 
-
-//     case tokenRegistryLambdaAction of [
-//         |   LambdaSetGovernance(newGovernanceAddress) -> {
-//                 s.governanceAddress := newGovernanceAddress;
-//             }
-//         |   _ -> skip
-//     ];
-
-// } with (noOperations, s)
-
-
-
 (*  updateMetadata lambda - update the metadata at a given key *)
 function lambdaUpdateMetadata(const tokenRegistryLambdaAction : tokenRegistryLambdaActionType; var s : tokenRegistryStorageType) : return is
 block {
     
-    // verify that sender is admin (i.e. Governance Proxy Contract address)
-    verifySenderIsAdmin(s.admin); 
+    // verify that sender is admin 
+    verifySenderIsAdmin(s.admins); 
 
     case tokenRegistryLambdaAction of [
         |   LambdaUpdateMetadata(updateMetadataParams) -> {
@@ -75,7 +69,7 @@ function lambdaUpdateWhitelistContracts(const tokenRegistryLambdaAction : tokenR
 block {
 
     // verify that sender is admin
-    verifySenderIsAdmin(s.admin); 
+    verifySenderIsAdmin(s.admins); 
 
     case tokenRegistryLambdaAction of [
         |   LambdaUpdateWhitelistContracts(updateWhitelistContractsParams) -> {
@@ -92,8 +86,8 @@ block {
 function lambdaUpdateGeneralContracts(const tokenRegistryLambdaAction : tokenRegistryLambdaActionType; var s: tokenRegistryStorageType) : return is
 block {
 
-    // verify that sender is admin (i.e. Governance Proxy Contract address)
-    verifySenderIsAdmin(s.admin); 
+    // verify that sender is admin 
+    verifySenderIsAdmin(s.admins); 
 
     case tokenRegistryLambdaAction of [
         |   LambdaUpdateGeneralContracts(updateGeneralContractsParams) -> {
@@ -115,10 +109,7 @@ block {
     case tokenRegistryLambdaAction of [
         |   LambdaMistakenTransfer(destinationParams) -> {
 
-                // Verify that the sender is admin or the Governance Satellite Contract
-                // verifySenderIsAdminOrGovernanceSatelliteContract(s);
-
-                verifySenderIsAdmin(s.admin); // check that sender is admin 
+                verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
 
                 // Create transfer operations (transferOperationFold in transferHelpers)
                 operations := List.fold_right(transferOperationFold, destinationParams, operations)
@@ -143,10 +134,7 @@ block {
 function lambdaPauseAll(const tokenRegistryLambdaAction : tokenRegistryLambdaActionType; var s : tokenRegistryStorageType) : return is
 block {
 
-    // verify that sender is admin or the Governance Contract address
-    // verifySenderIsAdminOrGovernance(s.admin, s.governanceAddress);
-    
-    verifySenderIsAdmin(s.admin); // check that sender is admin 
+    verifySenderIsAdmin(s.admins); // check that sender is admin 
 
     case tokenRegistryLambdaAction of [
         |   LambdaPauseAll(_parameters) -> {
@@ -166,10 +154,7 @@ block {
 function lambdaUnpauseAll(const tokenRegistryLambdaAction : tokenRegistryLambdaActionType; var s : tokenRegistryStorageType) : return is
 block {
 
-    // verify that sender is admin or the Governance Contract address
-    // verifySenderIsAdminOrGovernance(s.admin, s.governanceAddress);
-
-    verifySenderIsAdmin(s.admin); // check that sender is admin 
+    verifySenderIsAdmin(s.admins); // check that sender is admin 
 
     case tokenRegistryLambdaAction of [
         |   LambdaUnpauseAll(_parameters) -> {
@@ -189,7 +174,7 @@ block {
 function lambdaTogglePauseEntrypoint(const tokenRegistryLambdaAction : tokenRegistryLambdaActionType; var s : tokenRegistryStorageType) : return is
 block {
 
-    verifySenderIsAdmin(s.admin); // check that sender is admin 
+    verifySenderIsAdmin(s.admins); // check that sender is admin 
 
     case tokenRegistryLambdaAction of [
         |   LambdaTogglePauseEntrypoint(params) -> {
@@ -224,66 +209,31 @@ block {
     case tokenRegistryLambdaAction of [
         |   LambdaSetToken(setTokenParams) -> {
 
-                verifySenderIsAdmin(s.admin); // check that sender is admin 
-
-                // const token         : listTokenType     = setTokenParams.token;
-                // const beneficiary   : option(address)   = setTokenParams.beneficiary;
-                // const fee           : option(nat)       = setTokenParams.fee;
-                
-                // const tokenOverride : tokenOverrideType = record [
-                //     beneficiaryOverride = beneficiary;
-                //     feeOverride         = fee;
-                // ];
-
-                // case token of [
-                //         Fa12 (fa12TokenAddress) -> {
-                //             s.fa12TokenLedger[fa12TokenAddress] := tokenOverride;
-                //         }
-                //     |   Fa2(fa2Token) -> {
-                //             s.fa2TokenLedger[(fa2Token.tokenContractAddress, fa2Token.tokenId)] := tokenOverride;
-                //         }
-                // ];
+                verifySenderIsAdmin(s.admins); // check that sender is admin 
 
                 const token         : listTokenType     = setTokenParams.token;
                 const beneficiary   : option(address)   = setTokenParams.beneficiary;
                 const fee           : option(nat)       = setTokenParams.fee;
+                
+                var tokenRecord : tokenRecordType := record [
+                    tokenType           = "null";
+                    tokenIds            = set[];
+                    beneficiaryOverride = beneficiary;
+                    feeOverride         = fee;
+                ];
 
                 case token of [
                         Fa12 (fa12TokenAddress) -> {
-                            s.tokenLedger[fa12TokenAddress] := record [
-                                tokenType           = Fa12Token(fa12TokenAddress);
-                                beneficiaryOverride = beneficiary;
-                                feeOverride         = fee;
-                            ];
+                            tokenRecord.tokenType  := "FA12";
+                            s.tokenLedger[fa12TokenAddress] := tokenRecord;
                         }
                     |   Fa2(fa2Token) -> {
-
-                            var tokenRecord : tokenRecordType := case s.tokenLedger[fa2Token.tokenContractAddress] of [
-
-                                    Some (_tokenRecord) -> block {
-
-                                        var _record : tokenRecordType := _tokenRecord;
-
-                                        _record.tokenType := case _record.tokenType of [
-                                                Fa2Token(_set) -> Fa2Token(Set.add(fa2Token.tokenId, _set))
-                                            |   _              -> Fa2Token(set[fa2Token.tokenId]) // should not be reached
-                                        ];
-
-                                        _record.beneficiaryOverride  := beneficiary;
-                                        _record.feeOverride          := fee;
-
-                                    } with _record
-
-                                |   None -> record [
-                                        tokenType           = Fa2Token(set[fa2Token.tokenId]);
-                                        beneficiaryOverride = beneficiary;
-                                        feeOverride         = fee;
-                                    ]   
-                            ];
-
+                            tokenRecord.tokenType  := "FA2";
+                            tokenRecord.tokenIds   := Set.add(fa2Token.tokenId, tokenRecord.tokenIds);
                             s.tokenLedger[fa2Token.tokenContractAddress] := tokenRecord;
                         }
                 ];
+
 
             }
         |   _ -> skip
@@ -302,33 +252,25 @@ block {
     case tokenRegistryLambdaAction of [
         |   LambdaRemoveToken(removeTokenParams) -> {
 
-                verifySenderIsAdmin(s.admin); // check that sender is admin 
-
+                verifySenderIsAdmin(s.admins); // check that sender is admin 
+                
                 case removeTokenParams of [
-                        Fa12 (fa12TokenAddress) -> remove fa12TokenAddress from map s.tokenLedger
-                    |   Fa2 (fa2Token) -> {
+                        Fa12 (fa12TokenAddress) -> {
+                            remove fa12TokenAddress from map s.tokenLedger;
+                        }
+                    |   Fa2(fa2Token) -> {
 
-                            // remove token id from Fa2Token set of tokenIds
                             var tokenRecord : tokenRecordType := case s.tokenLedger[fa2Token.tokenContractAddress] of [
-                                    Some (_tokenRecord) -> block {
-                                        var _record : tokenRecordType := _tokenRecord;
-                                        _record.tokenType := case _record.tokenType of [
-                                                Fa2Token(_set) -> Fa2Token(Set.remove(fa2Token.tokenId, _set))
-                                            |   _              -> Fa2Token(set[]) // should not be reached
-                                        ];
-                                    } with _record
-                                |   None -> failwith(error_FA2_TOKEN_RECORD_NOT_FOUND_TO_BE_REMOVED)
+                                    Some(_record) -> _record
+                                |   None          -> failwith(error_TOKEN_RECORD_NOT_FOUND)
                             ];
+
+                            tokenRecord.tokenIds := Set.remove(fa2Token.tokenId, tokenRecord.tokenIds);
                             s.tokenLedger[fa2Token.tokenContractAddress] := tokenRecord;
 
-                            // remove token record if there are no more token ids for the Fa2 Token
-                            const cardinal : nat = case tokenRecord.tokenType of [
-                                    Fa2Token(_set) -> Set.size(_set)
-                                |   _              -> 0n
-                            ];
-                            
-                            if cardinal = 0n then remove fa2Token.tokenContractAddress from map s.tokenLedger;
-                            
+                            // remove token record if there are no more token ids in the set
+                            const cardinal : nat = Set.size(tokenRecord.tokenIds);
+                            if cardinal = 0n then remove fa2Token.tokenContractAddress from map s.tokenLedger else skip;
                         }
                 ];
 
