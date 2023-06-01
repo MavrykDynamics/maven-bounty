@@ -266,7 +266,6 @@ block {
                     |   AcceptOffer (_v)       -> s.breakGlassConfig.acceptOfferIsPaused        := _v
                     |   RemoveOffer (_v)       -> s.breakGlassConfig.removeOfferIsPaused        := _v
                     |   SetCurrency (_v)       -> s.breakGlassConfig.setCurrencyIsPaused        := _v
-                    |   RemoveCurrency (_v)    -> s.breakGlassConfig.removeCurrencyIsPaused     := _v
                 ]
                 
             }
@@ -292,76 +291,64 @@ block {
     verifyEntrypointIsNotPaused(s.breakGlassConfig.setCurrencyIsPaused, error_SET_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED);
 
     case marketplaceLambdaAction of [
-        |   LambdaSetCurrency(token) -> {
+        |   LambdaSetCurrency(setCurrencyParams) -> {
 
                 verifySenderIsAdmin(s.admins); // check that sender is admin 
 
+                const actionType : string   = setCurrencyParams.actionType;
+                const token : listTokenType = setCurrencyParams.token;
+
                 case token of [
-                        Fa12(fa12TokenAddress) -> {
+                        Fa12Token(fa12TokenAddress) -> {
                             
-                            const currencyRecord : currencyRecordType = record [
-                                tokenType = "FA12";
-                                tokenIds  = set[];
-                            ];
+                            if actionType = "update" then {
 
-                            s.currencyLedger[fa12TokenAddress] := currencyRecord;
+                                const currencyRecord : currencyRecordType = record [
+                                    tokenType = "FA12";
+                                    tokenIds  = set[];
+                                ];
+
+                                s.currencyLedger[fa12TokenAddress] := currencyRecord;
+
+                            } else if actionType = "remove" then {
+
+                                remove fa12TokenAddress from map s.currencyLedger;
+                            }
                         }
-                    |   Fa2(fa2Token) -> {
+                    |   Fa2Token(fa2Token) -> {
 
-                            var currencyRecord : currencyRecordType := case s.currencyLedger[fa2Token.tokenContractAddress] of [
-                                    Some(_record) -> block {
-                                        
-                                        _record.tokenIds := Set.add(fa2Token.tokenId, _record.tokenIds);
+                            if actionType = "update" then {
+                                
+                                var currencyRecord : currencyRecordType := case s.currencyLedger[fa2Token.tokenContractAddress] of [
+                                        Some(_record) -> {
+                                            
+                                            var _record := _record;
+                                            _record.tokenIds := Set.add(fa2Token.tokenId, _record.tokenIds);
 
-                                    } with _record
+                                        } with _record
+                                    |   None -> record [
+                                            tokenType = "FA2";
+                                            tokenIds  = set[fa2Token.tokenId];
+                                        ]
+                                ];
 
-                                |   None -> record [
-                                        tokenType = "FA2";
-                                        tokenIds  = set[fa2Token.tokenId];
-                                    ]
-                            ];
+                                s.currencyLedger[fa2Token.tokenContractAddress] := currencyRecord;
 
-                            s.currencyLedger[fa2Token.tokenContractAddress] := currencyRecord;
+                            } else if actionType = "remove" then {
+                            
+                                var currencyRecord : currencyRecordType := case s.currencyLedger[fa2Token.tokenContractAddress] of [
+                                        Some(_record) -> _record
+                                    |   None          -> failwith(error_CURRENCY_RECORD_NOT_FOUND)
+                                ];
 
-                        }
-                ]
-            }
-        |   _ -> skip
-    ];
+                                currencyRecord.tokenIds := Set.remove(fa2Token.tokenId, currencyRecord.tokenIds);
+                                s.currencyLedger[fa2Token.tokenContractAddress] := currencyRecord;
 
-} with (noOperations, s)
+                                // remove token record if there are no more token ids in the set
+                                const cardinal : nat = Set.size(currencyRecord.tokenIds);
+                                if cardinal = 0n then remove fa2Token.tokenContractAddress from map s.currencyLedger else skip;
 
-
-
-(*  removeCurrency lambda *)
-function lambdaRemoveCurrency(const marketplaceLambdaAction : marketplaceLambdaActionType; var s : marketplaceStorageType) : return is
-block {
-
-    verifyEntrypointIsNotPaused(s.breakGlassConfig.removeCurrencyIsPaused, error_REMOVE_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED);
-
-    case marketplaceLambdaAction of [
-        |   LambdaRemoveCurrency(token) -> {
-
-                verifySenderIsAdmin(s.admins); // check that sender is admin 
-
-                case token of [
-                        Fa12(fa12TokenAddress) -> {
-                            remove fa12TokenAddress from map s.currencyLedger;
-                        }
-                    |   Fa2(fa2Token) -> {
-
-                            var currencyRecord : currencyRecordType := case s.currencyLedger[fa2Token.tokenContractAddress] of [
-                                    Some(_record) -> _record
-                                |   None          -> failwith(error_CURRENCY_RECORD_NOT_FOUND)
-                            ];
-
-                            currencyRecord.tokenIds := Set.remove(fa2Token.tokenId, currencyRecord.tokenIds);
-                            s.currencyLedger[fa2Token.tokenContractAddress] := currencyRecord;
-
-                            // remove token record if there are no more token ids in the set
-                            const cardinal : nat = Set.size(currencyRecord.tokenIds);
-                            if cardinal = 0n then remove fa2Token.tokenContractAddress from map s.currencyLedger else skip;
-
+                            }
                         }
                 ]
             }
@@ -389,34 +376,39 @@ block {
     var operations : list(operation) := nil;
 
     case marketplaceLambdaAction of [
-        |   LambdaCreateListing(listParams) -> {
+        |   LambdaCreateListing(listingParams) -> {
 
-                const token : listTokenType          = listParams.token;
-                const amount : nat                   = listParams.amount;
-                const expiryTime : option(timestamp) = listParams.expiryTime;
-                const currency : tokenType           = listParams.currency;
+                const token : listTokenType          = listingParams.token;
+                const amount : nat                   = listingParams.amount;
+                const price : nat                    = listingParams.price;
+                const expiryTime : option(timestamp) = listingParams.expiryTime;
+                const currency : tokenType           = listingParams.currency;
                 const sender : address               = Tezos.get_sender();
-                const nextListId : nat               = s.nextListId;
+                const nextListingId : nat            = s.nextListingId;
+                const marketplace : address          = Tezos.get_self_address();
 
                 // verify that currency is accepted
-                verifyValidCurrency(currency);
+                verifyValidCurrency(currency, s);
 
                 const listingRecord : listingRecordType = record [
                     initiator   = sender;
                     token       = token; 
+                    price       = price;
                     amount      = amount;
-                    expiryTime  = expiryTime; 
                     currency    = currency;
+                    expiryTime  = expiryTime; 
                 ];                
 
                 // create new listing
-                s.listLedger[nextListId] := listingRecord;
+                s.listingLedger[nextListingId] := listingRecord;
 
                 // transfer token to contract (custodial solution)
                 operations := case token of [
-                        Fa12(fa12TokenAddress) -> transferFa12Token(sender, Tezos.get_self_address(), amount, fa12TokenAddress) # operations
-                    |   Fa2(fa2Token) -> transferFa2Token(sender, Tezos.get_self_address(), amount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
+                        Fa12Token(fa12TokenAddress) -> transferFa12Token(sender, marketplace, amount, fa12TokenAddress) # operations
+                    |   Fa2Token(fa2Token) -> transferFa2Token(sender, marketplace, amount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
                 ];
+
+                s.nextListingId := nextListingId + 1n;
                 
             }
         |   _ -> skip
@@ -435,18 +427,18 @@ block {
     var operations : list(operation) := nil;
 
     case marketplaceLambdaAction of [
-        |   LambdaRemoveListing(listId) -> {
+        |   LambdaRemoveListing(listingId) -> {
 
                 const sender : address  = Tezos.get_sender();
 
-                const listingRecord : listingRecordType = case s.listLedger[listId] of [
+                const listingRecord : listingRecordType = case s.listingLedger[listingId] of [
                         Some(_record) -> _record
-                    |   None          -> failwith(error_LIST_RECORD_NOT_FOUND)
+                    |   None          -> failwith(error_LISTING_RECORD_NOT_FOUND)
                 ];
 
-                verifyListingOwnership(listingRecord.initiator, sender);
+                verifyOwnership(listingRecord.initiator, sender);
 
-                remove listId from map s.listLedger;
+                remove listingId from map s.listingLedger;
 
             }
         |   _ -> skip
@@ -465,9 +457,57 @@ block {
     var operations : list(operation) := nil;
 
     case marketplaceLambdaAction of [
-        |   LambdaPurchase(_params) -> {
+        |   LambdaPurchase(listingId) -> {
 
-                skip
+                const sender : address          = Tezos.get_sender();
+                const marketplace : address     = Tezos.get_self_address();
+                const listingRecord : listingRecordType = case s.listingLedger[listingId] of [
+                        Some(_record) -> _record
+                    |   None          -> failwith(error_LISTING_RECORD_NOT_FOUND)
+                ];
+
+                // verify purchaser is not initiator
+                verifyPurchaserIsNotInitiator(sender, listingRecord.initiator);
+
+                // verify listing is not expired
+                case listingRecord.expiryTime of [
+                        Some(_timestamp) -> verifyNotExpired(_timestamp, error_LISTING_HAS_EXPIRED)
+                    |   None             -> skip
+                ];
+                
+                const lister    : address        = listingRecord.initiator;
+                const token     : listTokenType  = listingRecord.token;
+                const price     : nat            = listingRecord.price;
+                const amount    : nat            = listingRecord.amount;
+
+                const treasuryAddress    : address  = getAddressFromGeneralContracts("treasury", s, error_TREASURY_NOT_FOUND);           
+                const royalty            : nat      = s.config.royalty;
+                const royaltyFeeTotal    : nat      = (price * fixedPointAccuracy * royalty) / (fixedPointAccuracy * 10000n);
+                const priceLessRoyalty   : nat      = abs(price - royaltyFeeTotal);
+
+                // transfer price/fees to lister and treasury
+                case listingRecord.currency of [
+                        Tez        -> {
+                            operations := transferTez((Tezos.get_contract_with_error(lister, "Error. Contract not found at given address") : contract(unit)), priceLessRoyalty * 1mutez) # operations;
+                            operations := transferTez((Tezos.get_contract_with_error(treasuryAddress, "Error. Contract not found at given address") : contract(unit)), royaltyFeeTotal * 1mutez) # operations;
+                        } 
+                    |   Fa12(_address)  -> {
+                            operations := transferFa12Token(sender, lister, priceLessRoyalty, _address) # operations;
+                            operations := transferFa12Token(sender, treasuryAddress, royaltyFeeTotal, _address) # operations;
+                        }
+                    |   Fa2(_fa2Token)  -> {
+                            operations := transferFa2Token(sender, lister, priceLessRoyalty, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
+                            operations := transferFa2Token(sender, treasuryAddress, royaltyFeeTotal, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
+                        }
+                ];
+
+                // transfer purchased token amount to sender
+                operations := case token of [
+                        Fa12Token(_address) -> transferFa12Token(marketplace, sender, amount, _address) # operations
+                    |   Fa2Token(_fa2Token) -> transferFa2Token(marketplace, sender, amount, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations
+                ];
+
+                remove listingId from map s.listingLedger;
 
             }
         |   _ -> skip
@@ -486,9 +526,40 @@ block {
     var operations : list(operation) := nil;
 
     case marketplaceLambdaAction of [
-        |   LambdaOffer(_params) -> {
+        |   LambdaOffer(offerParams) -> {
 
-                skip
+                const listingId : nat                = offerParams.listingId;
+                const price : nat                    = offerParams.price;
+                const expiryTime : option(timestamp) = offerParams.expiryTime;
+                const currency : tokenType           = offerParams.currency;
+
+                const sender : address               = Tezos.get_sender();
+                const nextOfferId : nat              = s.nextOfferId;
+                const marketplace : address          = Tezos.get_self_address();
+
+                // verify that currency is accepted
+                verifyValidCurrency(currency, s);
+
+                const offerRecord : offerRecordType = record [
+                    initiator   = sender;
+                    listingId   = listingId;
+                    price       = price;
+                    currency    = currency;
+                    expiryTime  = expiryTime; 
+                ];                
+
+                // create new offer
+                s.offerLedger[nextOfferId] := offerRecord;
+
+                // transfer offer to contract (custodial solution)
+                operations := case currency of [
+                        Tez                     -> transferTez((Tezos.get_contract_with_error(marketplace, "Error. Contract not found at given address") : contract(unit)), price * 1mutez) # operations
+                    |   Fa12(fa12TokenAddress)  -> transferFa12Token(sender, marketplace, price, fa12TokenAddress) # operations
+                    |   Fa2(fa2Token)           -> transferFa2Token(sender, marketplace, price, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
+                ];
+
+                // increment next offer id
+                s.nextOfferId := nextOfferId + 1n;
 
             }
         |   _ -> skip
@@ -507,9 +578,78 @@ block {
     var operations : list(operation) := nil;
 
     case marketplaceLambdaAction of [
-        |   LambdaAcceptOffer(_params) -> {
+        |   LambdaAcceptOffer(offerId) -> {
 
-                skip
+                const sender : address               = Tezos.get_sender();
+                const marketplace : address          = Tezos.get_self_address();
+
+                const offerRecord : offerRecordType = case s.offerLedger[offerId] of [
+                        Some(_record) -> _record
+                    |   None          -> failwith(error_OFFER_RECORD_NOT_FOUND)
+                ];
+
+                // get offerer
+                const offerer : address = offerRecord.initiator;
+
+                // verify offer is not expired
+                case offerRecord.expiryTime of [
+                        Some(_timestamp) -> verifyNotExpired(_timestamp, error_OFFER_HAS_EXPIRED)
+                    |   None             -> skip
+                ];
+
+                const listingId          : nat       = offerRecord.listingId;
+                const offerPrice         : nat       = offerRecord.price;
+
+                const listingRecord : listingRecordType = case s.listingLedger[listingId] of [
+                        Some(_record) -> _record
+                    |   None          -> failwith(error_LISTING_RECORD_NOT_FOUND)
+                ];
+
+                // listing params
+                const lister             : address       = listingRecord.initiator;
+                const token              : listTokenType = listingRecord.token;
+                const listingAmount      : nat           = listingRecord.amount;
+                
+                // verify sender is listing creator
+                verifyOwnership(lister, sender);
+
+                // do we want to allow lister to accept an offer even if his listing has expired?
+                // verify listing is not expired
+                case listingRecord.expiryTime of [
+                        Some(_timestamp) -> verifyNotExpired(_timestamp, error_LISTING_HAS_EXPIRED)
+                    |   None             -> skip
+                ];
+
+                const treasuryAddress           : address  = getAddressFromGeneralContracts("treasury", s, error_TREASURY_NOT_FOUND);           
+                const royalty                   : nat      = s.config.royalty;
+                const royaltyFeeTotal           : nat      = (offerPrice * fixedPointAccuracy * royalty) / (fixedPointAccuracy * 10000n);
+                const offerPriceLessRoyalty     : nat      = abs(offerPrice - royaltyFeeTotal);
+
+                // transfer offer price/fees to lister and treasury
+                case offerRecord.currency of [
+                        Tez        -> {
+                            operations := transferTez((Tezos.get_contract_with_error(lister, "Error. Contract not found at given address") : contract(unit)), offerPriceLessRoyalty * 1mutez) # operations;
+                            operations := transferTez((Tezos.get_contract_with_error(treasuryAddress, "Error. Contract not found at given address") : contract(unit)), royaltyFeeTotal * 1mutez) # operations;
+                        } 
+                    |   Fa12(_address)  -> {
+                            operations := transferFa12Token(sender, lister, offerPriceLessRoyalty, _address) # operations;
+                            operations := transferFa12Token(sender, treasuryAddress, royaltyFeeTotal, _address) # operations;
+                        }
+                    |   Fa2(_fa2Token)  -> {
+                            operations := transferFa2Token(sender, lister, offerPriceLessRoyalty, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
+                            operations := transferFa2Token(sender, treasuryAddress, royaltyFeeTotal, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
+                        }
+                ];
+
+                // transfer listing token amount to offerer
+                operations := case token of [
+                        Fa12Token(_address) -> transferFa12Token(marketplace, offerer, listingAmount, _address) # operations
+                    |   Fa2Token(_fa2Token) -> transferFa2Token(marketplace, offerer, listingAmount, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations
+                ];
+
+                // remove listing and offer
+                remove listingId from map s.listingLedger;
+                remove offerId from map s.offerLedger;
                 
             }
         |   _ -> skip
@@ -528,10 +668,19 @@ block {
     var operations : list(operation) := nil;
 
     case marketplaceLambdaAction of [
-        |   LambdaRemoveOffer(_params) -> {
+        |   LambdaRemoveOffer(offerId) -> {
 
-                skip
-                
+                const sender : address  = Tezos.get_sender();
+
+                const offerRecord : offerRecordType = case s.offerLedger[offerId] of [
+                        Some(_record) -> _record
+                    |   None          -> failwith(error_OFFER_RECORD_NOT_FOUND)
+                ];
+
+                verifyOwnership(offerRecord.initiator, sender);
+
+                remove offerId from map s.offerLedger;
+
             }
         |   _ -> skip
     ];

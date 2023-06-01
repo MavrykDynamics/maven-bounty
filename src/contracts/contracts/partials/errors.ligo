@@ -90,6 +90,32 @@
 //
 // ------------------------------------------------------------------------------
 
-[@inline] const error_SENDER_IS_NOT_LISTING_INITIATOR                                                                    = 2n;
+[@inline] const error_SENDER_IS_NOT_CREATOR                                                                              = 2n;
+[@inline] const error_LISTER_CANNOT_PURCHASE_HIS_LISTING                                                                 = 2n;
+[@inline] const error_LISTING_HAS_EXPIRED                                                                                = 2n;
+[@inline] const error_OFFER_HAS_EXPIRED                                                                                  = 2n;
+
+[@inline] const error_CURRENCY_RECORD_NOT_FOUND                                                                          = 2n;
+[@inline] const error_LISTING_RECORD_NOT_FOUND                                                                           = 2n;
+[@inline] const error_OFFER_RECORD_NOT_FOUND                                                                             = 2n;
+[@inline] const error_INVALID_CURRENCY                                                                                   = 2n;
+
 [@inline] const error_SET_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 2n;
 [@inline] const error_REMOVE_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                          = 2n;
+[@inline] const error_CREATE_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                           = 2n;
+[@inline] const error_REMOVE_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                           = 2n;
+[@inline] const error_PURCHASE_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                                 = 2n;
+[@inline] const error_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                                    = 2n;
+[@inline] const error_ACCEPT_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 2n;
+[@inline] const error_REMOVE_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 2n;
+
+
+
+
+// ------------------------------------------------------------------------------
+//
+// Treasury Errors
+//
+// ------------------------------------------------------------------------------
+
+[@inline] const error_TREASURY_NOT_FOUND                                                                                 = 2n;

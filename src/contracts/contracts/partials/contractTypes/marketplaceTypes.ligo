@@ -2,10 +2,10 @@
 // Storage Types
 // ------------------------------------------------------------------------------
 
-// only FA12 or FA2, no Tez
+// only FA12 or FA2
 type listTokenType is 
-    |   Fa12   of fa12TokenType   // address
-    |   Fa2    of fa2TokenType    // record [ tokenContractAddress : address; tokenId : nat; ]
+    |   Fa12Token   of fa12TokenType   // address
+    |   Fa2Token    of fa2TokenType    // record [ tokenContractAddress : address; tokenId : nat; ]
 
 
 type marketplaceBreakGlassConfigType is [@layout:comb] record [
@@ -16,7 +16,6 @@ type marketplaceBreakGlassConfigType is [@layout:comb] record [
     acceptOfferIsPaused      : bool;
     removeOfferIsPaused      : bool;
     setCurrencyIsPaused      : bool;
-    removeCurrencyIsPaused   : bool;
 ]
 
 type marketplaceConfigType is [@layout:comb] record [
@@ -27,16 +26,18 @@ type marketplaceConfigType is [@layout:comb] record [
 type listingRecordType is [@layout:comb] record [
     initiator   : address;
     token       : listTokenType;
+    price       : nat;
     amount      : nat; 
-    expiryTime  : option(timestamp);
     currency    : tokenType;
+    expiryTime  : option(timestamp);
 ]
 type listingLedgerType is big_map(nat, listingRecordType)
 
 type offerRecordType is [@layout:comb] record [
-    listId      : nat;
-    token       : tokenType;
-    amount      : nat;
+    initiator   : address;
+    listingId   : nat;
+    price       : nat;
+    currency    : tokenType;
     expiryTime  : option(timestamp);
 ]
 type offerLedgerType is big_map(nat, offerRecordType)
@@ -51,6 +52,11 @@ type currencyLedgerType is big_map(address, currencyRecordType)
 // Action Types
 // ------------------------------------------------------------------------------
 
+type setCurrencyActionType is [@layout:comb] record [
+    actionType  : string;           // update, remove
+    token       : listTokenType;
+]
+
 type removeListingActionType is nat
 type purchaseActionType is nat
 
@@ -60,20 +66,18 @@ type removeOfferActionType is nat
 type createListingActionType is [@layout:comb] record [
     initiator   : address;
     token       : listTokenType;
+    price       : nat;
     amount      : nat;
     expiryTime  : option(timestamp);
     currency    : tokenType;
 ]
 
 type offerActionType is [@layout:comb] record [
-    listId      : nat;
-    amount      : nat;
+    listingId   : nat;
+    price       : nat;
     expiryTime  : option(timestamp);
     currency    : tokenType;
 ]
-
-type setCurrencyActionType is tokenType
-type removeCurrencyActionType is tokenType
 
 type marketplaceUpdateConfigNewValueType is nat
 type marketplaceUpdateConfigActionType is 
@@ -85,7 +89,6 @@ type marketplaceUpdateConfigParamsType is [@layout:comb] record [
     updateConfigAction      : marketplaceUpdateConfigActionType;
 ]
 
-
 type marketplacePausableEntrypointType is
         CreateListing                of bool
     |   RemoveListing                of bool
@@ -94,7 +97,6 @@ type marketplacePausableEntrypointType is
     |   AcceptOffer                  of bool
     |   RemoveOffer                  of bool
     |   SetCurrency                  of bool
-    |   RemoveCurrency               of bool
     
 type marketplaceTogglePauseEntrypointType is [@layout:comb] record [
     targetEntrypoint  : marketplacePausableEntrypointType;
@@ -129,15 +131,14 @@ type marketplaceLambdaActionType is
 
         // Marketplace Admin Lambdas
     |   LambdaSetCurrency                 of setCurrencyActionType
-    |   LambdaRemoveCurrency              of removeCurrencyActionType
         
         // Marketplace Lambdas
-    |   LambdaCreateListing               of (nat)
-    |   LambdaRemoveListing               of (nat)
-    |   LambdaPurchase                    of (nat)
-    |   LambdaOffer                       of (unit)
-    |   LambdaAcceptOffer                 of (address)
-    |   LambdaRemoveOffer                 of (address)
+    |   LambdaCreateListing               of createListingActionType
+    |   LambdaRemoveListing               of removeListingActionType
+    |   LambdaPurchase                    of purchaseActionType
+    |   LambdaOffer                       of offerActionType
+    |   LambdaAcceptOffer                 of acceptOfferActionType
+    |   LambdaRemoveOffer                 of removeOfferActionType
 
 // ------------------------------------------------------------------------------
 // Storage

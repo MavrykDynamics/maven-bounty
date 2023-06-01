@@ -15,6 +15,9 @@
 // Transfer Helpers
 #include "../partials/shared/transferHelpers.ligo"
 
+// Constants
+#include "../partials/shared/constants.ligo"
+
 // ------------------------------------------------------------------------------
 // Contract Types
 // ------------------------------------------------------------------------------
@@ -46,7 +49,6 @@ type action is
 
         // Marketplace Admin Entrypoints
     |   SetCurrency                 of setCurrencyActionType
-    |   RemoveCurrency              of removeCurrencyActionType
 
         // Marketplace Entrypoints
     |   CreateListing               of createListingActionType
@@ -123,11 +125,10 @@ function main (const action : action; const s : marketplaceStorageType) : return
 
             // Marketplace Admin Entrypoints
         |   SetCurrency(parameters)               -> setCurrency(parameters, s)
-        |   RemoveCurrency(parameters)            -> removeCurrency(parameters, s)
 
             // Marketplace Entrypoints
         |   CreateListing(parameters)             -> createListing(parameters, s)  
-        |   RemoveListiing(parameters)            -> removeListing(parameters, s)  
+        |   RemoveListing(parameters)             -> removeListing(parameters, s)  
         |   Purchase(parameters)                  -> purchase(parameters, s)
         |   Offer(parameters)                     -> offer(parameters, s)
         |   AcceptOffer(parameters)               -> acceptOffer(parameters, s)

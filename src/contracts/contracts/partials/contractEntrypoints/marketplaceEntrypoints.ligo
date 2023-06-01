@@ -5,18 +5,18 @@
 // ------------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------
-// Housekeeping Entrypoints Begin
+// Admin Entrypoints Begin
 // ------------------------------------------------------------------------------
 
-(*  setAdmin entrypoint *)
-function setAdmin(const newAdminAddress : address; var s : marketplaceStorageType) : return is
+(*  setSuperAdmin entrypoint *)
+function setSuperAdmin(const newAdminAddress : address; var s : marketplaceStorageType) : return is
 block {
 
     // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaSetAdmin", s.lambdaLedger);
+    const lambdaBytes : bytes = getLambdaBytes("lambdaSetSuperAdmin", s.lambdaLedger);
 
-    // init marketplace lambda action
-    const marketplaceLambdaAction : marketplaceLambdaActionType = LambdaSetAdmin(newAdminAddress);
+    // init tokenRegistry lambda action
+    const marketplaceLambdaAction : marketplaceLambdaActionType = LambdaSetSuperAdmin(newAdminAddress);
 
     // init response
     const response : return = unpackLambda(lambdaBytes, marketplaceLambdaAction, s);  
@@ -25,22 +25,63 @@ block {
 
 
 
-(*  setGovernance entrypoint *)
-function setGovernance(const newGovernanceAddress : address; var s : marketplaceStorageType) : return is
+(*  claimSuperAdmin entrypoint *)
+function claimSuperAdmin(var s : marketplaceStorageType) : return is
 block {
-    
-    // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaSetGovernance", s.lambdaLedger);
 
-    // init marketplace lambda action
-    const marketplaceLambdaAction : marketplaceLambdaActionType = LambdaSetGovernance(newGovernanceAddress);
+    // get lambda bytes
+    const lambdaBytes : bytes = getLambdaBytes("lambdaClaimSuperAdmin", s.lambdaLedger);
+
+    // init tokenRegistry lambda action
+    const marketplaceLambdaAction : marketplaceLambdaActionType = LambdaClaimSuperAdmin(unit);
 
     // init response
-    const response : return = unpackLambda(lambdaBytes, marketplaceLambdaAction, s);
-
+    const response : return = unpackLambda(lambdaBytes, marketplaceLambdaAction, s);  
+    
 } with response
 
 
+
+(*  setAdmin entrypoint *)
+function setAdmin(const newAdminAddress : address; var s : marketplaceStorageType) : return is
+block {
+
+    // get lambda bytes
+    const lambdaBytes : bytes = getLambdaBytes("lambdaSetAdmin", s.lambdaLedger);
+
+    // init tokenRegistry lambda action
+    const marketplaceLambdaAction : marketplaceLambdaActionType = LambdaSetAdmin(newAdminAddress);
+
+    // init response
+    const response : return = unpackLambda(lambdaBytes, marketplaceLambdaAction, s);  
+    
+} with response
+
+
+(*  removeAdmin entrypoint *)
+function removeAdmin(const adminAddress : address; var s : marketplaceStorageType) : return is
+block {
+
+    // get lambda bytes
+    const lambdaBytes : bytes = getLambdaBytes("lambdaRemoveAdmin", s.lambdaLedger);
+
+    // init tokenRegistry lambda action
+    const marketplaceLambdaAction : marketplaceLambdaActionType = LambdaRemoveAdmin(adminAddress);
+
+    // init response
+    const response : return = unpackLambda(lambdaBytes, marketplaceLambdaAction, s);  
+    
+} with response
+
+// ------------------------------------------------------------------------------
+// Admin Entrypoints End
+// ------------------------------------------------------------------------------
+
+
+
+// ------------------------------------------------------------------------------
+// Housekeping Entrypoints Begin
+// ------------------------------------------------------------------------------
 
 (*  updateMetadata entrypoint: update the metadata at a given key *)
 function updateMetadata(const updateMetadataParams : updateMetadataType; var s : marketplaceStorageType) : return is
@@ -208,23 +249,6 @@ block {
 
 } with response
 
-
-
-(*  removeCurrency entrypoint *)
-function removeCurrency(const removeCurrencyParams : removeCurrencyActionType; var s : marketplaceStorageType) : return is
-block {
-
-    // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaRemoveCurrency", s.lambdaLedger);
-
-    // init marketplace lambda action
-    const marketplaceLambdaAction : marketplaceLambdaActionType = LambdaRemoveCurrency(removeurrencyParams);
-
-    // init response
-    const response : return = unpackLambda(lambdaBytes, marketplaceLambdaAction, s);  
-
-} with response
-
 // ------------------------------------------------------------------------------
 // Marketplace Admin Entrypoints End
 // ------------------------------------------------------------------------------
@@ -270,7 +294,7 @@ block {
 
 
 (*  purchase entrypoint *)
-function purchase(const purchaseParams : nat; var s : marketplaceStorageType) : return is
+function purchase(const purchaseParams : purchaseActionType; var s : marketplaceStorageType) : return is
 block {
 
     // get lambda bytes
@@ -304,7 +328,7 @@ block {
 
 
 (*  acceptOffer entrypoint *)
-function acceptOffer(const acceptOfferParams : nat; var s : marketplaceStorageType) : return is
+function acceptOffer(const acceptOfferParams : acceptOfferActionType; var s : marketplaceStorageType) : return is
 block{
     
     // get lambda bytes
@@ -349,7 +373,7 @@ block{
 function setLambda(const setLambdaParams : setLambdaType; var s : marketplaceStorageType) : return is
 block{
     
-    verifySenderIsAdmin(s.admin); // verify that sender is admin 
+    verifySenderIsAdmin(s.admins); // verify that sender is admin 
     
     // assign params to constants for better code readability
     const lambdaName    = setLambdaParams.name;

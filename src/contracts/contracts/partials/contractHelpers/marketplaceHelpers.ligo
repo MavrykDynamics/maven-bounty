@@ -45,9 +45,6 @@ block {
     if s.breakGlassConfig.setCurrencyIsPaused then skip
     else s.breakGlassConfig.setCurrencyIsPaused := True;
 
-    if s.breakGlassConfig.removeCurrencyIsPaused then skip
-    else s.breakGlassConfig.removeCurrencyIsPaused := True;
-
 } with s
 
 
@@ -76,9 +73,6 @@ block {
     else skip;
 
     if s.breakGlassConfig.setCurrencyIsPaused then s.breakGlassConfig.setCurrencyIsPaused := False
-    else skip;
-
-    if s.breakGlassConfig.removeCurrencyIsPaused then s.breakGlassConfig.removeCurrencyIsPaused := False
     else skip;
 
 } with s
@@ -123,18 +117,52 @@ function getTransferEntrypointFromTokenAddress(const tokenAddress : address) : c
 // General Helper Functions Begin
 // ------------------------------------------------------------------------------
 
+// helper function to get contract address from general contracts map
+function getAddressFromGeneralContracts(const contractName : string; const s : marketplaceStorageType; const errorCode : nat) : address is 
+block {
+
+    const contractAddress : address = case s.generalContracts[contractName] of [
+            Some(_address) -> _address
+        |   None           -> failwith(errorCode)
+    ];
+
+} with contractAddress
+
+
+
 function verifyValidCurrency(const currency : tokenType; const s : marketplaceStorageType) : unit is 
 block {
 
-    skip
+    case currency of [
+            Tez -> skip
+        |   Fa12(_address) -> if Big_map.mem(_address, s.currencyLedger) then skip else failwith(error_INVALID_CURRENCY)
+        |   Fa2(_fa2Token) -> if Big_map.mem(_fa2Token.tokenContractAddress, s.currencyLedger) then skip else failwith(error_INVALID_CURRENCY)
+    ];
 
 } with unit
 
 
-function verifyListingOwnership(const listInitiator : address; const sender : address) : unit is 
+function verifyOwnership(const creator : address; const sender : address) : unit is 
 block {
 
-    if listInitiator = sender then skip else failwith(error_SENDER_IS_NOT_LISTING_INITIATOR);
+    if creator = sender then skip else failwith(error_SENDER_IS_NOT_CREATOR);
+
+} with unit
+
+
+
+function verifyPurchaserIsNotInitiator(const sender : address; const lister : address) : unit is 
+block {
+
+    if sender = lister then failwith(error_LISTER_CANNOT_PURCHASE_HIS_LISTING) else skip;
+
+} with unit
+
+
+function verifyNotExpired(const expiryTime : timestamp; const errorCode : nat) : unit is
+block {
+
+    if Tezos.get_now() > expiryTime then failwith(errorCode) else skip;
 
 } with unit
 
