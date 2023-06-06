@@ -19,13 +19,18 @@ import { launchpadStorageType }             from "../../storage/storageTypes/lau
 import { marketplaceStorageType }           from "../../storage/storageTypes/marketplaceStorageType"
 import { tokenRegistryStorageType }         from "../../storage/storageTypes/tokenRegistryStorageType"
 
+// Tokens Storage Type
+import { mavrykFa2TokenStorageType }            from "../../storage/storageTypes/mavrykFa2TokenStorageType";
+import { mavrykFa12TokenStorageType }           from "../../storage/storageTypes/mavrykFa12TokenStorageType";
+
+
 // Contract Lambdas
-import launchpadLambdas                     from "../../build/lambdas/launchpadLambdas.json"
+// import launchpadLambdas                     from "../../build/lambdas/launchpadLambdas.json"
 import marketplaceLambdas                   from "../../build/lambdas/marketplaceLambdas.json"
 import tokenRegistryLambdas                 from "../../build/lambdas/tokenRegistryLambdas.json"
 
 const generalContractLambdas = {
-    "launchpad"             : launchpadLambdas,
+    // "launchpad"             : launchpadLambdas,
     "marketplace"           : marketplaceLambdas,
     "tokenRegistry"         : tokenRegistryLambdas,
 }
@@ -35,9 +40,11 @@ type generalContractStorageType =
     // contracts
     launchpadStorageType |    
     marketplaceStorageType |    
-    tokenRegistryStorageType 
+    tokenRegistryStorageType |
     
     // tokens
+    mavrykFa12TokenStorageType | 
+    mavrykFa2TokenStorageType 
     
 
 type GeneralContractContractMethods<T extends ContractProvider | Wallet> = {

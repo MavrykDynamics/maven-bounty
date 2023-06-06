@@ -30,7 +30,7 @@ import { marketplaceStorage } from '../../storage/marketplaceStorage'
 // Contract Deployment Start
 // ------------------------------------------------------------------------------
 
-describe('Doorman', async () => {
+describe('Marketplace', async () => {
   
     var utils: Utils
     var marketplace

@@ -16,25 +16,25 @@ import contractDeployments from '../contractDeployments.json'
 // Contract Helpers
 // ------------------------------------------------------------------------------
 
-import { GeneralContract, setGeneralContractLambdas } from '../helpers/deploymentTestHelper'
+import { GeneralContract }  from '../helpers/deploymentTestHelper'
 import { bob } from '../../scripts/sandbox/accounts'
-import * as helperFunctions from '../helpers/helperFunctions'
 
 // ------------------------------------------------------------------------------
 // Contract Storage
 // ------------------------------------------------------------------------------
 
-import { tokenRegistryStorage } from '../../storage/tokenRegistryStorage'
+import { mavrykFa12TokenStorage } from '../../storage/mavrykFa12TokenStorage'
+import { mavrykFa2TokenStorage } from '../../storage/mavrykFa2TokenStorage'
 
 // ------------------------------------------------------------------------------
 // Contract Deployment Start
 // ------------------------------------------------------------------------------
 
-describe('Token Registry', async () => {
-  
+describe('Mock Tokens', async () => {
+    
     var utils: Utils
-    var tokenRegistry
-    var tezos
+    var mavrykFa12Token 
+    var mavrykFa2Token 
 
     before('setup', async () => {
         try{
@@ -46,16 +46,13 @@ describe('Token Registry', async () => {
             // Originate and deploy contracts
             //----------------------------
         
-            tokenRegistry = await GeneralContract.originate(utils.tezos, "tokenRegistry", tokenRegistryStorage);
-            await saveContractAddress('tokenRegistryAddress', tokenRegistry.contract.address)
+            mavrykFa12TokenStorage.governanceAddress  = bob.pkh;
+            mavrykFa12Token = await GeneralContract.originate(utils.tezos, "mavrykFa12Token", mavrykFa12TokenStorage);
+            await saveContractAddress('mockFa12TokenAddress', mavrykFa12Token.contract.address)
         
-            /* ---- ---- ---- ---- ---- */
-        
-            tezos = tokenRegistry.tezos
-            await helperFunctions.signerFactory(tezos, bob.sk);
-
-            // Set Lambdas
-            await setGeneralContractLambdas(tezos, "tokenRegistry", tokenRegistry.contract)
+            mavrykFa2TokenStorage.governanceAddress  = bob.pkh;
+            mavrykFa2Token = await GeneralContract.originate(utils.tezos, "mavrykFa2Token", mavrykFa2TokenStorage);
+            await saveContractAddress('mockFa2TokenAddress', mavrykFa2Token.contract.address)
 
         } catch(e){
             console.dir(e, {depth: 5})
@@ -63,7 +60,7 @@ describe('Token Registry', async () => {
 
     })
 
-    it(`doorman contract deployment`, async () => {
+    it(`mock token contracts deployed`, async () => {
         try {
             console.log('-- -- -- -- -- -- -- -- -- -- -- -- --')
         } catch (e) {
