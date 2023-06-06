@@ -36,6 +36,18 @@ fi
 
 for contract_test in "${CONTRACTS_DEPLOY_ARRAY[@]}"; do
     case "$contract_test" in
+        mockTokens)
+            echo "Deploying Mock Tokens"
+            COMMANDS+=("yarn ts-mocha --paths test/deploy/00_deploy_mock_tokens.spec.ts --bail --timeout 9000000")
+            ;;
+        tokenRegistry)
+            echo "Deploying Token Registry"
+            COMMANDS+=("yarn ts-mocha --paths test/deploy/01_deploy_token_registry.spec.ts --bail --timeout 9000000")
+            ;;
+        marketplace)
+            echo "Deploying Marketplace"
+            COMMANDS+=("yarn ts-mocha --paths test/deploy/02_deploy_marketplace.spec.ts --bail --timeout 9000000")
+            ;;
         all)
             echo "Deploy all contracts"
 

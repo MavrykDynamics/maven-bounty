@@ -32,7 +32,7 @@ for contract_test in "${CONTRACTS_TEST_ARRAY[@]}"; do
     case "$contract_test" in
         dev)
             echo "Running tests for dev"
-        
+            COMMANDS+=("yarn ts-mocha --paths test/01_test_token_registry.spec.ts --bail --timeout 9000000")
             ;;
         all)
             echo "Running all tests"
