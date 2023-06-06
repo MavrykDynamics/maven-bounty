@@ -4,11 +4,12 @@ import { BigNumber } from "bignumber.js"
 export type marketplaceStorageType = {
     
     superAdmin              : string;
-    admins                  : [];
+    admins                  : [];   
     newSuperAdmin           : string;
     
     metadata                : MichelsonMap<MichelsonMapKey, unknown>;
     config                  : {};
+    breakGlassConfig        : {};
 
     whitelistContracts      : MichelsonMap<MichelsonMapKey, unknown>;
     generalContracts        : MichelsonMap<MichelsonMapKey, unknown>;

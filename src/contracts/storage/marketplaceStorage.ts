@@ -1,8 +1,13 @@
 import { MichelsonMap } from "@taquito/michelson-encoder"
 import { BigNumber } from "bignumber.js"
 import { bob } from '../scripts/sandbox/accounts'
-import { MVK } from "../test/helpers/Utils"
 import { marketplaceStorageType } from "./storageTypes/marketplaceStorageType"
+
+const config = {
+    minOfferAmount             : 1, 
+    royalty                    : 100
+}
+
 
 const metadata = MichelsonMap.fromLiteral({
     '': Buffer.from('tezos-storage:data', 'ascii').toString('hex'),
@@ -24,10 +29,11 @@ export const marketplaceStorage: marketplaceStorageType = {
     
     superAdmin                : bob.pkh,
     admins                    : [],
-    newSuperAdmin             : "",
+    newSuperAdmin             : null,
 
     metadata                  : metadata,
-    config                    : {},
+    config                    : config,
+    breakGlassConfig          : {},
 
     whitelistContracts        : MichelsonMap.fromLiteral({}),
     generalContracts          : MichelsonMap.fromLiteral({}),

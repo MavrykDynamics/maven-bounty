@@ -17,15 +17,32 @@ type launchpadConfigType is [@layout:comb] record [
     empty            : unit
 ];
 
-type whitelistAccessType is 
+
+type saleWhitelistRecordType is [@layout:comb] record [
+    allowed         : map(string, nat);
+    purchased       : map(string, nat);
+]
+type saleWhitelistLedgerType is big_map((nat * address), saleWhitelistRecordType)
+
 
 type saleRecordType is [@layout:comb] record [
     name            : string;
-    whitelist       : map(address, nat);
     isPaused        : bool;
+    status          : string;
+
+    saleStart       : timestamp;
+    saleEnd         : timestamp;
+
     pricing         : map(string, nat);
 ]
-type saleLedgerType is big_map(nat, saleRecordType);
+type saleLedgerType is big_map(nat, saleRecordType)
+
+
+
+type salePurchaseRecordType is [@layout:comb] record [
+
+]
+type salePurchasaeLedgerType is big_map((nat * address), salePurchaseRecordType)
 
 // ------------------------------------------------------------------------------
 // Action Types
@@ -108,6 +125,9 @@ type launchpadStorageType is [@layout:comb] record [
     generalContracts          : generalContractsType;
 
     saleLedger                : saleLedgerType;
+    saleWhitelistLedger       : saleWhitelistLedgerType;
+    salePurchaseLedger        : salePurchasaeLedgerType;
+    lastSaleId                : nat;
     
     lambdaLedger              : lambdaLedgerType;
 ]

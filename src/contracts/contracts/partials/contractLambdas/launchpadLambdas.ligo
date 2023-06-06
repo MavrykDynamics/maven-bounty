@@ -95,7 +95,108 @@ block {
 // Housekeeping Lambdas Begin
 // ------------------------------------------------------------------------------
 
+(*  updateMetadata lambda - update the metadata at a given key *)
+function lambdaUpdateMetadata(const launchpadLambdaAction : launchpadLambdaActionType; var s : launchpadStorageType) : return is
+block {
+    
+    // verify that sender is admin (i.e. Governance Proxy Contract address)
+    verifySenderIsAdmin(s.admins); 
 
+    case launchpadLambdaAction of [
+        |   LambdaUpdateMetadata(updateMetadataParams) -> {
+                
+                const metadataKey   : string = updateMetadataParams.metadataKey;
+                const metadataHash  : bytes  = updateMetadataParams.metadataHash;
+                
+                s.metadata[metadataKey] := metadataHash;
+            }
+        |   _ -> skip
+    ];
+
+} with (noOperations, s)
+
+
+
+(* updateConfig lambda *)
+function lambdaUpdateConfig(const launchpadLambdaAction : launchpadLambdaActionType; var s : launchpadStorageType) : return is 
+block {
+
+    // verify that sender is admin (i.e. Governance Proxy Contract address)
+    verifySenderIsAdmin(s.admins); 
+
+    case launchpadLambdaAction of [
+        |   LambdaUpdateConfig(updateConfigParams) -> {
+                
+                const updateConfigAction    : marketplaceUpdateConfigActionType   = updateConfigParams.updateConfigAction;
+                const updateConfigNewValue  : marketplaceUpdateConfigNewValueType = updateConfigParams.updateConfigNewValue;
+
+                case updateConfigAction of [
+                    |   ConfigMinOfferAmount (_v)  -> s.config.minOfferAmount         := updateConfigNewValue
+                    |   ConfigRoyalty (_v)         -> s.config.royalty                := updateConfigNewValue
+                ];
+            }
+        |   _ -> skip
+    ];
+  
+} with (noOperations, s)
+
+
+
+(*  updateWhitelistContracts lambda *)
+function lambdaUpdateWhitelistContracts(const launchpadLambdaAction : launchpadLambdaActionType; var s: launchpadStorageType) : return is
+block {
+
+    // verify that sender is admin
+    verifySenderIsAdmin(s.admins); 
+
+    case launchpadLambdaAction of [
+        |   LambdaUpdateWhitelistContracts(updateWhitelistContractsParams) -> {
+                s.whitelistContracts := updateWhitelistContractsMap(updateWhitelistContractsParams, s.whitelistContracts);
+            }
+        |   _ -> skip
+    ];
+
+} with (noOperations, s)
+
+
+
+(*  updateGeneralContracts lambda *)
+function lambdaUpdateGeneralContracts(const launchpadLambdaAction : launchpadLambdaActionType; var s: launchpadStorageType) : return is
+block {
+
+    // verify that sender is admin (i.e. Governance Proxy Contract address)
+    verifySenderIsAdmin(s.admins); 
+
+    case launchpadLambdaAction of [
+        |   LambdaUpdateGeneralContracts(updateGeneralContractsParams) -> {
+                s.generalContracts := updateGeneralContractsMap(updateGeneralContractsParams, s.generalContracts);
+            }
+        |   _ -> skip
+    ];
+
+} with (noOperations, s)
+
+
+
+(*  mistaken lambda *)
+function lambdaMistakenTransfer(const launchpadLambdaAction : launchpadLambdaActionType; var s: launchpadStorageType) : return is
+block {
+
+    var operations : list(operation) := nil;
+
+    case launchpadLambdaAction of [
+        |   LambdaMistakenTransfer(destinationParams) -> {
+
+                verifySenderIsAdmin(s.admins); // check that sender is admin 
+
+                // Create transfer operations (transferOperationFold in transferHelpers)
+                operations := List.fold_right(transferOperationFold, destinationParams, operations)
+                
+            }
+        |   _ -> skip
+    ];
+
+} with (operations, s)
 
 // ------------------------------------------------------------------------------
 // Housekeeping Lambdas End

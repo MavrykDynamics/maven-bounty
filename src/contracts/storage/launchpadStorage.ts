@@ -1,7 +1,6 @@
 import { MichelsonMap } from "@taquito/michelson-encoder"
 import { BigNumber } from "bignumber.js"
 import { bob } from '../scripts/sandbox/accounts'
-import { MVK } from "../test/helpers/Utils"
 import { launchpadStorageType } from "./storageTypes/launchpadStorageType"
 
 const metadata = MichelsonMap.fromLiteral({
@@ -24,7 +23,7 @@ export const launchpadStorage : launchpadStorageType = {
     
     superAdmin                : bob.pkh,
     admins                    : [],
-    newSuperAdmin             : "",
+    newSuperAdmin             : null,
 
     metadata                  : metadata,
     config                    : {},

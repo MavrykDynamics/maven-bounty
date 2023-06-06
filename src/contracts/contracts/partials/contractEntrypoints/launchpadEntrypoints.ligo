@@ -341,7 +341,7 @@ block{
 function setLambda(const setLambdaParams : setLambdaType; var s : launchpadStorageType) : return is
 block{
     
-    verifySenderIsAdmin(s.admin); // verify that sender is admin 
+    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
     
     // assign params to constants for better code readability
     const lambdaName    = setLambdaParams.name;
