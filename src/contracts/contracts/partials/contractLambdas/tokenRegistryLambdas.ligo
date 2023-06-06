@@ -28,8 +28,6 @@ block {
 (*  claimSuperAdmin lambda *)
 function lambdaClaimSuperAdmin(const tokenRegistryLambdaAction : tokenRegistryLambdaActionType; var s : tokenRegistryStorageType) : return is
 block {
-
-    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
     
     case tokenRegistryLambdaAction of [
         |   LambdaClaimSuperAdmin(_params) -> {

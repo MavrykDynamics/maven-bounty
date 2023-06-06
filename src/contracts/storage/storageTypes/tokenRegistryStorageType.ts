@@ -4,7 +4,7 @@ import { BigNumber } from "bignumber.js"
 export type tokenRegistryStorageType = {
     
     superAdmin              : string;
-    admins                  : [];
+    admins                  : [string];
     newSuperAdmin           : string;
     
     metadata                : MichelsonMap<MichelsonMapKey, unknown>;

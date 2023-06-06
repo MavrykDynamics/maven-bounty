@@ -1,7 +1,6 @@
 import { MichelsonMap } from "@taquito/michelson-encoder"
 import { BigNumber } from "bignumber.js"
-import { bob } from '../scripts/sandbox/accounts'
-import { MVK } from "../test/helpers/Utils"
+import { bob, eve } from '../scripts/sandbox/accounts'
 import { tokenRegistryStorageType } from "./storageTypes/tokenRegistryStorageType"
 
 const metadata = MichelsonMap.fromLiteral({
@@ -23,8 +22,8 @@ const metadata = MichelsonMap.fromLiteral({
 export const tokenRegistryStorage : tokenRegistryStorageType = {
     
     superAdmin                : bob.pkh,
-    admins                    : [],
-    newSuperAdmin             : "",
+    admins                    : [eve.pkh],
+    newSuperAdmin             : null,
 
     metadata                  : metadata,
     breakGlassConfig          : {},
@@ -38,5 +37,5 @@ export const tokenRegistryStorage : tokenRegistryStorageType = {
     tokenLedger               : MichelsonMap.fromLiteral({}),
     
     lambdaLedger              : MichelsonMap.fromLiteral({})
-    
+
 };
