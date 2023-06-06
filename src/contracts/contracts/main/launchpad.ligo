@@ -12,9 +12,18 @@
 // Shared Helpers
 #include "../partials/shared/sharedHelpers.ligo"
 
+// Transfer Helpers
+#include "../partials/shared/transferHelpers.ligo"
+
+// Constants
+#include "../partials/shared/constants.ligo"
+
 // ------------------------------------------------------------------------------
 // Contract Types
 // ------------------------------------------------------------------------------
+
+// CMTA Token Types
+#include "../partials/contractTypes/securityTokenTypes.ligo"
 
 // Launchpad Types
 #include "../partials/contractTypes/launchpadTypes.ligo"
@@ -44,12 +53,15 @@ type action is
         // Launchpad Entrypoints
     |   CreateTokenSale             of createTokenSaleActionType
     |   SetSaleWhitelist            of setSaleWhitelistActionType
-    |   StartSale                   of startSaleActionType 
-    |   CloseSale                   of closeSaleActionType
-    |   EditSale                    of editSaleActionType
-    |   PauseSale                   of pauseSaleActionType
-    |   UnpauseSale                 of unpauseSaleActionType
-    |   DistributeTokens            of distributeTokensActionType
+    |   EditSale                    of (unit)
+    |   StartSale                   of (nat)
+    |   CloseSale                   of (nat)
+    |   PauseSale                   of (nat)
+    |   UnpauseSale                 of (nat)
+    |   DistributeTokens            of (nat)
+
+        // User Entrypoints
+    |   Purchase                    of purchaseActionType
     
         // Lambda Entrypoints
     |   SetLambda                   of setLambdaType
@@ -125,6 +137,9 @@ function main (const action : action; const s : launchpadStorageType) : return i
         |   PauseSale(parameters)                 -> pauseSale(parameters, s)
         |   UnpauseSale(parameters)               -> unpauseSale(parameters, s)
         |   DistributeTokens(parameters)          -> distributeTokens(parameters, s)
+
+            // User Entrypoints
+        |   Purchase(parameters)                  -> purchase(parameters, s)
         
             // Lambda Entrypoints
         |   SetLambda(parameters)                 -> setLambda(parameters, s)

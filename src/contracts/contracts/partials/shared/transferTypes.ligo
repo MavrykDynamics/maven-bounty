@@ -4,7 +4,7 @@
 
 type tokenIdType        is nat
 type tokenBalanceType   is nat
-type tokenAmountType    is nat
+type amountType    is nat
 
 // ------------------------------------------------------------------------------
 // FA12 Types
@@ -83,7 +83,7 @@ type tokenType is
 
 type transferDestinationType is [@layout:comb] record[
     to_       : address;
-    amount    : tokenAmountType;
+    amount    : amountType;
     token     : tokenType;
 ]
 

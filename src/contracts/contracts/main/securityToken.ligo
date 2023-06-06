@@ -771,7 +771,6 @@ block{
 function mint(const tokenAmounts : list(tokenAmountType); var s : securityTokenStorageType) : return is
 block {
 
-
     for tokenAmount in list tokenAmounts block {
 
         const administratorLedgerKey : ledgerKeyType = record [

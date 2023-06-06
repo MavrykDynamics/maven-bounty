@@ -54,7 +54,7 @@
 [@inline] const error_NOT_ADMIN                                                                                         = 31n;
 
 [@inline] const error_TOKEN_EXISTS                                                                                      = 32n;
-[@inline] const error_TOKEN_CONTEXT_NOT_FOUND                                                                            = 33n;
+[@inline] const error_TOKEN_CONTEXT_NOT_FOUND                                                                           = 33n;
 [@inline] const error_TOKEN_UNDEFINED                                                                                   = 34n;
 [@inline] const error_TOKEN_PAUSED                                                                                      = 35n;
 
@@ -66,6 +66,7 @@
 [@inline] const error_SNAPSHOT_IN_PAST                                                                                  = 40n;
 
 [@inline] const error_VIEW_IS_TRANSFER_VALID_NOT_FOUND                                                                  = 41n;
+[@inline] const error_MINT_ENTRYPOINT_IN_FA2_CONTRACT_NOT_FOUND                                                         = 41n;
 
 
 // ------------------------------------------------------------------------------
@@ -82,6 +83,22 @@
 
 [@inline] const error_NO_NEW_SUPER_ADMIN_FOUND                                                                           = 46n;
 [@inline] const error_SENDER_IS_NOT_NEW_SUPER_ADMIN                                                                      = 47n;
+
+
+// ------------------------------------------------------------------------------
+//
+// Launchpad Errors
+//
+// ------------------------------------------------------------------------------
+
+
+[@inline] const error_SALE_RECORD_NOT_FOUND                                                                              = 42n;
+[@inline] const error_SALE_OPTION_NOT_FOUND                                                                              = 42n;
+[@inline] const error_MAX_AMOUNT_PER_WALLET_FOR_SALE_OPTION_TOTAL_EXCEEDED                                               = 42n;
+[@inline] const error_MAX_AMOUNT_CAP_FOR_SALE_OPTION_EXCEEDED                                                            = 42n;
+
+
+
 
 
 // ------------------------------------------------------------------------------

@@ -58,12 +58,15 @@
         "lambdaUnpauseAll",
         "lambdaTogglePauseEntrypoint",
     
-        "lambdaLaunchNewToken",
-        "lambdaStartNewSale",
+        "lambdaCreateTokenSale",
         "lambdaSetSaleWhitelist",
+        "lambdaStartSale",
+        "lambdaCloseSale",
         "lambdaEditSale",
         "lambdaPauseSale",
         "lambdaUnpauseSale",
-        "lambdaDistributeTokens"
+        "lambdaDistributeTokens",
+
+        "lambdaPurchase"
     ]
 }

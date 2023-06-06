@@ -15,7 +15,7 @@ block {
     // get lambda bytes
     const lambdaBytes : bytes = getLambdaBytes("lambdaSetSuperAdmin", s.lambdaLedger);
 
-    // init tokenRegistry lambda action
+    // init marketplace lambda action
     const marketplaceLambdaAction : marketplaceLambdaActionType = LambdaSetSuperAdmin(newAdminAddress);
 
     // init response
@@ -32,7 +32,7 @@ block {
     // get lambda bytes
     const lambdaBytes : bytes = getLambdaBytes("lambdaClaimSuperAdmin", s.lambdaLedger);
 
-    // init tokenRegistry lambda action
+    // init marketplace lambda action
     const marketplaceLambdaAction : marketplaceLambdaActionType = LambdaClaimSuperAdmin(unit);
 
     // init response
@@ -49,7 +49,7 @@ block {
     // get lambda bytes
     const lambdaBytes : bytes = getLambdaBytes("lambdaSetAdmin", s.lambdaLedger);
 
-    // init tokenRegistry lambda action
+    // init marketplace lambda action
     const marketplaceLambdaAction : marketplaceLambdaActionType = LambdaSetAdmin(newAdminAddress);
 
     // init response
@@ -65,7 +65,7 @@ block {
     // get lambda bytes
     const lambdaBytes : bytes = getLambdaBytes("lambdaRemoveAdmin", s.lambdaLedger);
 
-    // init tokenRegistry lambda action
+    // init marketplace lambda action
     const marketplaceLambdaAction : marketplaceLambdaActionType = LambdaRemoveAdmin(adminAddress);
 
     // init response

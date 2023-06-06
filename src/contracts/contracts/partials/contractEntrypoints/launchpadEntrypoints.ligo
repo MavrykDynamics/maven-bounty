@@ -8,6 +8,44 @@
 // Housekeeping Entrypoints Begin
 // ------------------------------------------------------------------------------
 
+// ------------------------------------------------------------------------------
+// Admin Entrypoints Begin
+// ------------------------------------------------------------------------------
+
+(*  setSuperAdmin entrypoint *)
+function setSuperAdmin(const newAdminAddress : address; var s : launchpadStorageType) : return is
+block {
+
+    // get lambda bytes
+    const lambdaBytes : bytes = getLambdaBytes("lambdaSetSuperAdmin", s.lambdaLedger);
+
+    // init launchpad lambda action
+    const launchpadLambdaAction : launchpadLambdaActionType = LambdaSetSuperAdmin(newAdminAddress);
+
+    // init response
+    const response : return = unpackLambda(lambdaBytes, launchpadLambdaAction, s);  
+    
+} with response
+
+
+
+(*  claimSuperAdmin entrypoint *)
+function claimSuperAdmin(var s : launchpadStorageType) : return is
+block {
+
+    // get lambda bytes
+    const lambdaBytes : bytes = getLambdaBytes("lambdaClaimSuperAdmin", s.lambdaLedger);
+
+    // init launchpad lambda action
+    const launchpadLambdaAction : launchpadLambdaActionType = LambdaClaimSuperAdmin(unit);
+
+    // init response
+    const response : return = unpackLambda(lambdaBytes, launchpadLambdaAction, s);  
+    
+} with response
+
+
+
 (*  setAdmin entrypoint *)
 function setAdmin(const newAdminAddress : address; var s : launchpadStorageType) : return is
 block {
@@ -24,23 +62,30 @@ block {
 } with response
 
 
-
-(*  setGovernance entrypoint *)
-function setGovernance(const newGovernanceAddress : address; var s : launchpadStorageType) : return is
+(*  removeAdmin entrypoint *)
+function removeAdmin(const adminAddress : address; var s : launchpadStorageType) : return is
 block {
-    
+
     // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaSetGovernance", s.lambdaLedger);
+    const lambdaBytes : bytes = getLambdaBytes("lambdaRemoveAdmin", s.lambdaLedger);
 
     // init launchpad lambda action
-    const launchpadLambdaAction : launchpadLambdaActionType = LambdaSetGovernance(newGovernanceAddress);
+    const launchpadLambdaAction : launchpadLambdaActionType = LambdaRemoveAdmin(adminAddress);
 
     // init response
-    const response : return = unpackLambda(lambdaBytes, launchpadLambdaAction, s);
-
+    const response : return = unpackLambda(lambdaBytes, launchpadLambdaAction, s);  
+    
 } with response
 
+// ------------------------------------------------------------------------------
+// Admin Entrypoints End
+// ------------------------------------------------------------------------------
 
+
+
+// ------------------------------------------------------------------------------
+// Housekeeping Entrypoints Begin
+// ------------------------------------------------------------------------------
 
 (*  updateMetadata entrypoint: update the metadata at a given key *)
 function updateMetadata(const updateMetadataParams : updateMetadataType; var s : launchpadStorageType) : return is
@@ -194,7 +239,7 @@ block{
 // ------------------------------------------------------------------------------
 
 (*  createTokenSale entrypoint *)
-function createTokenSale(const createTokenSaleParams : nat; var s : launchpadStorageType) : return is
+function createTokenSale(const createTokenSaleParams : createTokenSaleActionType; var s : launchpadStorageType) : return is
 block {
 
     // get lambda bytes
@@ -228,7 +273,7 @@ block {
 
 
 (*  setSaleWhitelist entrypoint *)
-function setSaleWhitelist(const setSaleWhitelistParams : nat; var s : launchpadStorageType) : return is
+function setSaleWhitelist(const setSaleWhitelistParams : setSaleWhitelistActionType; var s : launchpadStorageType) : return is
 block {
 
     // get lambda bytes
@@ -245,7 +290,7 @@ block {
 
 
 (*  editSale entrypoint *)
-function editSale(const editSaleParams : nat; var s : launchpadStorageType) : return is
+function editSale(const editSaleParams : unit; var s : launchpadStorageType) : return is
 block {
 
     // get lambda bytes
@@ -262,7 +307,7 @@ block {
 
 
 (*  pauseSale entrypoint *)
-function pauseSale(const pauseSaleParams : address; var s : launchpadStorageType) : return is
+function pauseSale(const pauseSaleParams : nat; var s : launchpadStorageType) : return is
 block{
     
     // get lambda bytes
@@ -279,7 +324,7 @@ block{
 
 
 (*  unpauseSale entrypoint *)
-function unpauseSale(const unpauseSaleParams : address; var s : launchpadStorageType) : return is
+function unpauseSale(const unpauseSaleParams : nat; var s : launchpadStorageType) : return is
 block{
     
     // get lambda bytes
@@ -296,7 +341,7 @@ block{
 
 
 (*  closeSale entrypoint *)
-function closeSale(const closeSaleParams : address; var s : launchpadStorageType) : return is
+function closeSale(const closeSaleParams : nat; var s : launchpadStorageType) : return is
 block{
     
     // get lambda bytes
@@ -313,7 +358,7 @@ block{
 
 
 (*  distributeTokens entrypoint *)
-function distributeTokens(const distributeTokensParams : address; var s : launchpadStorageType) : return is
+function distributeTokens(const distributeTokensParams : nat; var s : launchpadStorageType) : return is
 block{
     
     // get lambda bytes
@@ -330,6 +375,23 @@ block{
 // ------------------------------------------------------------------------------
 // Launchpad Entrypoints End
 // ------------------------------------------------------------------------------
+
+
+
+(*  purchase entrypoint *)
+function purchase(const purchaseParams : purchaseActionType; var s : launchpadStorageType) : return is
+block{
+    
+    // get lambda bytes
+    const lambdaBytes : bytes = getLambdaBytes("lambdaPurchase", s.lambdaLedger);
+
+    // init launchpad lambda action
+    const launchpadLambdaAction : launchpadLambdaActionType = LambdaPurchase(purchaseParams);
+
+    // init response
+    const response : return = unpackLambda(lambdaBytes, launchpadLambdaAction, s);  
+
+} with response
 
 
 
