@@ -36,6 +36,10 @@ fi
 
 for contract_test in "${CONTRACTS_DEPLOY_ARRAY[@]}"; do
     case "$contract_test" in
+        cmtaToken)
+            echo "Deploying CMTA Token"
+            COMMANDS+=("yarn ts-mocha --paths test/deploy/00a_deploy_cmta_token.spec.ts --bail --timeout 9000000")
+            ;;
         mockTokens)
             echo "Deploying Mock Tokens"
             COMMANDS+=("yarn ts-mocha --paths test/deploy/00_deploy_mock_tokens.spec.ts --bail --timeout 9000000")

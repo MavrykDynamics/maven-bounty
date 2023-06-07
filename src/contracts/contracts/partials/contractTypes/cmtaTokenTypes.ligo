@@ -68,7 +68,7 @@ type ledgerKeyType is [@layout:comb] record [
 
 type tokenMetadataType is [@layout:comb] record [
     token_id          : tokenIdType;
-    token_info        : map(string, bytes);
+    token_metadata    : map(string, bytes);
 ]
 
 
@@ -158,9 +158,9 @@ type cmtaTokenStorageType is [@layout:comb] record [
     token_metadata          : tokenMetadataLedgerType;
     total_supply            : totalSupplyType;
 
-    snapshotLedger          : snapshotLedgerType;
+    snapshot_ledger         : snapshotLedgerType;
     snapshot_lookup         : snapshotLookupType;
-    snapshotTotalSupply     : snapshotTotalSupplyType;
+    snapshot_total_supply   : snapshotTotalSupplyType;
     token_context           : tokenContextLedgerType;
     identities              : identityType;
 

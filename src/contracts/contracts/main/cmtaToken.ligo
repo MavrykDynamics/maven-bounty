@@ -245,7 +245,7 @@ block {
                     snapshot_timestamp  = current_snapshot_timestamp;
                 ];
 
-                case s.snapshotLedger[snapshot_ledger_key] of [
+                case s.snapshot_ledger[snapshot_ledger_key] of [
                         Some (_v) -> {
                             
                             const ledger_key : ledgerKeyType = record [
@@ -259,7 +259,7 @@ block {
                             ];
 
                             // set snapshot ledger value
-                            s.snapshotLedger[snapshot_ledger_key] := ledger_value;
+                            s.snapshot_ledger[snapshot_ledger_key] := ledger_value;
 
                         }
                     |   None -> skip
@@ -293,7 +293,7 @@ block {
                 ];
 
                 // set snapshot total supply
-                s.snapshotTotalSupply[snapshot_lookup_key] := total_supply;
+                s.snapshot_total_supply[snapshot_lookup_key] := total_supply;
 
             }   
         |   None -> skip
@@ -439,7 +439,7 @@ block{
 block {
 
     var snapshot_total_supply : nat := 0n;
-    case s.snapshotTotalSupply[snapshot_lookup_key] of [
+    case s.snapshot_total_supply[snapshot_lookup_key] of [
             Some (_total_supply) -> snapshot_total_supply := _total_supply
         |   None -> block {
 
@@ -455,7 +455,7 @@ block {
                                     snapshot_timestamp  = _timestamp
                                 ];
 
-                                case s.snapshotTotalSupply[current_snapshot_lookup_key] of [
+                                case s.snapshot_total_supply[current_snapshot_lookup_key] of [
                                         Some (_v) -> keep_loop := False
                                     |   None      -> skip
                                 ];
@@ -465,7 +465,7 @@ block {
                     ]
                 };
 
-                case s.snapshotTotalSupply[current_snapshot_lookup_key] of [
+                case s.snapshot_total_supply[current_snapshot_lookup_key] of [
                         Some (_v) -> snapshot_total_supply := _v
                     |   None      -> skip
                 ];
@@ -485,7 +485,7 @@ block {
 block {
 
     var snapshot_balance_of : nat := 0n;
-    case s.snapshotLedger[snapshot_ledger_key] of [
+    case s.snapshot_ledger[snapshot_ledger_key] of [
             Some (_balance) -> snapshot_balance_of := _balance
         |   None -> block {
 
@@ -515,7 +515,7 @@ block {
                                     snapshot_timestamp  = current_snapshot_lookup_key.snapshot_timestamp;
                                 ];
 
-                                case s.snapshotLedger[current_snapshot_ledger_key] of [
+                                case s.snapshot_ledger[current_snapshot_ledger_key] of [
                                         Some (_v) -> keep_loop := False
                                     |   None      -> skip
                                 ];
@@ -525,7 +525,7 @@ block {
                     ]
                 };
 
-                case s.snapshotLedger[current_snapshot_ledger_key] of [
+                case s.snapshot_ledger[current_snapshot_ledger_key] of [
                         Some (_v) -> snapshot_balance_of := _v
                     |   None      -> skip
                 ];
@@ -553,7 +553,7 @@ block {
 //             Some (_metadata)  -> _metadata
 //         |   None -> record[
 //                 token_id    = tokenId;
-//                 token_info  = map[]
+//                 token_metadata  = map[]
 //             ]
 //     ]
 

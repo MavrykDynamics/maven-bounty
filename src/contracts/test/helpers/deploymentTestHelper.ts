@@ -20,8 +20,9 @@ import { marketplaceStorageType }           from "../../storage/storageTypes/mar
 import { tokenRegistryStorageType }         from "../../storage/storageTypes/tokenRegistryStorageType"
 
 // Tokens Storage Type
-import { mavrykFa2TokenStorageType }            from "../../storage/storageTypes/mavrykFa2TokenStorageType";
-import { mavrykFa12TokenStorageType }           from "../../storage/storageTypes/mavrykFa12TokenStorageType";
+import { cmtaTokenStorageType }             from "../../storage/storageTypes/cmtaTokenStorageType";
+import { mavrykFa2TokenStorageType }        from "../../storage/storageTypes/mavrykFa2TokenStorageType";
+import { mavrykFa12TokenStorageType }       from "../../storage/storageTypes/mavrykFa12TokenStorageType";
 
 
 // Contract Lambdas
@@ -43,6 +44,7 @@ type generalContractStorageType =
     tokenRegistryStorageType |
     
     // tokens
+    cmtaTokenStorageType | 
     mavrykFa12TokenStorageType | 
     mavrykFa2TokenStorageType 
     
