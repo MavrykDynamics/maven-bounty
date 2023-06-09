@@ -1,13 +1,12 @@
 { parameter
     (or (or (or (or (or (nat %acceptOffer) (unit %claimSuperAdmin))
                     (or (pair %createListing
-                           (address %initiator)
+                           (nat %amount)
+                           (nat %price)
+                           (option %expiryTime timestamp)
                            (or %token
                               (address %fa12Token)
                               (pair %fa2Token (address %tokenContractAddress) (nat %tokenId)))
-                           (nat %price)
-                           (nat %amount)
-                           (option %expiryTime timestamp)
                            (or %currency
                               (or (address %fa12) (pair %fa2 (address %tokenContractAddress) (nat %tokenId)))
                               (unit %tez)))
@@ -100,11 +99,10 @@
          LAMBDA
            (pair (pair bytes
                        (or (or (or (or (or nat unit)
-                                       (or (pair address
-                                                 (or address (pair address nat))
-                                                 nat
+                                       (or (pair nat
                                                  nat
                                                  (option timestamp)
+                                                 (or address (pair address nat))
                                                  (or (or address (pair address nat)) unit))
                                            (list (pair address nat (or (or address (pair address nat)) unit)))))
                                    (or (or (pair nat nat (option timestamp) (or (or address (pair address nat)) unit)) unit)
@@ -167,13 +165,12 @@
                (lambda
                   (pair (or (or (or (or (or (nat %lambdaAcceptOffer) (unit %lambdaClaimSuperAdmin))
                                         (or (pair %lambdaCreateListing
-                                               (address %initiator)
+                                               (nat %amount)
+                                               (nat %price)
+                                               (option %expiryTime timestamp)
                                                (or %token
                                                   (address %fa12Token)
                                                   (pair %fa2Token (address %tokenContractAddress) (nat %tokenId)))
-                                               (nat %price)
-                                               (nat %amount)
-                                               (option %expiryTime timestamp)
                                                (or %currency
                                                   (or (address %fa12) (pair %fa2 (address %tokenContractAddress) (nat %tokenId)))
                                                   (unit %tez)))
@@ -316,11 +313,10 @@
                              EXEC ;
                              SWAP ;
                              LEFT unit ;
-                             LEFT (or (pair address
-                                            (or address (pair address nat))
-                                            nat
+                             LEFT (or (pair nat
                                             nat
                                             (option timestamp)
+                                            (or address (pair address nat))
                                             (or (or address (pair address nat)) unit))
                                       (list (pair address nat (or (or address (pair address nat)) unit)))) ;
                              LEFT (or (or (pair nat nat (option timestamp) (or (or address (pair address nat)) unit)) unit)
@@ -346,11 +342,10 @@
                              EXEC ;
                              UNIT ;
                              RIGHT nat ;
-                             LEFT (or (pair address
-                                            (or address (pair address nat))
-                                            nat
+                             LEFT (or (pair nat
                                             nat
                                             (option timestamp)
+                                            (or address (pair address nat))
                                             (or (or address (pair address nat)) unit))
                                       (list (pair address nat (or (or address (pair address nat)) unit)))) ;
                              LEFT (or (or (pair nat nat (option timestamp) (or (or address (pair address nat)) unit)) unit)
@@ -399,11 +394,10 @@
                              EXEC ;
                              SWAP ;
                              RIGHT
-                               (pair address
-                                     (or address (pair address nat))
-                                     nat
+                               (pair nat
                                      nat
                                      (option timestamp)
+                                     (or address (pair address nat))
                                      (or (or address (pair address nat)) unit)) ;
                              RIGHT (or nat unit) ;
                              LEFT (or (or (pair nat nat (option timestamp) (or (or address (pair address nat)) unit)) unit)
@@ -433,11 +427,10 @@
                              LEFT (or nat address) ;
                              RIGHT
                                (or (or nat unit)
-                                   (or (pair address
-                                             (or address (pair address nat))
-                                             nat
+                                   (or (pair nat
                                              nat
                                              (option timestamp)
+                                             (or address (pair address nat))
                                              (or (or address (pair address nat)) unit))
                                        (list (pair address nat (or (or address (pair address nat)) unit))))) ;
                              LEFT (or (or (or nat nat) (or address (pair string (or address (pair address nat)))))
@@ -464,11 +457,10 @@
                              LEFT (or nat address) ;
                              RIGHT
                                (or (or nat unit)
-                                   (or (pair address
-                                             (or address (pair address nat))
-                                             nat
+                                   (or (pair nat
                                              nat
                                              (option timestamp)
+                                             (or address (pair address nat))
                                              (or (or address (pair address nat)) unit))
                                        (list (pair address nat (or (or address (pair address nat)) unit))))) ;
                              LEFT (or (or (or nat nat) (or address (pair string (or address (pair address nat)))))
@@ -495,11 +487,10 @@
                              RIGHT (or (pair nat nat (option timestamp) (or (or address (pair address nat)) unit)) unit) ;
                              RIGHT
                                (or (or nat unit)
-                                   (or (pair address
-                                             (or address (pair address nat))
-                                             nat
+                                   (or (pair nat
                                              nat
                                              (option timestamp)
+                                             (or address (pair address nat))
                                              (or (or address (pair address nat)) unit))
                                        (list (pair address nat (or (or address (pair address nat)) unit))))) ;
                              LEFT (or (or (or nat nat) (or address (pair string (or address (pair address nat)))))
@@ -525,11 +516,10 @@
                              RIGHT (or (pair nat nat (option timestamp) (or (or address (pair address nat)) unit)) unit) ;
                              RIGHT
                                (or (or nat unit)
-                                   (or (pair address
-                                             (or address (pair address nat))
-                                             nat
+                                   (or (pair nat
                                              nat
                                              (option timestamp)
+                                             (or address (pair address nat))
                                              (or (or address (pair address nat)) unit))
                                        (list (pair address nat (or (or address (pair address nat)) unit))))) ;
                              LEFT (or (or (or nat nat) (or address (pair string (or address (pair address nat)))))
@@ -560,11 +550,10 @@
                                       (or unit (pair nat (or unit unit)))) ;
                              RIGHT
                                (or (or (or nat unit)
-                                       (or (pair address
-                                                 (or address (pair address nat))
-                                                 nat
+                                       (or (pair nat
                                                  nat
                                                  (option timestamp)
+                                                 (or address (pair address nat))
                                                  (or (or address (pair address nat)) unit))
                                            (list (pair address nat (or (or address (pair address nat)) unit)))))
                                    (or (or (pair nat nat (option timestamp) (or (or address (pair address nat)) unit)) unit)
@@ -591,11 +580,10 @@
                                       (or unit (pair nat (or unit unit)))) ;
                              RIGHT
                                (or (or (or nat unit)
-                                       (or (pair address
-                                                 (or address (pair address nat))
-                                                 nat
+                                       (or (pair nat
                                                  nat
                                                  (option timestamp)
+                                                 (or address (pair address nat))
                                                  (or (or address (pair address nat)) unit))
                                            (list (pair address nat (or (or address (pair address nat)) unit)))))
                                    (or (or (pair nat nat (option timestamp) (or (or address (pair address nat)) unit)) unit)
@@ -623,11 +611,10 @@
                                       (or unit (pair nat (or unit unit)))) ;
                              RIGHT
                                (or (or (or nat unit)
-                                       (or (pair address
-                                                 (or address (pair address nat))
-                                                 nat
+                                       (or (pair nat
                                                  nat
                                                  (option timestamp)
+                                                 (or address (pair address nat))
                                                  (or (or address (pair address nat)) unit))
                                            (list (pair address nat (or (or address (pair address nat)) unit)))))
                                    (or (or (pair nat nat (option timestamp) (or (or address (pair address nat)) unit)) unit)
@@ -654,11 +641,10 @@
                                       (or unit (pair nat (or unit unit)))) ;
                              RIGHT
                                (or (or (or nat unit)
-                                       (or (pair address
-                                                 (or address (pair address nat))
-                                                 nat
+                                       (or (pair nat
                                                  nat
                                                  (option timestamp)
+                                                 (or address (pair address nat))
                                                  (or (or address (pair address nat)) unit))
                                            (list (pair address nat (or (or address (pair address nat)) unit)))))
                                    (or (or (pair nat nat (option timestamp) (or (or address (pair address nat)) unit)) unit)
@@ -710,11 +696,10 @@
                              RIGHT (or (or nat nat) (or address (pair string (or address (pair address nat))))) ;
                              RIGHT
                                (or (or (or nat unit)
-                                       (or (pair address
-                                                 (or address (pair address nat))
-                                                 nat
+                                       (or (pair nat
                                                  nat
                                                  (option timestamp)
+                                                 (or address (pair address nat))
                                                  (or (or address (pair address nat)) unit))
                                            (list (pair address nat (or (or address (pair address nat)) unit)))))
                                    (or (or (pair nat nat (option timestamp) (or (or address (pair address nat)) unit)) unit)
@@ -741,11 +726,10 @@
                              RIGHT (or (or nat nat) (or address (pair string (or address (pair address nat))))) ;
                              RIGHT
                                (or (or (or nat unit)
-                                       (or (pair address
-                                                 (or address (pair address nat))
-                                                 nat
+                                       (or (pair nat
                                                  nat
                                                  (option timestamp)
+                                                 (or address (pair address nat))
                                                  (or (or address (pair address nat)) unit))
                                            (list (pair address nat (or (or address (pair address nat)) unit)))))
                                    (or (or (pair nat nat (option timestamp) (or (or address (pair address nat)) unit)) unit)
@@ -772,11 +756,10 @@
                              RIGHT (or (or nat nat) (or address (pair string (or address (pair address nat))))) ;
                              RIGHT
                                (or (or (or nat unit)
-                                       (or (pair address
-                                                 (or address (pair address nat))
-                                                 nat
+                                       (or (pair nat
                                                  nat
                                                  (option timestamp)
+                                                 (or address (pair address nat))
                                                  (or (or address (pair address nat)) unit))
                                            (list (pair address nat (or (or address (pair address nat)) unit)))))
                                    (or (or (pair nat nat (option timestamp) (or (or address (pair address nat)) unit)) unit)
@@ -804,11 +787,10 @@
                      RIGHT (or (or nat nat) (or address (pair string (or address (pair address nat))))) ;
                      RIGHT
                        (or (or (or nat unit)
-                               (or (pair address
-                                         (or address (pair address nat))
-                                         nat
+                               (or (pair nat
                                          nat
                                          (option timestamp)
+                                         (or address (pair address nat))
                                          (or (or address (pair address nat)) unit))
                                    (list (pair address nat (or (or address (pair address nat)) unit)))))
                            (or (or (pair nat nat (option timestamp) (or (or address (pair address nat)) unit)) unit)
@@ -833,11 +815,10 @@
                      LEFT (pair string address (or unit unit)) ;
                      RIGHT
                        (or (or (or (or nat unit)
-                                   (or (pair address
-                                             (or address (pair address nat))
-                                             nat
+                                   (or (pair nat
                                              nat
                                              (option timestamp)
+                                             (or address (pair address nat))
                                              (or (or address (pair address nat)) unit))
                                        (list (pair address nat (or (or address (pair address nat)) unit)))))
                                (or (or (pair nat nat (option timestamp) (or (or address (pair address nat)) unit)) unit)
@@ -864,11 +845,10 @@
                      LEFT (pair string address (or unit unit)) ;
                      RIGHT
                        (or (or (or (or nat unit)
-                                   (or (pair address
-                                             (or address (pair address nat))
-                                             nat
+                                   (or (pair nat
                                              nat
                                              (option timestamp)
+                                             (or address (pair address nat))
                                              (or (or address (pair address nat)) unit))
                                        (list (pair address nat (or (or address (pair address nat)) unit)))))
                                (or (or (pair nat nat (option timestamp) (or (or address (pair address nat)) unit)) unit)
@@ -893,11 +873,10 @@
                      RIGHT (or (pair string address (or unit unit)) (pair string bytes)) ;
                      RIGHT
                        (or (or (or (or nat unit)
-                                   (or (pair address
-                                             (or address (pair address nat))
-                                             nat
+                                   (or (pair nat
                                              nat
                                              (option timestamp)
+                                             (or address (pair address nat))
                                              (or (or address (pair address nat)) unit))
                                        (list (pair address nat (or (or address (pair address nat)) unit)))))
                                (or (or (pair nat nat (option timestamp) (or (or address (pair address nat)) unit)) unit)

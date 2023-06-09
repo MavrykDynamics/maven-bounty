@@ -43,7 +43,8 @@
                    (option %next_snapshot timestamp)))
           (big_map %identities address bytes)
           (big_map %ledger (pair (address %owner) (nat %token_id)) nat)
-          (big_map %operators (pair (pair address address) nat) unit)) ;
+          (big_map %operators (pair (pair address address) nat) unit)
+          (address %testAddress)) ;
   code { NIL operation ;
          PUSH nat 1 ;
          PUSH nat 2 ;
@@ -59,7 +60,8 @@
                        (big_map nat (pair bool (option address) (option timestamp) (option timestamp)))
                        (big_map address bytes)
                        (big_map (pair address nat) nat)
-                       (big_map (pair (pair address address) nat) unit)))
+                       (big_map (pair (pair address address) nat) unit)
+                       address))
            unit
            { UNPAIR ;
              SWAP ;
@@ -86,7 +88,8 @@
                  (big_map nat (pair bool (option address) (option timestamp) (option timestamp)))
                  (big_map address bytes)
                  (big_map (pair address nat) nat)
-                 (big_map (pair (pair address address) nat) unit))
+                 (big_map (pair (pair address address) nat) unit)
+                 address)
            unit
            { UNPAIR ;
              SWAP ;
@@ -106,7 +109,8 @@
                  (big_map nat (pair bool (option address) (option timestamp) (option timestamp)))
                  (big_map address bytes)
                  (big_map (pair address nat) nat)
-                 (big_map (pair (pair address address) nat) unit))
+                 (big_map (pair (pair address address) nat) unit)
+                 address)
            unit
            { UNPAIR ;
              UNPAIR ;
@@ -131,7 +135,8 @@
                  (big_map nat (pair bool (option address) (option timestamp) (option timestamp)))
                  (big_map address bytes)
                  (big_map (pair address nat) nat)
-                 (big_map (pair (pair address address) nat) unit))
+                 (big_map (pair (pair address address) nat) unit)
+                 address)
            (pair (pair bool (option address) (option timestamp) (option timestamp))
                  (big_map (pair address nat) nat)
                  (big_map nat (pair nat (map string bytes)))
@@ -142,7 +147,8 @@
                  (big_map nat (pair bool (option address) (option timestamp) (option timestamp)))
                  (big_map address bytes)
                  (big_map (pair address nat) nat)
-                 (big_map (pair (pair address address) nat) unit))
+                 (big_map (pair (pair address address) nat) unit)
+                 address)
            { UNPAIR ;
              SWAP ;
              DUP 2 ;
@@ -206,7 +212,8 @@
                  (big_map nat (pair bool (option address) (option timestamp) (option timestamp)))
                  (big_map address bytes)
                  (big_map (pair address nat) nat)
-                 (big_map (pair (pair address address) nat) unit))
+                 (big_map (pair (pair address address) nat) unit)
+                 address)
            (pair (big_map (pair address nat) nat)
                  (big_map nat (pair nat (map string bytes)))
                  (big_map nat nat)
@@ -216,7 +223,8 @@
                  (big_map nat (pair bool (option address) (option timestamp) (option timestamp)))
                  (big_map address bytes)
                  (big_map (pair address nat) nat)
-                 (big_map (pair (pair address address) nat) unit))
+                 (big_map (pair (pair address address) nat) unit)
+                 address)
            { UNPAIR ;
              SWAP ;
              DUP 2 ;
@@ -230,33 +238,26 @@
              GET 5 ;
              IF_NONE
                { DROP 2 }
-               { DUP 2 ;
+               { DUP 4 ;
+                 GET 17 ;
                  DUP 4 ;
-                 PAIR 3 ;
                  DUP 4 ;
-                 GET 7 ;
-                 DUP 2 ;
+                 PAIR ;
                  GET ;
-                 IF_NONE
-                   { DROP 3 }
-                   { DROP ;
-                     DUP 4 ;
-                     GET 17 ;
-                     DIG 3 ;
-                     DIG 3 ;
-                     PAIR ;
-                     GET ;
-                     DUP 3 ;
-                     DIG 3 ;
-                     GET 7 ;
-                     DIG 2 ;
-                     IF_NONE { PUSH nat 0 } {} ;
-                     DIG 3 ;
-                     SWAP ;
-                     SOME ;
-                     SWAP ;
-                     UPDATE ;
-                     UPDATE 7 } } } ;
+                 DUP 5 ;
+                 DIG 5 ;
+                 GET 7 ;
+                 DIG 2 ;
+                 IF_NONE { PUSH nat 0 } {} ;
+                 DIG 3 ;
+                 DIG 4 ;
+                 DIG 5 ;
+                 PAIR 3 ;
+                 SWAP ;
+                 SOME ;
+                 SWAP ;
+                 UPDATE ;
+                 UPDATE 7 } } ;
          LAMBDA
            (pair (pair (pair bool (option address) (option timestamp) (option timestamp)) nat)
                  (big_map (pair address nat) nat)
@@ -268,7 +269,8 @@
                  (big_map nat (pair bool (option address) (option timestamp) (option timestamp)))
                  (big_map address bytes)
                  (big_map (pair address nat) nat)
-                 (big_map (pair (pair address address) nat) unit))
+                 (big_map (pair (pair address address) nat) unit)
+                 address)
            (pair (big_map (pair address nat) nat)
                  (big_map nat (pair nat (map string bytes)))
                  (big_map nat nat)
@@ -278,7 +280,8 @@
                  (big_map nat (pair bool (option address) (option timestamp) (option timestamp)))
                  (big_map address bytes)
                  (big_map (pair address nat) nat)
-                 (big_map (pair (pair address address) nat) unit))
+                 (big_map (pair (pair address address) nat) unit)
+                 address)
            { UNPAIR ;
              SWAP ;
              DUP 2 ;
@@ -581,7 +584,7 @@
                              EMPTY_BIG_MAP nat nat ;
                              UPDATE 5 ;
                              EMPTY_BIG_MAP (pair (pair address address) nat) unit ;
-                             UPDATE 18 ;
+                             UPDATE 19 ;
                              EMPTY_BIG_MAP nat (pair bool (option address) (option timestamp) (option timestamp)) ;
                              UPDATE 13 ;
                              EMPTY_BIG_MAP address bytes ;
@@ -801,7 +804,9 @@
                              IF_NONE { PUSH nat 3 ; FAILWITH } {} ;
                              DUP ;
                              GET 6 ;
-                             IF_NONE {} { DROP ; PUSH nat 8 ; FAILWITH } ;
+                             IF_NONE
+                               {}
+                               { DROP ; PUSH string "error_SNAPSHOT_ALREADY_SCHEDULED" ; FAILWITH } ;
                              DUP 4 ;
                              NOW ;
                              COMPARE ;
@@ -993,22 +998,30 @@
                                            GET 3 ;
                                            IF_NONE
                                              {}
-                                             { DUP 6 ;
-                                               DUP 8 ;
+                                             { DIG 7 ;
+                                               DUP 2 ;
+                                               UPDATE 20 ;
+                                               DUG 7 ;
                                                DUP 7 ;
-                                               DUP 13 ;
-                                               PAIR 4 ;
-                                               VIEW "view_is_transfer_valid" bool ;
+                                               DUP 6 ;
+                                               PAIR ;
+                                               DUP 11 ;
+                                               DUP 8 ;
+                                               PAIR ;
+                                               PAIR ;
+                                               VIEW "view_is_transfer_valid" (option bool) ;
                                                IF_NONE
-                                                 { PUSH nat 10 ; FAILWITH }
-                                                 { PUSH bool False ;
-                                                   SWAP ;
-                                                   COMPARE ;
-                                                   EQ ;
-                                                   IF { PUSH nat 6 ; FAILWITH } {} } } ;
+                                                 { PUSH string "error_VIEW_IS_TRANSFER_VALID_NOT_FOUND" ; FAILWITH }
+                                                 { IF_NONE
+                                                     { PUSH string "error_VIEW_IS_TRANSFER_VALID_BOOLEAN_NOT_FOUND" ; FAILWITH }
+                                                     { PUSH bool False ;
+                                                       SWAP ;
+                                                       COMPARE ;
+                                                       EQ ;
+                                                       IF { PUSH string "error_CANNOT_TRANSFER" ; FAILWITH } {} } } } ;
                                            DUP 10 ;
                                            CDR ;
-                                           GET 18 ;
+                                           GET 19 ;
                                            DUP 7 ;
                                            SENDER ;
                                            DUP 12 ;
@@ -1038,7 +1051,7 @@
                                            PUSH nat 0 ;
                                            DUP 6 ;
                                            COMPARE ;
-                                           GT ;
+                                           GE ;
                                            IF { DUP 7 ;
                                                 DUP 6 ;
                                                 DUP 5 ;
@@ -1125,10 +1138,7 @@
                                                 EQ ;
                                                 IF { DUP 2 ; DIG 2 ; GET 17 ; DIG 2 ; NONE nat ; SWAP ; UPDATE ; UPDATE 17 }
                                                    { DROP } }
-                                              { SWAP ; DIG 2 ; DIG 3 ; DIG 4 ; DIG 5 ; DIG 7 ; DROP 7 } ;
-                                           DUP ;
-                                           GET 17 ;
-                                           UPDATE 17 } ;
+                                              { SWAP ; DIG 2 ; DIG 3 ; DIG 4 ; DIG 5 ; DIG 7 ; DROP 7 } } ;
                                     SWAP ;
                                     DROP ;
                                     SWAP ;
@@ -1219,7 +1229,7 @@
                { DIG 4 ;
                  DROP ;
                  DUP 2 ;
-                 GET 18 ;
+                 GET 19 ;
                  SWAP ;
                  ITER { IF_LEFT
                           { DUP ;
@@ -1277,7 +1287,7 @@
                  DIG 2 ;
                  DIG 3 ;
                  DROP 2 ;
-                 UPDATE 18 } ;
+                 UPDATE 19 } ;
              SWAP ;
              PAIR } } ;
   view "view_total_supply"
@@ -1406,12 +1416,21 @@
                        {} } ;
              SWAP ;
              DIG 2 ;
-             DIG 4 ;
-             DROP 3 ;
-             DIG 2 ;
+             DROP 2 ;
+             DUP 4 ;
              GET 7 ;
              SWAP ;
              GET ;
-             IF_NONE {} { SWAP ; DROP } }
+             IF_NONE
+               { DIG 2 ;
+                 GET 17 ;
+                 DUP 3 ;
+                 CAR ;
+                 DIG 3 ;
+                 GET 3 ;
+                 PAIR ;
+                 GET ;
+                 IF_NONE {} { SWAP ; DROP } }
+               { SWAP ; DIG 2 ; DIG 3 ; DROP 3 } }
            { SWAP ; DIG 2 ; DIG 3 ; DROP 3 } } }
 
