@@ -64,11 +64,10 @@ type acceptOfferActionType is nat
 type removeOfferActionType is nat
 
 type createListingActionType is [@layout:comb] record [
-    initiator   : address;
-    token       : listTokenType;
-    price       : nat;
     amount      : nat;
+    price       : nat;
     expiryTime  : option(timestamp);
+    token       : listTokenType;
     currency    : tokenType;
 ]
 

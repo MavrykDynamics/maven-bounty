@@ -1,6 +1,6 @@
 import { MichelsonMap } from "@taquito/michelson-encoder"
 import { BigNumber } from "bignumber.js"
-import { bob } from '../scripts/sandbox/accounts'
+import { bob, eve } from '../scripts/sandbox/accounts'
 import { marketplaceStorageType } from "./storageTypes/marketplaceStorageType"
 
 const config = {
@@ -28,7 +28,7 @@ const metadata = MichelsonMap.fromLiteral({
 export const marketplaceStorage: marketplaceStorageType = {
     
     superAdmin                : bob.pkh,
-    admins                    : [],
+    admins                    : [eve.pkh],
     newSuperAdmin             : null,
 
     metadata                  : metadata,

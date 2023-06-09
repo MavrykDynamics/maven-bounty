@@ -4,7 +4,7 @@ import { BigNumber } from "bignumber.js"
 export type marketplaceStorageType = {
     
     superAdmin              : string;
-    admins                  : [];   
+    admins                  : [string];   
     newSuperAdmin           : string;
     
     metadata                : MichelsonMap<MichelsonMapKey, unknown>;
