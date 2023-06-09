@@ -24,16 +24,16 @@ import * as helperFunctions from '../helpers/helperFunctions'
 // Contract Storage
 // ------------------------------------------------------------------------------
 
-import { tokenRegistryStorage } from '../../storage/tokenRegistryStorage'
+import { marketplaceStorage } from '../../storage/marketplaceStorage'
 
 // ------------------------------------------------------------------------------
 // Contract Deployment Start
 // ------------------------------------------------------------------------------
 
-describe('Token Registry', async () => {
+describe('Marketplace', async () => {
   
     var utils: Utils
-    var tokenRegistry
+    var marketplace
     var tezos
 
     before('setup', async () => {
@@ -46,16 +46,16 @@ describe('Token Registry', async () => {
             // Originate and deploy contracts
             //----------------------------
         
-            tokenRegistry = await GeneralContract.originate(utils.tezos, "tokenRegistry", tokenRegistryStorage);
-            await saveContractAddress('tokenRegistryAddress', tokenRegistry.contract.address)
+            marketplace = await GeneralContract.originate(utils.tezos, "marketplace", marketplaceStorage);
+            await saveContractAddress('marketplaceAddress', marketplace.contract.address)
         
             /* ---- ---- ---- ---- ---- */
         
-            tezos = tokenRegistry.tezos
+            tezos = marketplace.tezos
             await helperFunctions.signerFactory(tezos, bob.sk);
 
             // Set Lambdas
-            await setGeneralContractLambdas(tezos, "tokenRegistry", tokenRegistry.contract)
+            await setGeneralContractLambdas(tezos, "marketplace", marketplace.contract)
 
         } catch(e){
             console.dir(e, {depth: 5})
@@ -63,7 +63,7 @@ describe('Token Registry', async () => {
 
     })
 
-    it(`doorman contract deployment`, async () => {
+    it(`marketplace contract deployment`, async () => {
         try {
             console.log('-- -- -- -- -- -- -- -- -- -- -- -- --')
         } catch (e) {

@@ -33,6 +33,26 @@ export async function wait(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export function makeSnapshotTimestamp(secondsFromNow : number) {
+    
+    let currentDateTime: Date = new Date()
+
+    // add 5 seconds to the current date time
+    currentDateTime.setUTCSeconds(currentDateTime.getUTCSeconds() + 5)
+
+    let year: string = currentDateTime.getUTCFullYear().toString()
+    let month: string = (currentDateTime.getUTCMonth() + 1).toString().padStart(2, '0')
+    let day: string = currentDateTime.getUTCDate().toString().padStart(2, '0')
+    let hours: string = currentDateTime.getUTCHours().toString().padStart(2, '0')
+    let minutes: string = currentDateTime.getUTCMinutes().toString().padStart(2, '0')
+    let seconds: string = currentDateTime.getUTCSeconds().toString().padStart(2, '0')
+
+    let snapshot_time = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}Z`
+
+    return snapshot_time
+}
+
+
 export function randomNumberFromInterval(min, max) { // min and max included 
     return Math.floor(Math.random() * (max - min + 1) + min)
 }

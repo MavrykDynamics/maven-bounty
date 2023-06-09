@@ -15,6 +15,7 @@ import { confirmOperation } from "../../scripts/confirmation"
 import { OnChainView } from "@taquito/taquito/dist/types/contract/contract-methods/contract-on-chain-view"
 
 // Contracts Storage Type
+import { freezeRuleEngineStorageType }      from "../../storage/storageTypes/freezeRuleEngineStorageType"
 import { launchpadStorageType }             from "../../storage/storageTypes/launchpadStorageType"
 import { marketplaceStorageType }           from "../../storage/storageTypes/marketplaceStorageType"
 import { tokenRegistryStorageType }         from "../../storage/storageTypes/tokenRegistryStorageType"
@@ -39,6 +40,7 @@ const generalContractLambdas = {
 type generalContractStorageType = 
 
     // contracts
+    freezeRuleEngineStorageType | 
     launchpadStorageType |    
     marketplaceStorageType |    
     tokenRegistryStorageType |

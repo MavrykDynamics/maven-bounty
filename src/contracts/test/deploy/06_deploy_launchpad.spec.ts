@@ -24,16 +24,16 @@ import * as helperFunctions from '../helpers/helperFunctions'
 // Contract Storage
 // ------------------------------------------------------------------------------
 
-import { marketplaceStorage } from '../../storage/marketplaceStorage'
+import { launchpadStorage } from '../../storage/launchpadStorage'
 
 // ------------------------------------------------------------------------------
 // Contract Deployment Start
 // ------------------------------------------------------------------------------
 
-describe('Marketplace', async () => {
+describe('Launchpad', async () => {
   
     var utils: Utils
-    var marketplace
+    var launchpad
     var tezos
 
     before('setup', async () => {
@@ -46,16 +46,16 @@ describe('Marketplace', async () => {
             // Originate and deploy contracts
             //----------------------------
         
-            marketplace = await GeneralContract.originate(utils.tezos, "marketplace", marketplaceStorage);
-            await saveContractAddress('marketplaceAddress', marketplace.contract.address)
+            launchpad = await GeneralContract.originate(utils.tezos, "launchpad", launchpadStorage);
+            await saveContractAddress('launchpadAddress', launchpad.contract.address)
         
             /* ---- ---- ---- ---- ---- */
         
-            tezos = marketplace.tezos
+            tezos = launchpad.tezos
             await helperFunctions.signerFactory(tezos, bob.sk);
 
             // Set Lambdas
-            await setGeneralContractLambdas(tezos, "marketplace", marketplace.contract)
+            await setGeneralContractLambdas(tezos, "launchpad", launchpad.contract)
 
         } catch(e){
             console.dir(e, {depth: 5})
@@ -63,7 +63,7 @@ describe('Marketplace', async () => {
 
     })
 
-    it(`doorman contract deployment`, async () => {
+    it(`launchpad contract deployment`, async () => {
         try {
             console.log('-- -- -- -- -- -- -- -- -- -- -- -- --')
         } catch (e) {

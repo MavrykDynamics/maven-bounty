@@ -1,4 +1,5 @@
 import { MichelsonMap } from "@taquito/michelson-encoder"
+import { UnitValue } from "@taquito/taquito"
 import { Utils } from "../helpers/Utils"
 const saveContractAddress = require("../helpers/saveContractAddress")
 
@@ -8,32 +9,26 @@ chai.use(chaiAsPromised)
 chai.should()
 
 // ------------------------------------------------------------------------------
-// Contract Address
-// ------------------------------------------------------------------------------
-
-import contractDeployments from '../contractDeployments.json'
-
-// ------------------------------------------------------------------------------
 // Contract Helpers
 // ------------------------------------------------------------------------------
 
 import { GeneralContract }  from '../helpers/deploymentTestHelper'
-import { bob } from '../../scripts/sandbox/accounts'
+import { bob, alice } from '../../scripts/sandbox/accounts'
 
 // ------------------------------------------------------------------------------
 // Contract Storage
 // ------------------------------------------------------------------------------
 
-import { cmtaTokenStorage } from '../../storage/cmtaTokenStorage'
+import { freezeRuleEngineStorage } from '../../storage/freezeRuleEngineStorage'
 
 // ------------------------------------------------------------------------------
 // Contract Deployment Start
 // ------------------------------------------------------------------------------
 
-describe('CMTA Token', async () => {
+describe('Freeze Rule Engine', async () => {
     
     var utils: Utils
-    var cmtaToken 
+    var freezeRuleEngine 
     var ledgerKey
 
     before('setup', async () => {
@@ -46,8 +41,13 @@ describe('CMTA Token', async () => {
             // Originate and deploy contracts
             //----------------------------
         
-            cmtaToken = await GeneralContract.originate(utils.tezos, "cmtaToken", cmtaTokenStorage);
-            await saveContractAddress('cmtaTokenAddress', cmtaToken.contract.address)
+            let frozen_accounts = new MichelsonMap();
+            frozen_accounts.set(alice.pkh, UnitValue);
+            frozen_accounts.set(bob.pkh, UnitValue);
+            freezeRuleEngineStorage.frozen_accounts = frozen_accounts
+
+            freezeRuleEngine = await GeneralContract.originate(utils.tezos, "freezeRuleEngine", freezeRuleEngineStorage);
+            await saveContractAddress('freezeRuleEngineAddress', freezeRuleEngine.contract.address)
         
         } catch(e){
             console.dir(e, {depth: 5})
@@ -55,7 +55,7 @@ describe('CMTA Token', async () => {
 
     })
 
-    it(`cmta token contract deployed`, async () => {
+    it(`freeze rule engine contract deployed`, async () => {
         try {
             console.log('-- -- -- -- -- -- -- -- -- -- -- -- --')
         } catch (e) {

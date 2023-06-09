@@ -24,16 +24,16 @@ import * as helperFunctions from '../helpers/helperFunctions'
 // Contract Storage
 // ------------------------------------------------------------------------------
 
-import { launchpadStorage } from '../../storage/launchpadStorage'
+import { tokenRegistryStorage } from '../../storage/tokenRegistryStorage'
 
 // ------------------------------------------------------------------------------
 // Contract Deployment Start
 // ------------------------------------------------------------------------------
 
-describe('Launchpad', async () => {
+describe('Token Registry', async () => {
   
     var utils: Utils
-    var launchpad
+    var tokenRegistry
     var tezos
 
     before('setup', async () => {
@@ -46,16 +46,16 @@ describe('Launchpad', async () => {
             // Originate and deploy contracts
             //----------------------------
         
-            launchpad = await GeneralContract.originate(utils.tezos, "launchpad", launchpadStorage);
-            await saveContractAddress('launchpadAddress', launchpad.contract.address)
+            tokenRegistry = await GeneralContract.originate(utils.tezos, "tokenRegistry", tokenRegistryStorage);
+            await saveContractAddress('tokenRegistryAddress', tokenRegistry.contract.address)
         
             /* ---- ---- ---- ---- ---- */
         
-            tezos = launchpad.tezos
+            tezos = tokenRegistry.tezos
             await helperFunctions.signerFactory(tezos, bob.sk);
 
             // Set Lambdas
-            await setGeneralContractLambdas(tezos, "launchpad", launchpad.contract)
+            await setGeneralContractLambdas(tezos, "tokenRegistry", tokenRegistry.contract)
 
         } catch(e){
             console.dir(e, {depth: 5})
@@ -63,7 +63,7 @@ describe('Launchpad', async () => {
 
     })
 
-    it(`doorman contract deployment`, async () => {
+    it(`token registry contract deployment`, async () => {
         try {
             console.log('-- -- -- -- -- -- -- -- -- -- -- -- --')
         } catch (e) {
