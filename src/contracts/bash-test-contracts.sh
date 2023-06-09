@@ -34,9 +34,18 @@ for contract_test in "${CONTRACTS_TEST_ARRAY[@]}"; do
             echo "Running tests for CMTA Token"
             COMMANDS+=("yarn ts-mocha --paths test/00_test_cmta_token.spec.ts --bail --timeout 9000000")
             ;;
+        tokenRegistry)
+            echo "Running tests for Token Registry"
+            COMMANDS+=("yarn ts-mocha --paths test/01_test_token_registry.spec.ts --bail --timeout 9000000")
+            ;;
+        marketplace)
+            echo "Running tests for marketplace"
+            COMMANDS+=("yarn ts-mocha --paths test/02_test_marketplace.spec.ts --bail --timeout 9000000")
+            ;;
         dev)
             echo "Running tests for dev"
             COMMANDS+=("yarn ts-mocha --paths test/01_test_token_registry.spec.ts --bail --timeout 9000000")
+            COMMANDS+=("yarn ts-mocha --paths test/02_test_marketplace.spec.ts --bail --timeout 9000000")
             ;;
         all)
             echo "Running all tests"

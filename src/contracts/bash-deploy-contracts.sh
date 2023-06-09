@@ -38,19 +38,27 @@ for contract_test in "${CONTRACTS_DEPLOY_ARRAY[@]}"; do
     case "$contract_test" in
         cmtaToken)
             echo "Deploying CMTA Token"
-            COMMANDS+=("yarn ts-mocha --paths test/deploy/00a_deploy_cmta_token.spec.ts --bail --timeout 9000000")
+            COMMANDS+=("yarn ts-mocha --paths test/deploy/01_deploy_cmta_token.spec.ts --bail --timeout 9000000")
+            ;;
+        freezeRuleEngine)
+            echo "Deploying Freeze Rule Engine"
+            COMMANDS+=("yarn ts-mocha --paths test/deploy/02_deploy_freeze_rule_engine.spec.ts --bail --timeout 9000000")
             ;;
         mockTokens)
             echo "Deploying Mock Tokens"
-            COMMANDS+=("yarn ts-mocha --paths test/deploy/00_deploy_mock_tokens.spec.ts --bail --timeout 9000000")
+            COMMANDS+=("yarn ts-mocha --paths test/deploy/03_deploy_mock_tokens.spec.ts --bail --timeout 9000000")
             ;;
         tokenRegistry)
             echo "Deploying Token Registry"
-            COMMANDS+=("yarn ts-mocha --paths test/deploy/01_deploy_token_registry.spec.ts --bail --timeout 9000000")
+            COMMANDS+=("yarn ts-mocha --paths test/deploy/04_deploy_token_registry.spec.ts --bail --timeout 9000000")
             ;;
         marketplace)
             echo "Deploying Marketplace"
-            COMMANDS+=("yarn ts-mocha --paths test/deploy/02_deploy_marketplace.spec.ts --bail --timeout 9000000")
+            COMMANDS+=("yarn ts-mocha --paths test/deploy/05_deploy_marketplace.spec.ts --bail --timeout 9000000")
+            ;;
+        launchpad)
+            echo "Deploying Launchpad"
+            COMMANDS+=("yarn ts-mocha --paths test/deploy/06_deploy_launchpad.spec.ts --bail --timeout 9000000")
             ;;
         all)
             echo "Deploy all contracts"
