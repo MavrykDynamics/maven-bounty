@@ -1,5 +1,8 @@
 import { MichelsonMap } from "@taquito/michelson-encoder"
 import { Utils } from './helpers/Utils'
+import { char2Bytes } from '@taquito/utils'
+import { RpcClient } from '@taquito/rpc';
+import env from '../env'
 
 const chai = require('chai')
 const assert = require('chai').assert
@@ -20,7 +23,9 @@ import contractDeployments from './contractDeployments.json'
 import { bob, alice, eve, mallory } from '../scripts/sandbox/accounts'
 import { 
     signerFactory, 
-    getStorageMapValue
+    wait,
+    getStorageMapValue,
+    makeSnapshotTimestamp
 } from './helpers/helperFunctions'
 
 // ------------------------------------------------------------------------------
@@ -38,9 +43,11 @@ describe('Test: CMTA Token Contract', async () => {
     // default
     let utils: Utils
     let tezos
+    let client
 
     // misc defaults
-    let tokenId 
+    let token_id 
+    let snapshot_time
     let tokenAmount
     let operator
     let operatorKey
@@ -49,6 +56,10 @@ describe('Test: CMTA Token Contract', async () => {
     let cmtaTokenAddress
     let cmtaTokenInstance
     let cmtaTokenStorage
+
+    let freezeRuleEngineAddress
+    let freezeRuleEngineInstance
+    let freezeRuleEngineStorage
 
     // user accounts
     let user
@@ -78,6 +89,7 @@ describe('Test: CMTA Token Contract', async () => {
         utils = new Utils()
         await utils.init(bob.sk)
         tezos = utils.tezos;
+        client = new RpcClient(env.networks.development.rpc);
 
         admin           = eve.pkh 
         adminSk         = eve.sk 
@@ -85,6 +97,10 @@ describe('Test: CMTA Token Contract', async () => {
         cmtaTokenAddress            = contractDeployments.cmtaToken.address;
         cmtaTokenInstance           = await utils.tezos.contract.at(cmtaTokenAddress)
         cmtaTokenStorage            = await cmtaTokenInstance.storage()
+
+        freezeRuleEngineAddress     = contractDeployments.freezeRuleEngine.address;
+        freezeRuleEngineInstance    = await utils.tezos.contract.at(freezeRuleEngineAddress)
+        freezeRuleEngineStorage     = await freezeRuleEngineInstance.storage()
 
         console.log('-- -- -- -- -- -- -- -- -- -- -- -- --')
 
@@ -127,154 +143,151 @@ describe('Test: CMTA Token Contract', async () => {
     })
 
     describe('Owner Only Calls', function () {
-        it('Transferring the Ownership to the individual owners', async () => {
-            try {
 
-                const ownerships = [
-                    {
-                        token_id : 0,
-                        owner : alice.pkh
-                    },
-                    {
-                        token_id : 1,
-                        proposed_administrator : bob.pkh
-                    },
-                    {
-                        token_id : 2,
-                        owner : mallory.pkh
-                    },
-                ];
+        describe('Transferring the Ownership to the individual owners', function () {
 
-            } catch (e) {
-                console.log(e)
-            }
-        })
+            const ownerships = [
+                {
+                    token_id : 0,
+                    owner : alice.pkh
+                },
+                {
+                    token_id : 1,
+                    proposed_administrator : bob.pkh
+                },
+                {
+                    token_id : 2,
+                    owner : mallory.pkh
+                },
+            ];
 
-        it('Not admin trying to propose new owner', async () => {
-            try {
+            it('Not admin trying to propose new owner', async () => {
+                try {
+    
+                    await signerFactory(tezos, alice.sk);
+                    const proposeAdministratorOperation = await cmtaTokenInstance.methods.propose_administrator(0, alice.pkh);
+                    chai.expect(proposeAdministratorOperation.send()).to.be.rejected;
+                    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
+            it('Not admin trying to transfer directly', async () => {
+                try {
+    
+                    await signerFactory(tezos, bob.sk);
+                    const setAdministratorOperation = await cmtaTokenInstance.methods.set_administrator(0);
+                    chai.expect(setAdministratorOperation.send()).to.be.rejected;
+                    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
+            it('Correct admin trying to transfer directly', async () => {
+                try {
+    
+                    await signerFactory(tezos, adminSk);
+                    const setAdministratorOperation = await cmtaTokenInstance.methods.set_administrator(0);
+                    chai.expect(setAdministratorOperation.send()).to.be.rejected;
+                    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
+            it('Correct admin trying to propose transfer', async () => {
+                try {
+    
+                    await signerFactory(tezos, adminSk);
+                    let proposeAdministratorOperation = await cmtaTokenInstance.methods.propose_administrator(0, alice.pkh).send();
+                    await proposeAdministratorOperation.confirmation();
+    
+                    proposeAdministratorOperation = await cmtaTokenInstance.methods.propose_administrator(1, bob.pkh).send();
+                    await proposeAdministratorOperation.confirmation();
+    
+                    proposeAdministratorOperation = await cmtaTokenInstance.methods.propose_administrator(2, mallory.pkh).send();
+                    await proposeAdministratorOperation.confirmation();
+                    
+                    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
+            it('Correct admin (but not proposed) trying to transfer', async () => {
+                try {
+    
+                    await signerFactory(tezos, adminSk);
+                    const setAdministratorOperation = await cmtaTokenInstance.methods.set_administrator(0);
+                    chai.expect(setAdministratorOperation.send()).to.be.rejected;
+                    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
+            it('Proposed admin trying to transfer', async () => {
+                try {
+    
+                    await signerFactory(tezos, alice.sk);
+                    let setAdministratorOperation = await cmtaTokenInstance.methods.set_administrator(0).send();
+                    await setAdministratorOperation.confirmation();
+    
+                    await signerFactory(tezos, bob.sk);
+                    setAdministratorOperation = await cmtaTokenInstance.methods.set_administrator(1).send();
+                    await setAdministratorOperation.confirmation();
+    
+                    await signerFactory(tezos, mallory.sk);
+                    setAdministratorOperation = await cmtaTokenInstance.methods.set_administrator(2).send();
+                    await setAdministratorOperation.confirmation();
+                    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
+            it('Non Admin deletes rights', async () => {
+                try {
+    
+                    await signerFactory(tezos, mallory.sk);
+                    let removeAdministratorOperation = await cmtaTokenInstance.methods.remove_administrator(0, admin);
+                    chai.expect(removeAdministratorOperation.send()).to.be.rejected;
+    
+                    await signerFactory(tezos, alice.sk);
+                    removeAdministratorOperation = await cmtaTokenInstance.methods.remove_administrator(1, admin);
+                    chai.expect(removeAdministratorOperation.send()).to.be.rejected;
+    
+                    await signerFactory(tezos, bob.sk);
+                    removeAdministratorOperation = await cmtaTokenInstance.methods.remove_administrator(2, admin);
+                    chai.expect(removeAdministratorOperation.send()).to.be.rejected;
+                    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
+            it('Admin deletes own rights', async () => {
+                try {
+    
+                    await signerFactory(tezos, alice.sk);
+                    let removeAdministratorOperation = await cmtaTokenInstance.methods.remove_administrator(0, admin).send();
+                    await removeAdministratorOperation.confirmation();
+    
+                    await signerFactory(tezos, bob.sk);
+                    removeAdministratorOperation = await cmtaTokenInstance.methods.remove_administrator(1, admin).send();
+                    await removeAdministratorOperation.confirmation();
+    
+                    await signerFactory(tezos, mallory.sk);
+                    removeAdministratorOperation = await cmtaTokenInstance.methods.remove_administrator(2, admin).send();
+                    await removeAdministratorOperation.confirmation();
+                    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
 
-                await signerFactory(tezos, alice.sk);
-                const proposeAdministratorOperation = await cmtaTokenInstance.methods.propose_administrator(0, alice.pkh);
-                chai.expect(proposeAdministratorOperation.send()).to.be.rejected;
-                
-            } catch (e) {
-                console.log(e)
-            }
-        })
-
-        it('Not admin trying to transfer directly', async () => {
-            try {
-
-                await signerFactory(tezos, bob.sk);
-                const setAdministratorOperation = await cmtaTokenInstance.methods.set_administrator(0);
-                chai.expect(setAdministratorOperation.send()).to.be.rejected;
-                
-            } catch (e) {
-                console.log(e)
-            }
-        })
-
-        it('Correct admin trying to transfer directly', async () => {
-            try {
-
-                await signerFactory(tezos, adminSk);
-                const setAdministratorOperation = await cmtaTokenInstance.methods.set_administrator(0);
-                chai.expect(setAdministratorOperation.send()).to.be.rejected;
-                
-            } catch (e) {
-                console.log(e)
-            }
-        })
-
-        it('Correct admin trying to propose transfer', async () => {
-            try {
-
-                await signerFactory(tezos, adminSk);
-                let proposeAdministratorOperation = await cmtaTokenInstance.methods.propose_administrator(0, alice.pkh).send();
-                await proposeAdministratorOperation.confirmation();
-
-                proposeAdministratorOperation = await cmtaTokenInstance.methods.propose_administrator(1, bob.pkh).send();
-                await proposeAdministratorOperation.confirmation();
-
-                proposeAdministratorOperation = await cmtaTokenInstance.methods.propose_administrator(2, mallory.pkh).send();
-                await proposeAdministratorOperation.confirmation();
-                
-                
-            } catch (e) {
-                console.log(e)
-            }
-        })
-
-        it('Correct admin (but not proposed) trying to transfer', async () => {
-            try {
-
-                await signerFactory(tezos, adminSk);
-                const setAdministratorOperation = await cmtaTokenInstance.methods.set_administrator(0);
-                chai.expect(setAdministratorOperation.send()).to.be.rejected;
-                
-            } catch (e) {
-                console.log(e)
-            }
-        })
-
-        it('Proposed admin trying to transfer', async () => {
-            try {
-
-                await signerFactory(tezos, alice.sk);
-                let setAdministratorOperation = await cmtaTokenInstance.methods.set_administrator(0).send();
-                await setAdministratorOperation.confirmation();
-
-                await signerFactory(tezos, bob.sk);
-                setAdministratorOperation = await cmtaTokenInstance.methods.set_administrator(1).send();
-                await setAdministratorOperation.confirmation();
-
-                await signerFactory(tezos, mallory.sk);
-                setAdministratorOperation = await cmtaTokenInstance.methods.set_administrator(2).send();
-                await setAdministratorOperation.confirmation();
-                
-            } catch (e) {
-                console.log(e)
-            }
-        })
-
-        it('Non Admin deletes rights', async () => {
-            try {
-
-                await signerFactory(tezos, mallory.sk);
-                let removeAdministratorOperation = await cmtaTokenInstance.methods.remove_administrator(0, admin);
-                chai.expect(removeAdministratorOperation.send()).to.be.rejected;
-
-                await signerFactory(tezos, alice.sk);
-                removeAdministratorOperation = await cmtaTokenInstance.methods.remove_administrator(1, admin);
-                chai.expect(removeAdministratorOperation.send()).to.be.rejected;
-
-                await signerFactory(tezos, bob.sk);
-                removeAdministratorOperation = await cmtaTokenInstance.methods.remove_administrator(2, admin);
-                chai.expect(removeAdministratorOperation.send()).to.be.rejected;
-                
-            } catch (e) {
-                console.log(e)
-            }
-        })
-
-        it('Admin deletes own rights', async () => {
-            try {
-
-                await signerFactory(tezos, alice.sk);
-                let removeAdministratorOperation = await cmtaTokenInstance.methods.remove_administrator(0, admin).send();
-                await removeAdministratorOperation.confirmation();
-
-                await signerFactory(tezos, bob.sk);
-                removeAdministratorOperation = await cmtaTokenInstance.methods.remove_administrator(1, admin).send();
-                await removeAdministratorOperation.confirmation();
-
-                await signerFactory(tezos, mallory.sk);
-                removeAdministratorOperation = await cmtaTokenInstance.methods.remove_administrator(2, admin).send();
-                await removeAdministratorOperation.confirmation();
-                
-            } catch (e) {
-                console.log(e)
-            }
         })
     })
 
@@ -950,7 +963,487 @@ describe('Test: CMTA Token Contract', async () => {
                 }
             })
 
+            it('Owner performs initial transfer of own balance', async () => {
+                try {
+
+                    await signerFactory(tezos, alice.sk);
+                    const transferOperation = await cmtaTokenInstance.methods.transfer([
+                        {
+                            from_ : alice.pkh,
+                            txs: [
+                                {
+                                    to_: mallory.pkh,
+                                    token_id: 0,
+                                    amount: 10,
+                                },
+                            ]
+                        }
+                    ]).send();
+                    await transferOperation.confirmation();
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('Owner tries transfer of third party balance', async () => {
+                try {
+
+                    await signerFactory(tezos, alice.sk);
+                    const transferOperation = await cmtaTokenInstance.methods.transfer([
+                        {
+                            from_ : mallory.pkh,
+                            txs: [
+                                {
+                                    to_: bob.pkh,
+                                    token_id: 0,
+                                    amount: 1,
+                                },
+                            ]
+                        }
+                    ]);
+                    await chai.expect(transferOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('Holder transfers own balance', async () => {
+                try {
+
+                    await signerFactory(tezos, mallory.sk);
+                    const transferOperation = await cmtaTokenInstance.methods.transfer([
+                        {
+                            from_ : mallory.pkh,
+                            txs: [
+                                {
+                                    to_: bob.pkh,
+                                    token_id: 0,
+                                    amount: 1,
+                                },
+                            ]
+                        }
+                    ]).send();
+                    await transferOperation.confirmation();
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('Holder transfers too much', async () => {
+                try {
+
+                    await signerFactory(tezos, mallory.sk);
+                    const transferOperation = await cmtaTokenInstance.methods.transfer([
+                        {
+                            from_ : mallory.pkh,
+                            txs: [
+                                {
+                                    to_: bob.pkh,
+                                    token_id: 0,
+                                    amount: 11,
+                                },
+                            ]
+                        }
+                    ]);
+                    await chai.expect(transferOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
         })
+
+
+        describe('Pause/Unpause', function () {
+
+            it('Holder transfers too much', async () => {
+                try {
+
+                    await signerFactory(tezos, mallory.sk);
+                    const transferOperation = await cmtaTokenInstance.methods.transfer([
+                        {
+                            from_ : mallory.pkh,
+                            txs: [
+                                {
+                                    to_: bob.pkh,
+                                    token_id: 0,
+                                    amount: 11,
+                                },
+                            ]
+                        }
+                    ]);
+                    await chai.expect(transferOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('Holder transfers paused token', async () => {
+                try {
+
+                    await signerFactory(tezos, alice.sk);
+                    let pauseOperation = await cmtaTokenInstance.methods.pause([0]).send();
+                    await pauseOperation.confirmation();
+
+
+                    await signerFactory(tezos, bob.sk);
+                    pauseOperation = await cmtaTokenInstance.methods.pause([1]).send();
+                    await pauseOperation.confirmation();
+
+                    
+                    await signerFactory(tezos, mallory.sk);
+                    const transferOperation = await cmtaTokenInstance.methods.transfer([
+                        {
+                            from_ : mallory.pkh,
+                            txs: [
+                                {
+                                    to_: bob.pkh,
+                                    token_id: 0,
+                                    amount: 1,
+                                },
+                            ]
+                        }
+                    ]);
+                    await chai.expect(transferOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+
+            it('Holder transfers resumed token', async () => {
+                try {
+
+                    await signerFactory(tezos, alice.sk);
+                    const unpauseOperation = await cmtaTokenInstance.methods.unpause([0]).send();
+                    await unpauseOperation.confirmation();
+
+                    
+                    await signerFactory(tezos, mallory.sk);
+                    const transferOperation = await cmtaTokenInstance.methods.transfer([
+                        {
+                            from_ : mallory.pkh,
+                            txs: [
+                                {
+                                    to_: bob.pkh,
+                                    token_id: 0,
+                                    amount: 1,
+                                },
+                            ]
+                        }
+                    ]).send();
+                    await transferOperation.confirmation();
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+        })
+
+
+        describe('Identities', function () {
+
+            it('Holder discloses own identity', async () => {
+                try {
+
+                    await signerFactory(tezos, alice.sk);
+                    let setIdentityOperation = await cmtaTokenInstance.methods.set_identity(char2Bytes("0x11")).send();
+                    await setIdentityOperation.confirmation();
+
+                    await signerFactory(tezos, bob.sk);
+                    setIdentityOperation = await cmtaTokenInstance.methods.set_identity(char2Bytes("0x12")).send();
+                    await setIdentityOperation.confirmation();
+
+                    await signerFactory(tezos, mallory.sk);
+                    setIdentityOperation = await cmtaTokenInstance.methods.set_identity(char2Bytes("0x13")).send();
+                    await setIdentityOperation.confirmation();
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+        })
+
+        describe('Rule Engines', function () {
+
+            before("Set rule engine", async () => {
+                
+                await signerFactory(tezos, alice.sk);
+                const setRuleEngineOperation = await cmtaTokenInstance.methods.set_rule_engines([
+                    {
+                        token_id : 0,
+                        rule_contract : freezeRuleEngineAddress
+                    }
+                ]).send();
+                await setRuleEngineOperation.confirmation();
+
+                // check that transfer fails now
+                const transferOperation = await cmtaTokenInstance.methods.transfer([
+                    {
+                        from_ : alice.pkh,
+                        txs: [
+                            {
+                                to_: mallory.pkh,
+                                token_id: 0,
+                                amount: 1,
+                            },
+                        ]
+                    }
+                ]);
+                await chai.expect(transferOperation.send()).to.be.rejected;
+            });
+
+            it('Only Admin can unfreeze', async () => {
+                try {
+
+                    await signerFactory(tezos, alice.sk);
+                    let unfreezeAccountOperation = await freezeRuleEngineInstance.methods.unfreeze_account(alice.pkh);
+                    await chai.expect(unfreezeAccountOperation.send()).to.be.rejected;
+
+                    await signerFactory(tezos, adminSk);
+                    unfreezeAccountOperation = await freezeRuleEngineInstance.methods.unfreeze_account(alice.pkh).send();
+                    await unfreezeAccountOperation.confirmation();
+
+                    await signerFactory(tezos, alice.sk);
+                    transferOperation = await cmtaTokenInstance.methods.transfer([
+                        {
+                            from_ : alice.pkh,
+                            txs: [
+                                {
+                                    to_: mallory.pkh,
+                                    token_id: 0,
+                                    amount: 1,
+                                },
+                            ]
+                        }
+                    ]).send();
+                    await transferOperation.confirmation();
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('Bob still frozen', async () => {
+                try {
+
+                    await signerFactory(tezos, alice.sk);
+                    const transferOperation = await cmtaTokenInstance.methods.transfer([
+                        {
+                            from_ : alice.pkh,
+                            txs: [
+                                {
+                                    to_: bob.pkh,
+                                    token_id: 0,
+                                    amount: 0,
+                                },
+                            ]
+                        }
+                    ]);
+                    await chai.expect(transferOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('Unfreeze Bob', async () => {
+                try {
+
+                    await signerFactory(tezos, adminSk);
+                    const unfreezeAccountOperation = await freezeRuleEngineInstance.methods.unfreeze_account(bob.pkh).send();
+                    await unfreezeAccountOperation.confirmation();
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+        })
+
+        describe('Snapshots', function () {
+        
+            before("setup", async () => {
+                token_id        = 0;
+                snapshot_time   = makeSnapshotTimestamp(5);
+            })
+
+            it('Bob cannot schedule snapshot', async () => {
+                try {
+
+                    await signerFactory(tezos, bob.sk);
+                    const scheduleSnapshotOperation = await cmtaTokenInstance.methods.schedule_snapshot(token_id, snapshot_time);
+                    await chai.expect(scheduleSnapshotOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('Only owner can schedule snapshot', async () => {
+                try {
+
+                    await signerFactory(tezos, alice.sk);
+                    const scheduleSnapshotOperation = await cmtaTokenInstance.methods.schedule_snapshot(token_id, snapshot_time).send();
+                    await scheduleSnapshotOperation.confirmation();
+
+                    // wait 5 sec
+                    await wait(5 * 1000);
+
+                    // difference from original CMTA Token Tests: use a zero amount transfer to take snapshot
+                    await signerFactory(tezos, alice.sk);
+                    let transferOperation = await cmtaTokenInstance.methods.transfer([
+                        {
+                            from_ : alice.pkh,
+                            txs: [
+                                {
+                                    to_: bob.pkh,
+                                    token_id: 0,
+                                    amount: 0,
+                                },
+                            ]
+                        }
+                    ]).send();
+                    await transferOperation.confirmation();
+
+                    transferOperation = await cmtaTokenInstance.methods.transfer([
+                        {
+                            from_ : alice.pkh,
+                            txs: [
+                                {
+                                    to_: mallory.pkh,
+                                    token_id: 0,
+                                    amount: 0,
+                                },
+                            ]
+                        }
+                    ]).send();
+                    await transferOperation.confirmation();
+
+                    // update storage
+                    cmtaTokenStorage = await cmtaTokenInstance.storage();
+
+                    var snapshotLedgerKey = {
+                        owner : alice.pkh,
+                        token_id : 0,
+                        snapshot_timestamp : snapshot_time
+                    };
+                    const aliceToken0Balance    = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(snapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    snapshotLedgerKey.owner = bob.pkh;
+                    const bobToken0Balance      = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(snapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    snapshotLedgerKey.owner = mallory.pkh;
+                    const malloryToken0Balance  = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(snapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    assert.equal(aliceToken0Balance     , 39);
+                    assert.equal(malloryToken0Balance   , 9);
+                    assert.equal(bobToken0Balance       , 2);
+                    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+
+            it('Owner cannot reschedule unless he removes the previous one', async () => {
+                try {
+
+                    const test_snapshot_time = makeSnapshotTimestamp(5);
+
+                    // difference from original CMTA Token Tests: zero amount transfer will remove next_snapshot, so we need 
+                    // to schedule another snapshot first for this test
+
+                    await signerFactory(tezos, alice.sk);
+                    const scheduleSnapshotOperation = await cmtaTokenInstance.methods.schedule_snapshot(token_id, test_snapshot_time).send();
+                    await scheduleSnapshotOperation.confirmation()
+
+                    const secondSnapshotOperation = await cmtaTokenInstance.methods.schedule_snapshot(token_id, test_snapshot_time);
+                    await chai.expect(secondSnapshotOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('Alice now transfers', async () => {
+                try {
+
+                    const future_snapshot_time : any = makeSnapshotTimestamp(5);
+
+                    // wait 5 sec
+                    await wait(5 * 1000);
+
+                    await signerFactory(tezos, alice.sk);
+                    let transferOperation = await cmtaTokenInstance.methods.transfer([
+                        {
+                            from_ : alice.pkh,
+                            txs: [
+                                {
+                                    to_: mallory.pkh,
+                                    token_id: 0,
+                                    amount: 1,
+                                },
+                            ]
+                        }
+                    ]).send();
+                    await transferOperation.confirmation();
+
+                    // update storage
+                    cmtaTokenStorage = await cmtaTokenInstance.storage();
+
+                    var snapshotLedgerKey = {
+                        owner : alice.pkh,
+                        token_id : 0,
+                        snapshot_timestamp : snapshot_time
+                    };
+                    const aliceToken0Balance    = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(snapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    snapshotLedgerKey.owner = bob.pkh;
+                    const bobToken0Balance      = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(snapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    snapshotLedgerKey.owner = mallory.pkh;
+                    const malloryToken0Balance  = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(snapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    assert.equal(aliceToken0Balance     , 39);
+                    assert.equal(malloryToken0Balance   , 9);
+                    assert.equal(bobToken0Balance       , 2);
+
+
+                    var futureSnapshotLedgerKey = {
+                        owner : alice.pkh,
+                        token_id : 0,
+                        snapshot_timestamp : future_snapshot_time
+                    };
+                    const futureAliceToken0Balance    = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(futureSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    futureSnapshotLedgerKey.owner = bob.pkh;
+                    const futureBobToken0Balance      = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(futureSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    futureSnapshotLedgerKey.owner = mallory.pkh;
+                    const futureMalloryToken0Balance  = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(futureSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    console.log(`futureAliceToken0Balance: ${futureAliceToken0Balance}`);
+                    console.log(`futureMalloryToken0Balance: ${futureMalloryToken0Balance}`);
+                    console.log(`futureBobToken0Balance: ${futureBobToken0Balance}`);
+
+                    assert.equal(futureAliceToken0Balance     , 38);
+                    assert.equal(futureMalloryToken0Balance   , 10);
+                    assert.equal(futureBobToken0Balance       , 2);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+        })
+
     })
 
 })
