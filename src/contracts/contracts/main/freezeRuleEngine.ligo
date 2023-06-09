@@ -2,17 +2,9 @@
 // Contract Types
 // ------------------------------------------------------------------------------
 
-type validationTransferType is record [
-    from_       : address;
-    to_         : address;
-    token_id    : nat;
-    amount      : nat;
-]
+// Freeze Rule Engine Types
+#include "../partials/contractTypes/freezeRuleEngineTypes.ligo"
 
-type freezeRuleEngineStorageType is record [
-    administrator       : address;
-    frozen_accounts     : big_map(address, unit);
-]
 
 // ------------------------------------------------------------------------------
 
@@ -26,6 +18,17 @@ type return is list (operation) * freezeRuleEngineStorageType
 const noOperations : list (operation) = nil;
 
 
+// ------------------------------------------------------------------------------
+// Errors Begin
+// ------------------------------------------------------------------------------
+
+[@inline] const error_ADMINISTRATOR_NOT_FOUND                   = 0n;
+[@inline] const error_NOT_ADMIN                                 = 1n;
+
+// ------------------------------------------------------------------------------
+// Errors End
+// ------------------------------------------------------------------------------
+
 
 function verifySenderIsAdmin(const s : freezeRuleEngineStorageType) : unit is 
 block {
@@ -37,7 +40,7 @@ block {
 
 
 (* view_is_transfer_valid *)
-[@view] function view_is_transfer_valid(const validation_transfer : validationTransferType; var s : freezeRuleEngineStorageType) : bool is
+[@view] function view_is_transfer_valid(const validation_transfer : validationTransferType; var s : freezeRuleEngineStorageType) : option(bool) is
 block {
 
     const from_is_frozen : bool = case s.frozen_accounts[validation_transfer.from_] of [
@@ -52,12 +55,14 @@ block {
 
     const is_transfer_valid : bool = if from_is_frozen = True or to_is_frozen = True then False else True;
 
-} with is_transfer_valid
+} with Some(is_transfer_valid)
+
+
 
 
 
 (* freeze_account entrypoint *)
-function freeze_account(const account : address; const s : freezeRuleEngineStorageType) : return is
+function freeze_account(const account : address; var s : freezeRuleEngineStorageType) : return is
 block{
 
     verifySenderIsAdmin(s);
@@ -68,11 +73,11 @@ block{
 
 
 (* unfreeze_account entrypoint *)
-function unfreeze_account(const account : address; const s : freezeRuleEngineStorageType) : return is
+function unfreeze_account(const account : address; var s : freezeRuleEngineStorageType) : return is
 block{
 
     verifySenderIsAdmin(s);
-    remove account from map s.frozen_accounts;
+    s.frozen_accounts := Big_map.remove(account, s.frozen_accounts);
 
 } with (noOperations, s)
 
