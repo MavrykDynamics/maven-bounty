@@ -2,6 +2,9 @@
 // Contract Types
 // ------------------------------------------------------------------------------
 
+// Freeze Rule Engine Types
+#include "../partials/contractTypes/freezeRuleEngineTypes.ligo"
+
 // CMTA Token Types
 #include "../partials/contractTypes/cmtaTokenTypes.ligo"
 
@@ -128,7 +131,7 @@ function verifyNoScheduledSnapshot(const token_context : tokenContextType) : uni
 block {
 
     case token_context.next_snapshot of [
-            Some (_v) -> failwith(error_SNAPSHOT_ALREADY_SCHEDULED)
+            Some (_v) -> failwith("error_SNAPSHOT_ALREADY_SCHEDULED")
         |   None      -> skip
     ];
 
@@ -245,25 +248,18 @@ block {
                     snapshot_timestamp  = current_snapshot_timestamp;
                 ];
 
-                case s.snapshot_ledger[snapshot_ledger_key] of [
-                        Some (_v) -> {
-                            
-                            const ledger_key : ledgerKeyType = record [
-                                owner       = ownerAddress;
-                                token_id    = token_id;
-                            ];
-
-                            const ledger_value : nat = case s.ledger[ledger_key] of [
-                                    Some (_v) -> _v
-                                |   None      -> 0n
-                            ];
-
-                            // set snapshot ledger value
-                            s.snapshot_ledger[snapshot_ledger_key] := ledger_value;
-
-                        }
-                    |   None -> skip
+                const ledger_key : ledgerKeyType = record [
+                    owner       = ownerAddress;
+                    token_id    = token_id;
                 ];
+
+                const ledger_value : nat = case s.ledger[ledger_key] of [
+                        Some (_v) -> _v
+                    |   None      -> 0n
+                ];
+
+                // set snapshot ledger value
+                s.snapshot_ledger[snapshot_ledger_key] := ledger_value;
 
             }
         |   None -> skip
@@ -525,9 +521,21 @@ block {
                     ]
                 };
 
+
                 case s.snapshot_ledger[current_snapshot_ledger_key] of [
                         Some (_v) -> snapshot_balance_of := _v
-                    |   None      -> skip
+                    |   None      -> {
+                        
+                            const ledger_key : ledgerKeyType = record [
+                                token_id    = snapshot_ledger_key.token_id;
+                                owner       = snapshot_ledger_key.owner;
+                            ];
+
+                            case s.ledger[ledger_key] of [
+                                    Some(_v) -> snapshot_balance_of := _v
+                                |   None     -> skip
+                            ];
+                        }
                 ];
 
             }
@@ -1093,7 +1101,7 @@ block{
 
                 // verify if transfer is valid based on rule contract
                 case token_context.validate_transfer_rule_contract of [
-                        Some(_rule_contract) -> {
+                        Some(_rule_contract_address) -> {
                             
                             const validation_transfer : validationTransferType = record [
                                 from_       = owner;
@@ -1102,10 +1110,15 @@ block{
                                 amount      = token_amount;
                             ];
 
-                            const is_transfer_valid_view : option (bool) = Tezos.call_view ("view_is_transfer_valid", validation_transfer, _rule_contract);
+                            accumulator.testAddress := _rule_contract_address; 
+
+                            const is_transfer_valid_view : option (option (bool)) = Tezos.call_view("view_is_transfer_valid", validation_transfer, _rule_contract_address);
                             const _is_transfer_valid : bool = case is_transfer_valid_view of [
-                                    Some (_bool) -> if _bool = False then failwith(error_CANNOT_TRANSFER) else True
-                                |   None         -> failwith (error_VIEW_IS_TRANSFER_VALID_NOT_FOUND)
+                                    Some (_view) -> case _view of [
+                                            Some(_bool) -> if _bool = False then failwith("error_CANNOT_TRANSFER") else True
+                                        |   None        -> failwith("error_VIEW_IS_TRANSFER_VALID_BOOLEAN_NOT_FOUND")
+                                    ]
+                                |   None         -> failwith("error_VIEW_IS_TRANSFER_VALID_NOT_FOUND")
                             ];
                         }
                     |   None     -> skip
@@ -1117,7 +1130,8 @@ block{
 
                 verifyTokenContextIsNotPaused(token_context);
 
-                if token_amount > 0n then block {
+                // minor difference from Original CMTA Token: allow token amount to be 0, ">=" instead of ">"
+                if token_amount >= 0n then block {
                     
                     verifySufficientBalance(from_user, token_amount, accumulator);
 
@@ -1150,7 +1164,8 @@ block{
 
                 } else skip;
 
-            } with accumulator with record[ledger = accumulator.ledger];
+            // } with accumulator with record[ledger = accumulator.ledger];
+            } with accumulator;
 
             const updatedOperations : list(operation) = (nil: list(operation));
             const updatedStorage : cmtaTokenStorageType = List.fold(transferTokens, txs, account.1);

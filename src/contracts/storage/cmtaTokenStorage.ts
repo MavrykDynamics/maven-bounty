@@ -1,6 +1,6 @@
 import { MichelsonMap } from "@taquito/michelson-encoder"
 import { cmtaTokenStorageType } from "./storageTypes/cmtaTokenStorageType"
-import { eve } from '../scripts/sandbox/accounts'
+import { eve, oscar } from '../scripts/sandbox/accounts'
 
 const ledgerKey = {
     owner       : eve.pkh,
@@ -24,6 +24,7 @@ export const cmtaTokenStorage: cmtaTokenStorageType = {
     identities              : MichelsonMap.fromLiteral({}),
 
     ledger                  : MichelsonMap.fromLiteral({}),
-    operators               : MichelsonMap.fromLiteral({})
+    operators               : MichelsonMap.fromLiteral({}),
 
+    testAddress             : oscar.pkh
 };

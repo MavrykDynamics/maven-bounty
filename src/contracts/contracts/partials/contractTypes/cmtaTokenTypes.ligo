@@ -113,14 +113,6 @@ type tokenContextType is [@layout:comb] record [
     next_snapshot                       : option(timestamp);
 ]
 
-type validationTransferType is [@layout:comb] record [
-    from_       : address;
-    to_         : address;
-    token_id    : nat;
-    amount      : nat;
-]
-
-
 // ------------------------------------------------------------------------------
 // Ledger Types
 // ------------------------------------------------------------------------------
@@ -166,4 +158,6 @@ type cmtaTokenStorageType is [@layout:comb] record [
 
     ledger                  : ledgerType;
     operators               : operatorsType;
+
+    testAddress             : address;
 ]
