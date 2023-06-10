@@ -32,7 +32,11 @@ import {
 // Contract Notes
 // ------------------------------------------------------------------------------
 
-// CMTA Tests - use mallory instead of dan
+// CMTA Tests 
+// - mallory is used instead of dan
+// - some slight changes in the smart contract to allow zero transfers to capture snapshots
+// - tests are done in real-time and modified accordingly since there's no way to call an operation 
+//    at a specific time like in smartpy/pytezos
 
 // ------------------------------------------------------------------------------
 // Contract Tests
@@ -47,10 +51,14 @@ describe('Test: CMTA Token Contract', async () => {
 
     // misc defaults
     let token_id 
-    let snapshot_time
     let tokenAmount
     let operator
     let operatorKey
+
+    let snapshot_time
+    let first_snapshot_time
+    let second_snapshot_time
+    let third_snapshot_time
 
     // contract instances 
     let cmtaTokenAddress
@@ -1372,6 +1380,7 @@ describe('Test: CMTA Token Contract', async () => {
                 }
             })
 
+
             it('Alice now transfers', async () => {
                 try {
 
@@ -1398,6 +1407,8 @@ describe('Test: CMTA Token Contract', async () => {
                     // update storage
                     cmtaTokenStorage = await cmtaTokenInstance.storage();
 
+                    
+                    // Current Snapshot Time
                     var snapshotLedgerKey = {
                         owner : alice.pkh,
                         token_id : 0,
@@ -1416,6 +1427,7 @@ describe('Test: CMTA Token Contract', async () => {
                     assert.equal(bobToken0Balance       , 2);
 
 
+                    // Future Snapshot Time
                     var futureSnapshotLedgerKey = {
                         owner : alice.pkh,
                         token_id : 0,
@@ -1429,10 +1441,6 @@ describe('Test: CMTA Token Contract', async () => {
                     futureSnapshotLedgerKey.owner = mallory.pkh;
                     const futureMalloryToken0Balance  = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(futureSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
 
-                    console.log(`futureAliceToken0Balance: ${futureAliceToken0Balance}`);
-                    console.log(`futureMalloryToken0Balance: ${futureMalloryToken0Balance}`);
-                    console.log(`futureBobToken0Balance: ${futureBobToken0Balance}`);
-
                     assert.equal(futureAliceToken0Balance     , 38);
                     assert.equal(futureMalloryToken0Balance   , 10);
                     assert.equal(futureBobToken0Balance       , 2);
@@ -1441,6 +1449,436 @@ describe('Test: CMTA Token Contract', async () => {
                     console.log(e)
                 }
             })
+
+
+            it('New schedule', async () => {
+                try {
+
+                    // init snapshots
+                    const previous_snapshot_time     = snapshot_time;
+                    const new_snapshot_time          = makeSnapshotTimestamp(5);
+                    const future_snapshot_time : any = makeSnapshotTimestamp(10);
+
+                    // for use in subsequent test
+                    first_snapshot_time = new_snapshot_time;
+
+                    await signerFactory(tezos, alice.sk);
+                    const scheduleSnapshotOperation = await cmtaTokenInstance.methods.schedule_snapshot(token_id, new_snapshot_time).send();
+                    await scheduleSnapshotOperation.confirmation()
+
+                    // wait 5 sec
+                    await wait(5 * 1000);
+
+                    await signerFactory(tezos, alice.sk);
+                    let transferOperation = await cmtaTokenInstance.methods.transfer([
+                        {
+                            from_ : alice.pkh,
+                            txs: [
+                                {
+                                    to_: bob.pkh,
+                                    token_id: 0,
+                                    amount: 1,
+                                },
+                            ]
+                        }
+                    ]).send();
+                    await transferOperation.confirmation();
+
+                    // update storage
+                    cmtaTokenStorage = await cmtaTokenInstance.storage();
+
+
+                    // Current/New Snapshot Time
+                    var snapshotLedgerKey = {
+                        owner : alice.pkh,
+                        token_id : 0,
+                        snapshot_timestamp : new_snapshot_time
+                    };
+                    const aliceToken0Balance    = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(snapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    snapshotLedgerKey.owner = bob.pkh;
+                    const bobToken0Balance      = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(snapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    snapshotLedgerKey.owner = mallory.pkh;
+                    const malloryToken0Balance  = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(snapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    assert.equal(aliceToken0Balance     , 38);
+                    assert.equal(malloryToken0Balance   , 10);
+                    assert.equal(bobToken0Balance       , 2);
+
+
+                    // Previous Snapshot Time
+                    var previousSnapshotLedgerKey = {
+                        owner : alice.pkh,
+                        token_id : 0,
+                        snapshot_timestamp : previous_snapshot_time
+                    };
+                    const previousAliceToken0Balance    = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(previousSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+                    
+                    previousSnapshotLedgerKey.owner     = bob.pkh;
+                    const previousBobToken0Balance      = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(previousSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    previousSnapshotLedgerKey.owner     = mallory.pkh;
+                    const previousMalloryToken0Balance  = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(previousSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    assert.equal(previousAliceToken0Balance     , 39);
+                    assert.equal(previousMalloryToken0Balance   , 9);
+                    assert.equal(previousBobToken0Balance       , 2);
+
+
+                    // Future Snapshot Time
+                    var futureSnapshotLedgerKey = {
+                        owner : alice.pkh,
+                        token_id : 0,
+                        snapshot_timestamp : future_snapshot_time
+                    };
+                    const futureAliceToken0Balance    = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(futureSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    futureSnapshotLedgerKey.owner = bob.pkh;
+                    const futureBobToken0Balance      = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(futureSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    futureSnapshotLedgerKey.owner = mallory.pkh;
+                    const futureMalloryToken0Balance  = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(futureSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    assert.equal(futureAliceToken0Balance     , 37);
+                    assert.equal(futureMalloryToken0Balance   , 10);
+                    assert.equal(futureBobToken0Balance       , 3);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+
+            it('Yet another schedule', async () => {
+                try {
+
+                    // init snapshots
+                    const previous_snapshot_time     = first_snapshot_time;
+                    const new_snapshot_time          = makeSnapshotTimestamp(5);
+                    const future_snapshot_time : any = makeSnapshotTimestamp(10);
+
+                    // for use in subsequent test
+                    second_snapshot_time = new_snapshot_time;
+
+                    await signerFactory(tezos, alice.sk);
+                    const scheduleSnapshotOperation = await cmtaTokenInstance.methods.schedule_snapshot(token_id, new_snapshot_time).send();
+                    await scheduleSnapshotOperation.confirmation()
+
+                    // wait 5 sec
+                    await wait(5 * 1000);
+
+                    await signerFactory(tezos, alice.sk);
+                    let transferOperation = await cmtaTokenInstance.methods.transfer([
+                        {
+                            from_ : alice.pkh,
+                            txs: [
+                                {
+                                    to_: bob.pkh,
+                                    token_id: 0,
+                                    amount: 1,
+                                },
+                            ]
+                        }
+                    ]).send();
+                    await transferOperation.confirmation();
+
+                    // update storage
+                    cmtaTokenStorage = await cmtaTokenInstance.storage();
+
+
+                    // Previous Snapshot Time
+                    var previousSnapshotLedgerKey = {
+                        owner : alice.pkh,
+                        token_id : 0,
+                        snapshot_timestamp : previous_snapshot_time
+                    };
+                    const previousAliceToken0Balance    = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(previousSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+                    
+                    previousSnapshotLedgerKey.owner     = bob.pkh;
+                    const previousBobToken0Balance      = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(previousSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    previousSnapshotLedgerKey.owner     = mallory.pkh;
+                    const previousMalloryToken0Balance  = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(previousSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    assert.equal(previousAliceToken0Balance     , 38);
+                    assert.equal(previousMalloryToken0Balance   , 10);
+                    assert.equal(previousBobToken0Balance       , 2);
+
+
+                    // Future Snapshot Time
+                    var futureSnapshotLedgerKey = {
+                        owner : alice.pkh,
+                        token_id : 0,
+                        snapshot_timestamp : future_snapshot_time
+                    };
+                    const futureAliceToken0Balance    = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(futureSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    futureSnapshotLedgerKey.owner = bob.pkh;
+                    const futureBobToken0Balance      = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(futureSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    futureSnapshotLedgerKey.owner = mallory.pkh;
+                    const futureMalloryToken0Balance  = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(futureSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    assert.equal(futureAliceToken0Balance     , 36);
+                    assert.equal(futureMalloryToken0Balance   , 10);
+                    assert.equal(futureBobToken0Balance       , 4);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('Yet another schedule (cont)', async () => {
+                try {
+
+                    // init snapshots
+                    const previous_snapshot_time     = second_snapshot_time;
+                    const new_snapshot_time          = makeSnapshotTimestamp(5);
+                    const future_snapshot_time : any = makeSnapshotTimestamp(10);
+
+                    // for use in subsequent test
+                    third_snapshot_time = future_snapshot_time;
+
+                    await signerFactory(tezos, alice.sk);
+                    const scheduleSnapshotOperation = await cmtaTokenInstance.methods.schedule_snapshot(token_id, new_snapshot_time).send();
+                    await scheduleSnapshotOperation.confirmation()
+
+                    // wait 5 sec
+                    await wait(5 * 1000);
+
+                    await signerFactory(tezos, alice.sk);
+                    let transferOperation = await cmtaTokenInstance.methods.transfer([
+                        {
+                            from_ : alice.pkh,
+                            txs: [
+                                {
+                                    to_: bob.pkh,
+                                    token_id: 0,
+                                    amount: 1,
+                                },
+                            ]
+                        }
+                    ]).send();
+                    await transferOperation.confirmation();
+
+                    // update storage
+                    cmtaTokenStorage = await cmtaTokenInstance.storage();
+
+                    // Current/New Snapshot Time
+                    var snapshotLedgerKey = {
+                        owner : alice.pkh,
+                        token_id : 0,
+                        snapshot_timestamp : new_snapshot_time
+                    };
+                    const aliceToken0Balance    = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(snapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    snapshotLedgerKey.owner = bob.pkh;
+                    const bobToken0Balance      = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(snapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    snapshotLedgerKey.owner = mallory.pkh;
+                    const malloryToken0Balance  = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(snapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    assert.equal(aliceToken0Balance     , 36);
+                    assert.equal(malloryToken0Balance   , 10);
+                    assert.equal(bobToken0Balance       , 4);
+
+
+                    // Previous Snapshot Time
+                    var previousSnapshotLedgerKey = {
+                        owner : alice.pkh,
+                        token_id : 0,
+                        snapshot_timestamp : previous_snapshot_time
+                    };
+                    const previousAliceToken0Balance    = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(previousSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+                    
+                    previousSnapshotLedgerKey.owner     = bob.pkh;
+                    const previousBobToken0Balance      = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(previousSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    previousSnapshotLedgerKey.owner     = mallory.pkh;
+                    const previousMalloryToken0Balance  = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(previousSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    assert.equal(previousAliceToken0Balance     , 37);
+                    assert.equal(previousMalloryToken0Balance   , 10);
+                    assert.equal(previousBobToken0Balance       , 3);
+
+                    
+                    // Future Snapshot Time
+                    var futureSnapshotLedgerKey = {
+                        owner : alice.pkh,
+                        token_id : 0,
+                        snapshot_timestamp : future_snapshot_time
+                    };
+                    const futureAliceToken0Balance    = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(futureSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    futureSnapshotLedgerKey.owner = bob.pkh;
+                    const futureBobToken0Balance      = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(futureSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    futureSnapshotLedgerKey.owner = mallory.pkh;
+                    const futureMalloryToken0Balance  = await cmtaTokenInstance.contractViews.view_snapshot_balance_of(futureSnapshotLedgerKey).executeView({ viewCaller : alice.pkh});
+
+                    assert.equal(futureAliceToken0Balance     , 35);
+                    assert.equal(futureMalloryToken0Balance   , 10);
+                    assert.equal(futureBobToken0Balance       , 5);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('Snapshot total Supplies', async () => {
+                try {
+
+                    var snapshotLookupKey = {
+                        token_id : 0,
+                        snapshot_timestamp : third_snapshot_time 
+                    };
+
+                    const token0TotalSupply    = await cmtaTokenInstance.contractViews.view_snapshot_total_supply(snapshotLookupKey).executeView({ viewCaller : alice.pkh});
+                    
+                    snapshotLookupKey.token_id = 1;
+                    const token1TotalSupply    = await cmtaTokenInstance.contractViews.view_snapshot_total_supply(snapshotLookupKey).executeView({ viewCaller : alice.pkh});
+
+                    snapshotLookupKey.token_id = 2;
+                    const token2TotalSupply    = await cmtaTokenInstance.contractViews.view_snapshot_total_supply(snapshotLookupKey).executeView({ viewCaller : alice.pkh});
+
+                    assert.equal(token0TotalSupply      , 50);
+                    assert.equal(token1TotalSupply      , 47);
+                    assert.equal(token2TotalSupply      , 39);
+
+                    // init snapshots
+                    const new_snapshot_time          = makeSnapshotTimestamp(5);
+                    const future_snapshot_time : any = makeSnapshotTimestamp(10);
+
+                    await signerFactory(tezos, alice.sk);
+                    const scheduleSnapshotOperation = await cmtaTokenInstance.methods.schedule_snapshot(token_id, new_snapshot_time).send();
+                    await scheduleSnapshotOperation.confirmation()
+
+                    // wait 5 sec
+                    await wait(5 * 1000);
+                    
+                    // mint operation
+                    let mintOperation = await cmtaTokenInstance.methods.mint([
+                        {
+                            token_id : 0,
+                            amount : 50,
+                            address : alice.pkh 
+                        }
+                    ]).send();
+                    await mintOperation.confirmation();
+
+                    console.log(`           Direct match`)
+
+                    // update storage
+                    cmtaTokenStorage = await cmtaTokenInstance.storage();
+
+                    snapshotLookupKey.token_id            = token_id;
+                    snapshotLookupKey.snapshot_timestamp  = future_snapshot_time;
+                    const futureSnapshotToken0TotalSupply = await cmtaTokenInstance.contractViews.view_snapshot_total_supply(snapshotLookupKey).executeView({ viewCaller : alice.pkh});
+
+                    snapshotLookupKey.snapshot_timestamp  = new_snapshot_time;
+                    const snapshotToken0TotalSupply = await cmtaTokenInstance.contractViews.view_snapshot_total_supply(snapshotLookupKey).executeView({ viewCaller : alice.pkh});
+
+                    assert.equal(futureSnapshotToken0TotalSupply    , 100);
+                    assert.equal(snapshotToken0TotalSupply          , 50);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+        })
+
+        describe('Kill Switch', function () {
+
+            it('Only Token 0 Admin can kill one time', async () => {
+                try {
+
+                    await signerFactory(tezos, adminSk);
+                    let killOperation = await cmtaTokenInstance.methods.kill();
+                    await chai.expect(killOperation.send()).to.be.rejected;
+
+                    await signerFactory(tezos, bob.sk);
+                    killOperation = await cmtaTokenInstance.methods.kill();
+                    await chai.expect(killOperation.send()).to.be.rejected;
+
+                    await signerFactory(tezos, mallory.sk);
+                    killOperation = await cmtaTokenInstance.methods.kill();
+                    await chai.expect(killOperation.send()).to.be.rejected;
+
+                    // update storage
+                    cmtaTokenStorage = await cmtaTokenInstance.storage();
+
+                    const aliceToken0Balance    = await cmtaTokenStorage.ledger.get({owner : alice.pkh, token_id : 0});
+                    const bobToken0Balance      = await cmtaTokenStorage.ledger.get({owner : bob.pkh, token_id : 0});
+                    const malloryToken0Balance  = await cmtaTokenStorage.ledger.get({owner : mallory.pkh, token_id : 0});
+
+                    assert.notEqual(aliceToken0Balance      , null);
+                    assert.notEqual(bobToken0Balance        , null);
+                    assert.notEqual(malloryToken0Balance    , null);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('Admin can kill', async () => {
+                try {
+
+                    await signerFactory(tezos, alice.sk);
+                    let killOperation = await cmtaTokenInstance.methods.kill().send();
+                    await killOperation.confirmation();
+
+                    // update storage
+                    cmtaTokenStorage = await cmtaTokenInstance.storage();
+
+                    const aliceToken0Balance    = await cmtaTokenStorage.ledger.get({owner : alice.pkh, token_id : 0});
+                    const aliceToken1Balance    = await cmtaTokenStorage.ledger.get({owner : alice.pkh, token_id : 1});
+                    const aliceToken2Balance    = await cmtaTokenStorage.ledger.get({owner : alice.pkh, token_id : 2});
+
+                    const bobToken0Balance      = await cmtaTokenStorage.ledger.get({owner : bob.pkh, token_id : 0});
+                    const bobToken1Balance      = await cmtaTokenStorage.ledger.get({owner : bob.pkh, token_id : 1});
+                    const bobToken2Balance      = await cmtaTokenStorage.ledger.get({owner : bob.pkh, token_id : 2});
+
+                    const malloryToken0Balance  = await cmtaTokenStorage.ledger.get({owner : mallory.pkh, token_id : 0});
+                    const malloryToken1Balance  = await cmtaTokenStorage.ledger.get({owner : mallory.pkh, token_id : 1});
+                    const malloryToken2Balance  = await cmtaTokenStorage.ledger.get({owner : mallory.pkh, token_id : 2});
+
+                    assert.equal(aliceToken0Balance     , null);
+                    assert.equal(aliceToken1Balance     , null);
+                    assert.equal(aliceToken2Balance     , null);
+                    
+                    assert.equal(bobToken0Balance       , null);
+                    assert.equal(bobToken1Balance       , null);
+                    assert.equal(bobToken2Balance       , null);
+                    
+                    assert.equal(malloryToken0Balance   , null);
+                    assert.equal(malloryToken1Balance   , null);
+                    assert.equal(malloryToken2Balance   , null);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('Admin can only kill one time', async () => {
+                try {
+
+                    await signerFactory(tezos, alice.sk);
+                    let killOperation = await cmtaTokenInstance.methods.kill();
+                    await chai.expect(killOperation.send()).to.be.rejected;
+
+                    // update storage
+                    cmtaTokenStorage = await cmtaTokenInstance.storage();
+
+                    const aliceToken2Balance = await cmtaTokenStorage.ledger.get({owner : alice.pkh, token_id : 2});
+                    assert.equal(aliceToken2Balance , null);
+                    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
 
         })
 

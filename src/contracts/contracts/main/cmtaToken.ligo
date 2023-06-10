@@ -461,9 +461,16 @@ block {
                     ]
                 };
 
+
                 case s.snapshot_total_supply[current_snapshot_lookup_key] of [
                         Some (_v) -> snapshot_total_supply := _v
-                    |   None      -> skip
+                    |   None      -> {
+                        
+                            case s.total_supply[snapshot_lookup_key.token_id] of [
+                                    Some(_v) -> snapshot_total_supply := _v
+                                |   None     -> skip
+                            ];
+                        }
                 ];
 
             }
@@ -542,28 +549,6 @@ block {
     ];
 
 } with snapshot_balance_of
-
-
-
-(* get: operator *)
-// [@view] function getOperatorOpt(const operator : (ownerType * operatorType * nat); const s : cmtaTokenStorageType) : option(unit) is
-//     Big_map.find_opt(operator, s.operators)
-
-
-// (* check if operator *)
-// [@view] function is_operator(const operator : (ownerType * operatorType * nat); const s : cmtaTokenStorageType) : bool is
-//     Big_map.mem(operator, s.operators)
-
-
-// (* get: metadata *)
-// [@view] function token_metadata(const tokenId : nat; const s : cmtaTokenStorageType) : tokenMetadataInfoType is
-//     case Big_map.find_opt(tokenId, s.token_metadata) of [
-//             Some (_metadata)  -> _metadata
-//         |   None -> record[
-//                 token_id    = tokenId;
-//                 token_metadata  = map[]
-//             ]
-//     ]
 
 // ------------------------------------------------------------------------------
 //
@@ -1164,7 +1149,6 @@ block{
 
                 } else skip;
 
-            // } with accumulator with record[ledger = accumulator.ledger];
             } with accumulator;
 
             const updatedOperations : list(operation) = (nil: list(operation));
