@@ -405,7 +405,7 @@ block {
                 // transfer token to contract (custodial solution)
                 operations := case token of [
                         Fa12Token(fa12TokenAddress) -> transferFa12Token(sender, marketplace, amount, fa12TokenAddress) # operations
-                    |   Fa2Token(fa2Token) -> transferFa2Token(sender, marketplace, amount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
+                    |   Fa2Token(fa2Token)          -> transferFa2Token(sender, marketplace, amount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
                 ];
 
                 s.nextListingId := nextListingId + 1n;
