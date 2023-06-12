@@ -281,7 +281,7 @@ function removeListing(const removeListingParams : removeListingActionType; var 
 block {
 
     // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaRemovelisting", s.lambdaLedger);
+    const lambdaBytes : bytes = getLambdaBytes("lambdaRemoveListing", s.lambdaLedger);
 
     // init marketplace lambda action
     const marketplaceLambdaAction : marketplaceLambdaActionType = LambdaRemoveListing(removeListingParams);

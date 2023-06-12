@@ -71,6 +71,25 @@ export function makeTimestamp(secondsFromNow : number) {
     return snapshot_time
 }
 
+export function removeMillisecondsDateFormat(dateString: string): string {
+    // Create a Date object
+    const date = new Date(dateString);
+    // Format the date
+    let formattedDate = date.toISOString();
+    // Remove the milliseconds
+    formattedDate = formattedDate.substring(0, formattedDate.length - 5) + 'Z';
+    return formattedDate;
+}
+  
+export function showMillisecondsDateFormat(dateString: string): string {
+    // Create a Date object
+    const date = new Date(dateString);
+    // Format the date to include milliseconds
+    let formattedDate = date.toISOString();
+    return formattedDate;
+}
+
+
 
 export function randomNumberFromInterval(min, max) { // min and max included 
     return Math.floor(Math.random() * (max - min + 1) + min)

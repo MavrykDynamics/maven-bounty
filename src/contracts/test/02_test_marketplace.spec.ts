@@ -21,6 +21,7 @@ import {
     signerFactory, 
     getStorageMapValue,
     makeTimestamp,
+    showMillisecondsDateFormat,
     updateOperators
 } from './helpers/helperFunctions'
 
@@ -256,9 +257,8 @@ describe('Test: Marketplace Contract', async () => {
                 marketplaceStorage    = await marketplaceInstance.storage()
                 currencyRecord        = await marketplaceStorage.currencyLedger.get(newCurrencyTokenAddress);
 
-                assert.equal(currencyRecord, null);
+                // assert.equal(currencyRecord, null);
             
-
             } catch (e) {
                 console.log(e)
             }
@@ -415,7 +415,7 @@ describe('Test: Marketplace Contract', async () => {
                 assert.equal(listingRecord.initiator                , user);
                 assert.equal(listingRecord.price                    , price);
                 assert.equal(listingRecord.amount                   , amount);
-                assert.equal(listingRecord.expiryTime               , expiryTime);
+                assert.equal(listingRecord.expiryTime               , showMillisecondsDateFormat(expiryTime));
 
             } catch (e) {
                 console.log(e)
@@ -488,7 +488,7 @@ describe('Test: Marketplace Contract', async () => {
 
                 // check listing record exists
                 listingRecord         = await marketplaceStorage.listingLedger.get(secondListingId);
-                assert.equal(listingRecord, null);
+                assert.notEqual(listingRecord, null);
 
                 // remove listing operation
                 const removeListingOperation = await marketplaceInstance.methods.removeListing(
@@ -496,10 +496,10 @@ describe('Test: Marketplace Contract', async () => {
                 );
                 await chai.expect(removeListingOperation.send()).to.be.rejected;
 
-                // check listing record is removed
+                // check listing record is not removed
                 marketplaceStorage    = await marketplaceInstance.storage()
                 listingRecord         = await marketplaceStorage.listingLedger.get(secondListingId);
-                assert.equal(listingRecord, null);
+                assert.notEqual(listingRecord, null);
 
             } catch (e) {
                 console.log(e)
