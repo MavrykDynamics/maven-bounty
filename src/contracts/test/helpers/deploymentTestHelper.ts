@@ -14,11 +14,13 @@ import env from "../../env"
 import { confirmOperation } from "../../scripts/confirmation"
 import { OnChainView } from "@taquito/taquito/dist/types/contract/contract-methods/contract-on-chain-view"
 
+
 // Contracts Storage Type
 import { freezeRuleEngineStorageType }      from "../../storage/storageTypes/freezeRuleEngineStorageType"
 import { launchpadStorageType }             from "../../storage/storageTypes/launchpadStorageType"
 import { marketplaceStorageType }           from "../../storage/storageTypes/marketplaceStorageType"
 import { tokenRegistryStorageType }         from "../../storage/storageTypes/tokenRegistryStorageType"
+
 
 // Tokens Storage Type
 import { cmtaTokenStorageType }             from "../../storage/storageTypes/cmtaTokenStorageType";
@@ -27,12 +29,12 @@ import { mavrykFa12TokenStorageType }       from "../../storage/storageTypes/mav
 
 
 // Contract Lambdas
-// import launchpadLambdas                     from "../../build/lambdas/launchpadLambdas.json"
+import launchpadLambdas                     from "../../build/lambdas/launchpadLambdas.json"
 import marketplaceLambdas                   from "../../build/lambdas/marketplaceLambdas.json"
 import tokenRegistryLambdas                 from "../../build/lambdas/tokenRegistryLambdas.json"
 
 const generalContractLambdas = {
-    // "launchpad"             : launchpadLambdas,
+    "launchpad"             : launchpadLambdas,
     "marketplace"           : marketplaceLambdas,
     "tokenRegistry"         : tokenRegistryLambdas,
 }

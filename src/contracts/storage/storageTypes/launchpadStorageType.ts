@@ -4,14 +4,20 @@ import { BigNumber } from "bignumber.js"
 export type launchpadStorageType = {
     
     superAdmin              : string;
-    admins                  : [];
+    admins                  : [string];
     newSuperAdmin           : string;
     
     metadata                : MichelsonMap<MichelsonMapKey, unknown>;
     config                  : {};
+    breakGlassConfig        : {};
 
     whitelistContracts      : MichelsonMap<MichelsonMapKey, unknown>;
     generalContracts        : MichelsonMap<MichelsonMapKey, unknown>;
+
+    saleLedger              : MichelsonMap<MichelsonMapKey, unknown>;
+    saleWhitelistLedger     : MichelsonMap<MichelsonMapKey, unknown>;
+    salePurchaseLedger      : MichelsonMap<MichelsonMapKey, unknown>;
+    lastSaleId              : BigNumber;
     
     lambdaLedger            : MichelsonMap<MichelsonMapKey, unknown>;
 

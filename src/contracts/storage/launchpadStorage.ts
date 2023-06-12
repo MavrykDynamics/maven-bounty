@@ -1,7 +1,11 @@
 import { MichelsonMap } from "@taquito/michelson-encoder"
 import { BigNumber } from "bignumber.js"
-import { bob } from '../scripts/sandbox/accounts'
+import { bob, eve } from '../scripts/sandbox/accounts'
 import { launchpadStorageType } from "./storageTypes/launchpadStorageType"
+
+const config = {
+    minOfferAmount             : 1, 
+}
 
 const metadata = MichelsonMap.fromLiteral({
     '': Buffer.from('tezos-storage:data', 'ascii').toString('hex'),
@@ -22,14 +26,20 @@ const metadata = MichelsonMap.fromLiteral({
 export const launchpadStorage : launchpadStorageType = {
     
     superAdmin                : bob.pkh,
-    admins                    : [],
+    admins                    : [eve.pkh],
     newSuperAdmin             : null,
 
     metadata                  : metadata,
-    config                    : {},
+    config                    : config,
+    breakGlassConfig          : {},
 
     whitelistContracts        : MichelsonMap.fromLiteral({}),
     generalContracts          : MichelsonMap.fromLiteral({}),
+
+    saleLedger                : MichelsonMap.fromLiteral({}),
+    saleWhitelistLedger       : MichelsonMap.fromLiteral({}),
+    salePurchaseLedger        : MichelsonMap.fromLiteral({}),
+    lastSaleId                : new BigNumber(0),
     
     lambdaLedger              : MichelsonMap.fromLiteral({})
 };
