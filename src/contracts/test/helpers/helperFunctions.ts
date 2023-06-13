@@ -25,6 +25,19 @@ export async function signerFactory (tezos, pk) {
     return tezos
 }
 
+
+type tezType = Unit;
+type fa12TokenType = string; // assuming address is represented by a string
+type fa2TokenType = {
+    tokenContractAddress: string;
+    tokenId: number; // assuming nat (natural numbers) is represented by a number
+}
+
+export type currencyType = 
+    | { kind: "tez", value: tezType } 
+    | { kind: "fa12", value: fa12TokenType }
+    | { kind: "fa2", value: fa2TokenType };
+    
 // ------------------------------------------------------------------------------
 // Common Functions
 // ------------------------------------------------------------------------------
@@ -232,4 +245,29 @@ export function mistakenTransferFa12Token (contractInstance, to, tokenContractAd
         }
     ])
     return mistakenTransferOperation;
+}
+
+
+export function getTokenInfo(currency, field: "tokenContractAddress" | "tokenId") : string | number | null {
+
+    if (currency.fa2 !== undefined) {
+
+        if(field == "tokenContractAddress"){
+            return currency.fa2.tokenContractAddress
+        } else if(field == "tokenId"){
+            return currency.fa2.tokenId
+        } else {
+            return null
+        }
+
+    } else if (currency.fa12 !== undefined && field === "tokenContractAddress") {
+        
+        console.log('fa12')
+        return currency.fa12.tokenContractAddress
+
+    } else {
+
+        return null;
+
+    }
 }

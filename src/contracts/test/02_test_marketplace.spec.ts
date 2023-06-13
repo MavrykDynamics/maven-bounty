@@ -1,3 +1,4 @@
+import { UnitValue } from '@taquito/taquito'
 import { Utils } from './helpers/Utils'
 
 const chai = require('chai')
@@ -22,7 +23,9 @@ import {
     getStorageMapValue,
     makeTimestamp,
     showMillisecondsDateFormat,
-    updateOperators
+    updateOperators,
+    getTokenInfo,
+    currencyType
 } from './helpers/helperFunctions'
 
 
@@ -44,6 +47,7 @@ describe('Test: Marketplace Contract', async () => {
     // misc defaults
     let tokenId = 0
     let tokenAmount
+    let tokenDecimals
     let operator
     let operatorKey
 
@@ -63,6 +67,10 @@ describe('Test: Marketplace Contract', async () => {
     let mockFa2TokenAddress 
     let mockFa2TokenInstance
     let mockFa2TokenStorage
+
+    let securityTokenAddress 
+    let securityTokenInstance
+    let securityTokenStorage
     
     // user accounts
     let user
@@ -113,6 +121,8 @@ describe('Test: Marketplace Contract', async () => {
         admin           = eve.pkh 
         adminSk         = eve.sk 
 
+        tokenDecimals   = 6;
+
         tokenRegistryAddress            = contractDeployments.tokenRegistry.address
         tokenRegistryInstance           = await utils.tezos.contract.at(tokenRegistryAddress)
         tokenRegistryStorage            = await tokenRegistryInstance.storage()
@@ -129,7 +139,32 @@ describe('Test: Marketplace Contract', async () => {
         mockFa2TokenInstance            = await utils.tezos.contract.at(mockFa2TokenAddress);
         mockFa2TokenStorage             = await mockFa2TokenInstance.storage()
 
+        securityTokenAddress            = contractDeployments.securityToken.address;
+        securityTokenInstance           = await utils.tezos.contract.at(securityTokenAddress);
+        securityTokenStorage            = await securityTokenInstance.storage()
+
         console.log('-- -- -- -- -- -- -- -- -- -- -- -- --')
+
+        // Mint Security Tokens to Alice, Eve, Mallory
+        await signerFactory(tezos, eve.sk);
+        let mintOperation = await securityTokenInstance.methods.mint([
+            {
+                token_id : 0,
+                amount : 50,
+                address : mallory.pkh 
+            },
+            {
+                token_id : 0,
+                amount : 50,
+                address : eve.pkh 
+            },
+            {
+                token_id : 0,
+                amount : 50,
+                address : alice.pkh 
+            }
+        ]).send();
+        await mintOperation.confirmation();
 
     })
 
@@ -334,19 +369,26 @@ describe('Test: Marketplace Contract', async () => {
             marketplaceStorage    = await marketplaceInstance.storage()
         });
 
+
+        // -----------------------------------
+        // change mock FA2 token to security token
+        // -----------------------------------
+
         it('user (mallory) should be able to set create a new mockFa2 Token listing [no expiry, currency: tez]', async () => {
             try {
 
                 listingId                   = marketplaceStorage.nextListingId;
                 firstListingId              = listingId;
+
                 const amount                = 22;
                 const price                 = 3;
                 const expiryTime            = null;
                 const listTokenType         = "fa2Token";
-                const listToken             = mockFa2TokenAddress;
+                const listToken             = securityTokenAddress;
                 const listTokenId           = 0;
-                const currencyTokenType     = "fa12";
-                const currencyTokenAddress  = mockFa12TokenAddress;
+                const currencyTokenType     = "fa2";
+                const currencyTokenAddress  = mockFa2TokenAddress;
+                const currencyTokenId       = 0;
 
                 // update operators operation
                 updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, user, marketplaceAddress, tokenId);
@@ -361,7 +403,8 @@ describe('Test: Marketplace Contract', async () => {
                     listToken,
                     listTokenId,
                     currencyTokenType,
-                    currencyTokenAddress
+                    currencyTokenAddress,
+                    currencyTokenId
                 ).send()
                 await createListingOperation.confirmation();
 
@@ -384,16 +427,22 @@ describe('Test: Marketplace Contract', async () => {
 
                 listingId                   = marketplaceStorage.nextListingId;
                 secondListingId             = listingId;
+
                 const amount                = 22;
                 const price                 = 3;
                 const listTokenType         = "fa2Token";
-                const listToken             = mockFa2TokenAddress;
+                const listToken             = securityTokenAddress;
                 const listTokenId           = 0;
-                const currencyTokenType     = "fa12";
-                const currencyTokenAddress  = mockFa12TokenAddress;
+                const currencyTokenType     = "fa2";
+                const currencyTokenAddress  = mockFa2TokenAddress;
+                const currencyTokenId       = 0;
 
                 // get timestamp in 3mins
                 const expiryTime = makeTimestamp(180);
+
+                // update operators operation
+                updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, user, marketplaceAddress, tokenId);
+                await updateOperatorsOperation.confirmation();
 
                 // create listing operation
                 const createListingOperation = await marketplaceInstance.methods.createListing(
@@ -404,7 +453,8 @@ describe('Test: Marketplace Contract', async () => {
                     listToken,
                     listTokenId,
                     currencyTokenType,
-                    currencyTokenAddress
+                    currencyTokenAddress,
+                    currencyTokenId
                 ).send()
                 await createListingOperation.confirmation();
 
@@ -508,15 +558,65 @@ describe('Test: Marketplace Contract', async () => {
 
     })
     
-    describe('%removeListing', function () {
+    describe('%purchase', function () {
         
-        beforeEach("Set signer to user (mallory)", async () => {
-            user    = mallory.pkh;
-            userSk  = mallory.sk;
+        beforeEach("Set signer to user (alice)", async () => {
+            user    = alice.pkh;
+            userSk  = alice.sk;
             await signerFactory(tezos, userSk);
 
             marketplaceStorage    = await marketplaceInstance.storage()
         });
+
+        it(`user (alice) should be able to purchase mallory's listing`, async () => {
+            try {
+
+                // check listing record exists
+                listingRecord = await marketplaceStorage.listingLedger.get(secondListingId);
+                assert.notEqual(listingRecord, null);
+
+                const amount      = listingRecord.amount;
+                const price       = listingRecord.price;
+                const currency    = listingRecord.currency;
+
+                const currencyTokenAddress  = getTokenInfo(currency, "tokenContractAddress");
+                const currencyTokenId       = getTokenInfo(currency, "tokenId");
+
+                // get current user balance
+                // initial storage
+                let tokenStorage                  = await mockFa2TokenInstance.storage()
+                const initialUserTokenBalance     = await tokenStorage.ledger.get(user);
+
+                const totalPrice = amount * price * (10 ** tokenDecimals);
+                
+                console.log(`totalPrice: ${totalPrice}`);
+                console.log(`initialUserTokenBalance: ${initialUserTokenBalance}`);
+                
+                // update operators operation
+                updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, user, marketplaceAddress, currencyTokenId);
+                await updateOperatorsOperation.confirmation();
+
+                // purhcase operation
+                const purchaseOperation = await marketplaceInstance.methods.purchase(
+                    secondListingId
+                ).send();
+                await purchaseOperation.confirmation();
+
+                // check listing record is removed (purchased)
+                marketplaceStorage    = await marketplaceInstance.storage()
+                listingRecord         = await marketplaceStorage.listingLedger.get(secondListingId);
+                assert.equal(listingRecord, null);
+
+                tokenStorage                    = await mockFa2TokenInstance.storage()
+                const updateUserTokenBalance    = await tokenStorage.ledger.get(user);
+
+                console.log(`updateUserTokenBalance: ${updateUserTokenBalance}`);
+                console.log(`updateUserTokenBalance - initialUserTokenBalance: ${updateUserTokenBalance - initialUserTokenBalance}`);
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
 
     })
     

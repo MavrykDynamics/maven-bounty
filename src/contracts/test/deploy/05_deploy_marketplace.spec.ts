@@ -46,6 +46,7 @@ describe('Marketplace', async () => {
             // Originate and deploy contracts
             //----------------------------
         
+            marketplaceStorage.generalContracts.set('treasury', bob.pkh);
             marketplace = await GeneralContract.originate(utils.tezos, "marketplace", marketplaceStorage);
             await saveContractAddress('marketplaceAddress', marketplace.contract.address)
         
