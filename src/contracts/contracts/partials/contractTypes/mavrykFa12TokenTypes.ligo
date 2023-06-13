@@ -14,8 +14,8 @@ type accountType is [@layout:comb] record [
 ]
 
 type tokenMetadataInfoType is [@layout:comb] record [
-  token_id          : tokenIdType;
-  token_info        : map(string, bytes);
+    token_id          : tokenIdType;
+    token_info        : map(string, bytes);
 ]
 
 type ledgerType is big_map (address, accountType);

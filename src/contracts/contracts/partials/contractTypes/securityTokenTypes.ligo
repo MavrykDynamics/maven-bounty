@@ -65,29 +65,21 @@ type ledgerKeyType is [@layout:comb] record [
     token_id        : nat;
 ]
 
-
 type tokenMetadataType is [@layout:comb] record [
     token_id          : tokenIdType;
     token_info        : map(string, bytes);
 ]
 
-
-// type reassignmentType is [@layout:comb] record [
-//     token_id            : nat;
-//     original_holder     : address;
-//     replacement_holder  : address;
-// ]
-
-type redemptionType is [@layout:comb] record [
-    token_id            : nat;
-    amount              : nat;
+type setAdminActionType is [@layout:comb] record [
+    admin            : address;
+    token_id         : nat;
 ]
 
-
-type destructionType is [@layout:comb] record [
-    token_id            : nat;
-    holders             : list(address);
+type removeAdminActionType is [@layout:comb] record [
+    admin            : address;
+    token_id         : nat;
 ]
+
 
 type ruleType is [@layout:comb] record [
     token_id        : nat;
@@ -153,16 +145,18 @@ type operatorsType is big_map((ownerType * operatorType * tokenIdType), unit)
 
 type securityTokenStorageType is [@layout:comb] record [
     
+    superAdmin              : address;
+    newSuperAdmin           : option(address);
     administrators          : administratorsType;
 
+    whitelistContracts      : whitelistContractsType;    
     token_metadata          : tokenMetadataLedgerType;
-    
     totalSupply             : totalSupplyType;
 
     snapshotLedger          : snapshotLedgerType;
     snapshotLookup          : snapshotLookupType;
     snapshotTotalSupply     : snapshotTotalSupplyType;
-    token_context           : tokenContextLedgerType;
+    tokenContext            : tokenContextLedgerType;
     identities              : identityType;
 
     ledger                  : ledgerType;

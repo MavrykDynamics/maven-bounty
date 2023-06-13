@@ -58,6 +58,7 @@ block {
 } with response
 
 
+
 (*  removeAdmin entrypoint *)
 function removeAdmin(const adminAddress : address; var s : tokenRegistryStorageType) : return is
 block {

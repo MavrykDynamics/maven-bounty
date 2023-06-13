@@ -5,7 +5,7 @@ export type tokenRegistryStorageType = {
     
     superAdmin              : string;
     admins                  : [string];
-    newSuperAdmin           : string;
+    newSuperAdmin           : string | null;
     
     metadata                : MichelsonMap<MichelsonMapKey, unknown>;
     breakGlassConfig        : {};
