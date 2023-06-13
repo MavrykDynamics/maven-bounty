@@ -60,6 +60,10 @@ for contract_test in "${CONTRACTS_DEPLOY_ARRAY[@]}"; do
             echo "Deploying Launchpad"
             COMMANDS+=("yarn ts-mocha --paths test/deploy/06_deploy_launchpad.spec.ts --bail --timeout 9000000")
             ;;
+        securityTokens)
+            echo "Deploying Security Tokens"
+            COMMANDS+=("yarn ts-mocha --paths test/deploy/07_deploy_security_tokens.spec.ts --bail --timeout 9000000")
+            ;;
         all)
             echo "Deploy all contracts"
 

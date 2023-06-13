@@ -12,6 +12,12 @@
 // Shared Helpers
 #include "../partials/shared/sharedHelpers.ligo"
 
+// Transfer Helpers
+#include "../partials/shared/transferHelpers.ligo"
+
+// Constants
+#include "../partials/shared/constants.ligo"
+
 // ------------------------------------------------------------------------------
 // Contract Types
 // ------------------------------------------------------------------------------
@@ -23,12 +29,14 @@
 
 type action is
 
+        // Admin Entrypoints
+        SetSuperAdmin             of (address)
+    |   ClaimSuperAdmin           of (unit)
+    |   SetAdmin                  of setAdminActionType
+    |   RemoveAdmin               of removeAdminActionType
+
         // Housekeeping Entrypoints
-        SetTokenMetadata          of list(tokenMetadataType)
-    |   ProposeAdministrator      of (tokenIdType * address)
-    |   SetAdministrator          of tokenIdType
-    |   RemoveAdministrator       of (tokenIdType * address)
-    |   SetGovernance             of address
+    |   SetTokenMetadata          of list(tokenMetadataType)
     |   UpdateWhitelistContracts  of updateWhitelistContractsType
     |   MistakenTransfer          of transferActionType
         
@@ -229,13 +237,13 @@ block {
     case tokenContext.currentSnapshot of [
             Some (currentSnapshotTimestamp) -> {
 
-                const snapshot_ledgerKey : snapshotLedgerKeyType = record [
+                const snapshotLedgerKey : snapshotLedgerKeyType = record [
                     token_id            = token_id;
                     owner               = ownerAddress;
                     snapshotTimestamp  = currentSnapshotTimestamp;
                 ];
 
-                case s.snapshotLedger[snapshot_ledgerKey] of [
+                case s.snapshotLedger[snapshotLedgerKey] of [
                         Some (_v) -> {
                             
                             const ledgerKey : ledgerKeyType = record [
@@ -249,7 +257,7 @@ block {
                             ];
 
                             // set snapshot ledger value
-                            s.snapshotLedger[snapshot_ledgerKey] := ledger_value;
+                            s.snapshotLedger[snapshotLedgerKey] := ledger_value;
 
                         }
                     |   None -> skip
@@ -540,7 +548,7 @@ block {
 
 
 (* get: metadata *)
-[@view] function token_metadata(const tokenId : nat; const s : securityTokenStorageType) : tokenMetadataInfoType is
+[@view] function token_metadata(const tokenId : nat; const s : securityTokenStorageType) : tokenMetadataType is
     case Big_map.find_opt(tokenId, s.token_metadata) of [
             Some (_metadata)  -> _metadata
         |   None -> record[
@@ -562,6 +570,78 @@ block {
 // Entrypoints Begin
 //
 // ------------------------------------------------------------------------------
+
+// ------------------------------------------------------------------------------
+// Admin Entrypoints Begin
+// ------------------------------------------------------------------------------
+
+(*  setSuperAdmin entrypoint *)
+function setSuperAdmin(const newAdminAddress : address; var s : securityTokenStorageType) : return is
+block {
+
+    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
+    s.newSuperAdmin := Some(newAdminAddress);
+    
+} with (noOperations, s)
+
+
+
+(*  claimSuperAdmin entrypoint *)
+function claimSuperAdmin(var s : securityTokenStorageType) : return is
+block {
+
+    // get sender and new super admin address 
+    const sender : address = Tezos.get_sender();
+    const newSuperAdmin : address = case s.newSuperAdmin of [
+            Some(_address) -> _address
+        |   None           -> failwith(error_NO_NEW_SUPER_ADMIN_FOUND)
+    ];
+
+    // check if sender is not new super admin 
+    if sender =/= newSuperAdmin then failwith(error_SENDER_IS_NOT_NEW_SUPER_ADMIN) else skip;
+    s.superAdmin := newSuperAdmin;
+    
+} with (noOperations, s)
+
+
+
+(*  setAdmin entrypoint *)
+function setAdmin(const setAdminParams : setAdminActionType; var s : securityTokenStorageType) : return is
+block {
+
+    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
+
+    const administratorLedgerKey : ledgerKeyType = record [
+        owner       = setAdminParams.admin;
+        token_id    = setAdminParams.token_id;
+    ];    
+
+    s.administrators[administratorLedgerKey] := is_admin;
+    
+} with (noOperations, s)
+
+
+
+(*  removeAdmin entrypoint *)
+function removeAdmin(const removeAdminParams : removeAdminActionType; var s : securityTokenStorageType) : return is
+block {
+
+    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
+    
+    const administrator_to_remove_ledgerKey : ledgerKeyType = record [
+        owner       = removeAdminParams.admin;
+        token_id    = removeAdminParams.token_id;
+    ];    
+
+    remove administrator_to_remove_ledgerKey from map s.administrators;
+    
+} with (noOperations, s)
+
+// ------------------------------------------------------------------------------
+// Admin Entrypoints End
+// ------------------------------------------------------------------------------
+
+
 
 // ------------------------------------------------------------------------------
 // Housekeeping Entrypoints Begin
@@ -610,93 +690,11 @@ block {
 
 
 
-(*  proposeAdministrator entrypoint 
-    - This kicks off the adding of a new administrator for a specific token. First you propose and then the proposed admin 
-      can set him/herself with the set_administrator endpoint
-*)
-function proposeAdministrator(const token_id : nat; const proposed_administrator : address; var s : securityTokenStorageType) : return is
-block {
-
-    const administratorLedgerKey : ledgerKeyType = record [
-        owner       = Tezos.get_sender();
-        token_id    = token_id;
-    ];    
-
-    const proposed_administratorLedgerKey : ledgerKeyType = record [
-        owner       = proposed_administrator;
-        token_id    = token_id;
-    ];    
-
-    // verify sender is admin
-    verifySenderIsAdmin(administratorLedgerKey, s);
-
-    s.administrators[proposed_administratorLedgerKey] := is_proposed_admin;
-
-} with (noOperations, s)
-
-
-
-(*  setAdministrator entrypoint 
-    - Only a proposed admin can call this entrypoint. If the sender is correct the new admin is set
-*)
-function setAdministrator(const token_id : nat; var s : securityTokenStorageType) : return is
-block {
-    
-    const administratorLedgerKey : ledgerKeyType = record [
-        owner       = Tezos.get_sender();
-        token_id    = token_id;
-    ];    
-
-    // verify sender is proposed admin
-    verifySenderIsProposedAdmin(administratorLedgerKey, s);
-
-    s.administrators[administratorLedgerKey] := is_admin;
-  
-} with (noOperations, s)
-
-
-
-(*  removeAdministrator entrypoint 
-    - This removes a administrator entry entirely from the map
-*)
-function removeAdministrator(const token_id : nat; const administrator_to_remove : address; var s : securityTokenStorageType) : return is
-block {
-    
-    const administratorLedgerKey : ledgerKeyType = record [
-        owner       = Tezos.get_sender();
-        token_id    = token_id;
-    ];    
-
-    const administrator_to_remove_ledgerKey : ledgerKeyType = record [
-        owner       = administrator_to_remove;
-        token_id    = token_id;
-    ];    
-
-    // verify sender is admin
-    verifySenderIsAdmin(administratorLedgerKey, s);
-
-    remove administrator_to_remove_ledgerKey from map s.administrators;
-
-} with (noOperations, s)
-
-
-
-(*  setGovernance entrypoint *)
-function setGovernance(const newGovernanceAddress : address; var store : mvkTokenStorageType) : return is
-block {
-    
-  checkSenderIsAllowed(store);
-  store.governanceAddress := newGovernanceAddress;
-
-} with (noOperations, store)
-
-
-
 (*  updateWhitelistContracts entrypoint *)
-function updateWhitelistContracts(const updateWhitelistContractsParams : updateWhitelistContractsType; var s : mvkTokenStorageType) : return is
+function updateWhitelistContracts(const updateWhitelistContractsParams : updateWhitelistContractsType; var s : securityTokenStorageType) : return is
 block {
 
-    checkSenderIsAdmin(s);
+    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
     s.whitelistContracts := updateWhitelistContractsMap(updateWhitelistContractsParams, s.whitelistContracts);
   
 } with (noOperations, s)
@@ -704,14 +702,14 @@ block {
 
 
 (*  mistakenTransfer entrypoint *)
-function mistakenTransfer(const destinationParams : transferActionType; var store : mvkTokenStorageType) : return is
+function mistakenTransfer(const destinationParams : transferActionType; var s : securityTokenStorageType) : return is
 block {
 
     // Steps Overview:    
     // 1. Check that sender is admin 
     // 2. Create and execute transfer operations based on the params sent
 
-    checkSenderIsAdmin(s);
+    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
 
     // Operations list
     var operations : list(operation) := nil;
@@ -719,7 +717,7 @@ block {
     // Create transfer operations (transferOperationFold in transferHelpers)
     operations := List.fold_right(transferOperationFold, destinationParams, operations)
 
-} with (operations, store)
+} with (operations, s)
 
 // ------------------------------------------------------------------------------
 // Housekeeping Entrypoints End
@@ -796,8 +794,8 @@ block {
         tokenContext  := bootstrapSnapshot.0;
         s              := bootstrapSnapshot.1;
 
-        s := set_snapshot_totalSupply((tokenContext, tokenAmount.token_id), s);
-        s := set_snapshot_ledger((tokenContext, tokenAmount.token_id, tokenAmount.address), s);
+        s := setSnapshotTotalSupply((tokenContext, tokenAmount.token_id), s);
+        s := setSnapshotLedger((tokenContext, tokenAmount.token_id, tokenAmount.address), s);
 
         s.ledger[recipientLedgerKey] := case s.ledger[recipientLedgerKey] of [
                 Some(_v) -> _v + tokenAmount.amount
@@ -847,8 +845,8 @@ block {
         tokenContext  := bootstrapSnapshot.0;
         s              := bootstrapSnapshot.1;
 
-        s := set_snapshot_totalSupply((tokenContext, tokenAmount.token_id), s);
-        s := set_snapshot_ledger((tokenContext, tokenAmount.token_id, tokenAmount.address), s);
+        s := setSnapshotTotalSupply((tokenContext, tokenAmount.token_id), s);
+        s := setSnapshotLedger((tokenContext, tokenAmount.token_id, tokenAmount.address), s);
 
         s.ledger[recipientLedgerKey] := case s.ledger[recipientLedgerKey] of [
                 Some(_v) -> if _v > tokenAmount.amount then abs(_v - tokenAmount.amount) else 0n
@@ -1159,8 +1157,8 @@ block{
                     tokenContext  := bootstrapSnapshot.0;
                     accumulator    := bootstrapSnapshot.1;
 
-                    accumulator    := set_snapshot_ledger((tokenContext, token_id, receiver), accumulator);
-                    accumulator    := set_snapshot_ledger((tokenContext, token_id, owner), accumulator);
+                    accumulator    := setSnapshotLedger((tokenContext, token_id, receiver), accumulator);
+                    accumulator    := setSnapshotLedger((tokenContext, token_id, owner), accumulator);
 
                     if tokenAmount >= 0n then block {
                         
@@ -1272,14 +1270,16 @@ function main (const action : action; const s : securityTokenStorageType) : retu
 
     case action of [
 
+            // Admin Entrypoints
+            SetSuperAdmin(parameters)           -> setSuperAdmin(parameters, s)
+        |   ClaimSuperAdmin(_parameters)        -> claimSuperAdmin(s)
+        |   SetAdmin(parameters)                -> setAdmin(parameters, s)
+        |   RemoveAdmin(parameters)             -> removeAdmin(parameters, s)
+        
             // Housekeeping Entrypoints
-            SetTokenMetadata (params)           -> setTokenMetadata(params, s)
-        |   ProposeAdministrator (params)       -> proposeAdministrator(params.0, params.1, s)
-        |   SetAdministrator (params)           -> setAdministrator(params, s)
-        |   RemoveAdministrator (params)        -> removeAdministrator(params.0, params.1, s)
-        |   SetGovernance (params)              -> setGovernance(params, store)
-        |   UpdateWhitelistContracts (params)   -> updateWhitelistContracts(params, store)
-        |   MistakenTransfer (params)           -> mistakenTransfer(params, store)
+        |   SetTokenMetadata (params)           -> setTokenMetadata(params, s)
+        |   UpdateWhitelistContracts (params)   -> updateWhitelistContracts(params, s)
+        |   MistakenTransfer (params)           -> mistakenTransfer(params, s)
         
             // Owner Entrypoints
         |   InitialiseToken (params)            -> initialiseToken(params, s)

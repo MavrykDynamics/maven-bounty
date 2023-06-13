@@ -24,6 +24,7 @@ import { tokenRegistryStorageType }         from "../../storage/storageTypes/tok
 
 // Tokens Storage Type
 import { cmtaTokenStorageType }             from "../../storage/storageTypes/cmtaTokenStorageType";
+import { securityTokenStorageType }         from "../../storage/storageTypes/securityTokenStorageType";
 import { mavrykFa2TokenStorageType }        from "../../storage/storageTypes/mavrykFa2TokenStorageType";
 import { mavrykFa12TokenStorageType }       from "../../storage/storageTypes/mavrykFa12TokenStorageType";
 
@@ -49,6 +50,7 @@ type generalContractStorageType =
     
     // tokens
     cmtaTokenStorageType | 
+    securityTokenStorageType | 
     mavrykFa12TokenStorageType | 
     mavrykFa2TokenStorageType 
     
