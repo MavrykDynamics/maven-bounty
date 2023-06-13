@@ -14,6 +14,22 @@ type tokenAmountType is [@layout:comb] record [
     address         : address; 
 ]
 
+// type reassignmentType is [@layout:comb] record [
+//     token_id            : nat;
+//     original_holder     : address;
+//     replacement_holder  : address;
+// ]
+
+// type redemptionType is [@layout:comb] record [
+//     token_id            : nat;
+//     amount              : nat;
+// ]
+
+// type destructionType is [@layout:comb] record [
+//     token_id            : nat;
+//     holders             : list(address);
+// ]
+
 (* Balance_of entrypoint inputs *)
 type balanceOfRequestType is [@layout:comb] record[
     owner       : ownerType;
@@ -158,6 +174,4 @@ type cmtaTokenStorageType is [@layout:comb] record [
 
     ledger                  : ledgerType;
     operators               : operatorsType;
-
-    testAddress             : address;
 ]

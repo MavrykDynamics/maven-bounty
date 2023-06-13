@@ -25,6 +25,4 @@ export const cmtaTokenStorage: cmtaTokenStorageType = {
 
     ledger                  : MichelsonMap.fromLiteral({}),
     operators               : MichelsonMap.fromLiteral({}),
-
-    testAddress             : oscar.pkh
 };

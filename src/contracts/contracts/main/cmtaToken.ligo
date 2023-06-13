@@ -248,18 +248,25 @@ block {
                     snapshot_timestamp  = current_snapshot_timestamp;
                 ];
 
-                const ledger_key : ledgerKeyType = record [
-                    owner       = ownerAddress;
-                    token_id    = token_id;
-                ];
+                case s.snapshot_ledger[snapshot_ledger_key] of [
+                        Some (_v) -> skip
+                    |   None -> {
+                            
+                            const ledgerKey : ledgerKeyType = record [
+                                owner       = ownerAddress;
+                                token_id    = token_id;
+                            ];
 
-                const ledger_value : nat = case s.ledger[ledger_key] of [
-                        Some (_v) -> _v
-                    |   None      -> 0n
-                ];
+                            const ledger_value : nat = case s.ledger[ledgerKey] of [
+                                    Some (_v) -> _v
+                                |   None      -> 0n
+                            ];
 
-                // set snapshot ledger value
-                s.snapshot_ledger[snapshot_ledger_key] := ledger_value;
+                            // set snapshot ledger value
+                            s.snapshot_ledger[snapshot_ledger_key] := ledger_value;
+
+                        }
+                ];
 
             }
         |   None -> skip
@@ -283,13 +290,20 @@ block {
                     snapshot_timestamp  = current_snapshot_timestamp;
                 ];
 
-                const total_supply : nat = case s.total_supply[token_id] of [
-                        Some (_v) -> _v
-                    |   None      -> 0n
-                ];
+                case s.snapshot_total_supply[snapshot_lookup_key] of [
+                        Some (_v) -> skip
+                    |   None -> {
+                            
+                            const total_supply : nat = case s.total_supply[token_id] of [
+                                    Some (_v) -> _v
+                                |   None      -> 0n
+                            ];
 
-                // set snapshot total supply
-                s.snapshot_total_supply[snapshot_lookup_key] := total_supply;
+                            // set snapshot total supply
+                            s.snapshot_total_supply[snapshot_lookup_key] := total_supply;
+
+                        }
+                ];
 
             }   
         |   None -> skip
@@ -1094,8 +1108,6 @@ block{
                                 token_id    = token_id;
                                 amount      = token_amount;
                             ];
-
-                            accumulator.testAddress := _rule_contract_address; 
 
                             const is_transfer_valid_view : option (option (bool)) = Tezos.call_view("view_is_transfer_valid", validation_transfer, _rule_contract_address);
                             const _is_transfer_valid : bool = case is_transfer_valid_view of [

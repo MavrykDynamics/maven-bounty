@@ -16,6 +16,5 @@ export type cmtaTokenStorageType = {
 
     ledger                  : MichelsonMap<MichelsonMapKey, unknown>;
     operators               : MichelsonMap<MichelsonMapKey, unknown>;
-    
-    testAddress             : string;
+
 };
