@@ -20,6 +20,7 @@ import { freezeRuleEngineStorageType }      from "../../storage/storageTypes/fre
 import { launchpadStorageType }             from "../../storage/storageTypes/launchpadStorageType"
 import { marketplaceStorageType }           from "../../storage/storageTypes/marketplaceStorageType"
 import { tokenRegistryStorageType }         from "../../storage/storageTypes/tokenRegistryStorageType"
+import { treasuryStorageType }              from "../../storage/storageTypes/treasuryStorageType"
 
 
 // Tokens Storage Type
@@ -33,11 +34,13 @@ import { mavrykFa12TokenStorageType }       from "../../storage/storageTypes/mav
 import launchpadLambdas                     from "../../build/lambdas/launchpadLambdas.json"
 import marketplaceLambdas                   from "../../build/lambdas/marketplaceLambdas.json"
 import tokenRegistryLambdas                 from "../../build/lambdas/tokenRegistryLambdas.json"
+import treasuryLambdas                      from "../../build/lambdas/treasuryLambdas.json"
 
 const generalContractLambdas = {
     "launchpad"             : launchpadLambdas,
     "marketplace"           : marketplaceLambdas,
     "tokenRegistry"         : tokenRegistryLambdas,
+    "treasury"              : treasuryLambdas,
 }
 
 type generalContractStorageType = 

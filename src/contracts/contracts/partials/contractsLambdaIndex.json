@@ -68,5 +68,23 @@
         "lambdaDistributeTokens",
 
         "lambdaPurchase"
+    ],
+    "treasury": [
+        "lambdaSetSuperAdmin",
+        "lambdaClaimSuperAdmin",
+        "lambdaSetAdmin",
+        "lambdaRemoveAdmin",
+
+        "lambdaSetBaker",
+        "lambdaUpdateMetadata",
+        "lambdaUpdateWhitelistContracts",
+        "lambdaUpdateGeneralContracts",
+        "lambdaUpdateWhitelistTokenContracts",
+    
+        "lambdaTransfer",
+        
+        "lambdaUpdateMvkOperators",
+        "lambdaStakeMvk",
+        "lambdaUnstakeMvk"
     ]
 }

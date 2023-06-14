@@ -34,7 +34,6 @@ type treasuryLambdaActionType is
 
         // Housekeeping Entrypoints
     |   LambdaSetBaker                       of option(key_hash)
-    |   LambdaSetName                        of (string)
     |   LambdaUpdateMetadata                 of updateMetadataType
     |   LambdaUpdateWhitelistContracts       of updateWhitelistContractsType
     |   LambdaUpdateGeneralContracts         of updateGeneralContractsType
