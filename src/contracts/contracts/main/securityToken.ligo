@@ -548,13 +548,10 @@ block {
 
 
 (* get: metadata *)
-[@view] function token_metadata(const tokenId : nat; const s : securityTokenStorageType) : tokenMetadataType is
+[@view] function token_metadata(const tokenId : nat; const s : securityTokenStorageType) : option(tokenMetadataType) is
     case Big_map.find_opt(tokenId, s.token_metadata) of [
-            Some (_metadata)  -> _metadata
-        |   None -> record[
-                token_id    = tokenId;
-                token_info  = map[]
-            ]
+            Some (_metadata)  -> Some(_metadata)
+        |   None              -> (None : option(tokenMetadataType))
     ]
 
 // ------------------------------------------------------------------------------
@@ -1134,11 +1131,15 @@ block{
                                 amount      = tokenAmount;
                             ];
 
-                            const isTransferValidView : option (bool) = Tezos.call_view ("view_is_transfer_valid", validationTransfer, _ruleContract);
-                            const _isTransferValid : bool = case isTransferValidView of [
-                                    Some (_bool) -> if _bool = False then failwith(error_CANNOT_TRANSFER) else True
-                                |   None         -> failwith (error_VIEW_IS_TRANSFER_VALID_NOT_FOUND)
+                            const is_transfer_valid_view : option (option (bool)) = Tezos.call_view("view_is_transfer_valid", validationTransfer, _ruleContract);
+                            const _is_transfer_valid : bool = case is_transfer_valid_view of [
+                                    Some (_view) -> case _view of [
+                                            Some(_bool) -> if _bool = False then failwith("error_CANNOT_TRANSFER") else True
+                                        |   None        -> failwith("error_VIEW_IS_TRANSFER_VALID_BOOLEAN_NOT_FOUND")
+                                    ]
+                                |   None         -> failwith("error_VIEW_IS_TRANSFER_VALID_NOT_FOUND")
                             ];
+                            
                         }
                     |   None     -> skip
                 ];
