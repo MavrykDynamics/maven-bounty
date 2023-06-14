@@ -42,7 +42,7 @@ import {
 // Contract Tests
 // ------------------------------------------------------------------------------
 
-describe('Test: CMTA Token Contract', async () => {
+describe('Test: CMTA20 Blueprint', async () => {
 
     // default
     let utils: Utils

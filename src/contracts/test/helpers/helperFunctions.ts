@@ -50,7 +50,7 @@ export function makeSnapshotTimestamp(secondsFromNow : number) {
     
     let currentDateTime: Date = new Date()
 
-    // add 5 seconds to the current date time
+    // add X seconds to the current date time
     currentDateTime.setUTCSeconds(currentDateTime.getUTCSeconds() + secondsFromNow)
 
     let year: string = currentDateTime.getUTCFullYear().toString()
