@@ -271,3 +271,12 @@ export function getTokenInfo(currency, field: "tokenContractAddress" | "tokenId"
 
     }
 }
+
+// ------------------------------------------------------------------------------
+// Marketplace Helpers
+// ------------------------------------------------------------------------------
+
+export function calculateRoyaltyFee(price, royalty) {
+    const royaltyFeeTotal = Math.floor((price * fixedPointAccuracy * royalty) / (fixedPointAccuracy * 10000))
+    return royaltyFeeTotal
+}

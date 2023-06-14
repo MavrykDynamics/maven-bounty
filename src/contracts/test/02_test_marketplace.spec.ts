@@ -1,4 +1,5 @@
 import { UnitValue } from '@taquito/taquito'
+import { MichelsonMap } from "@taquito/michelson-encoder"
 import { Utils } from './helpers/Utils'
 
 const chai = require('chai')
@@ -25,6 +26,7 @@ import {
     showMillisecondsDateFormat,
     updateOperators,
     getTokenInfo,
+    calculateRoyaltyFee,
     currencyType
 } from './helpers/helperFunctions'
 
@@ -43,6 +45,10 @@ describe('Test: Marketplace Contract', async () => {
     // default
     let utils: Utils
     let tezos
+
+    // config
+    let royalty
+    let treasuryAddress
 
     // misc defaults
     let tokenId = 0
@@ -92,6 +98,12 @@ describe('Test: Marketplace Contract', async () => {
     let listingId
     let firstListingId
     let secondListingId
+    let thirdListingId
+
+    let offerId
+    let firstOfferId
+    let secondOfferId
+    let thirdOfferId
 
     // contract map value
     let storageMap
@@ -145,26 +157,51 @@ describe('Test: Marketplace Contract', async () => {
 
         console.log('-- -- -- -- -- -- -- -- -- -- -- -- --')
 
-        // Mint Security Tokens to Alice, Eve, Mallory
-        await signerFactory(tezos, eve.sk);
-        let mintOperation = await securityTokenInstance.methods.mint([
-            {
-                token_id : 0,
-                amount : 50,
-                address : mallory.pkh 
-            },
-            {
-                token_id : 0,
-                amount : 50,
-                address : eve.pkh 
-            },
-            {
-                token_id : 0,
-                amount : 50,
-                address : alice.pkh 
-            }
-        ]).send();
-        await mintOperation.confirmation();
+        // marketplace config 
+        royalty = marketplaceStorage.config.royalty;
+
+        const marketplaceGeneralContracts   = await marketplaceInstance.contractViews.getGeneralContracts().executeView({ viewCaller : eve.pkh});
+        treasuryAddress                     = marketplaceGeneralContracts.get('treasury');
+
+        // Set Token Metadata and Initialise Security Token
+
+        const checkTokenMetadataExists = await securityTokenInstance.contractViews.token_metadata(0).executeView({ viewCaller : eve.pkh});
+        
+        if(checkTokenMetadataExists == undefined){
+
+            await signerFactory(tezos, eve.sk);
+            const setTokenMetadataOperation = await securityTokenInstance.methods.setTokenMetadata([
+                {
+                    token_id : 0,
+                    token_info : new MichelsonMap()
+                }
+            ]).send();
+            await setTokenMetadataOperation.confirmation();
+
+            const initialiseTokenOperation = await securityTokenInstance.methods.initialiseToken([0]).send();
+            await initialiseTokenOperation.confirmation();
+
+            // Mint Security Tokens to Alice, Eve, Mallory
+            await signerFactory(tezos, eve.sk);
+            let mintOperation = await securityTokenInstance.methods.mint([
+                {
+                    token_id : 0,
+                    amount : 500,
+                    address : mallory.pkh 
+                },
+                {
+                    token_id : 0,
+                    amount : 500,
+                    address : eve.pkh 
+                },
+                {
+                    token_id : 0,
+                    amount : 500,
+                    address : alice.pkh 
+                }
+            ]).send();
+            await mintOperation.confirmation();
+        }
 
     })
 
@@ -231,7 +268,6 @@ describe('Test: Marketplace Contract', async () => {
 
                 assert.equal(currencyRecord, null);
             
-
             } catch (e) {
                 console.log(e)
             }
@@ -369,19 +405,14 @@ describe('Test: Marketplace Contract', async () => {
             marketplaceStorage    = await marketplaceInstance.storage()
         });
 
-
-        // -----------------------------------
-        // change mock FA2 token to security token
-        // -----------------------------------
-
-        it('user (mallory) should be able to set create a new mockFa2 Token listing [no expiry, currency: tez]', async () => {
+        it('user (mallory) should be able to set create a new Security Token listing [no expiry, currency: tez]', async () => {
             try {
 
                 listingId                   = marketplaceStorage.nextListingId;
                 firstListingId              = listingId;
 
                 const amount                = 22;
-                const price                 = 3;
+                const price                 = 3000000;
                 const expiryTime            = null;
                 const listTokenType         = "fa2Token";
                 const listToken             = securityTokenAddress;
@@ -391,7 +422,10 @@ describe('Test: Marketplace Contract', async () => {
                 const currencyTokenId       = 0;
 
                 // update operators operation
-                updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, user, marketplaceAddress, tokenId);
+                updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, user, marketplaceAddress, currencyTokenId);
+                await updateOperatorsOperation.confirmation();
+
+                updateOperatorsOperation = await updateOperators(securityTokenInstance, user, marketplaceAddress, listTokenId);
                 await updateOperatorsOperation.confirmation();
 
                 // create listing operation
@@ -422,14 +456,14 @@ describe('Test: Marketplace Contract', async () => {
             }
         })
 
-        it('user (mallory) should be able to set create a new mockFa2 Token listing [expiry in 3 mins, currency: tez]', async () => {
+        it('user (mallory) should be able to set create a new Security Token listing [expiry in 3 mins, currency: tez]', async () => {
             try {
 
                 listingId                   = marketplaceStorage.nextListingId;
                 secondListingId             = listingId;
 
                 const amount                = 22;
-                const price                 = 3;
+                const price                 = 3000000;
                 const listTokenType         = "fa2Token";
                 const listToken             = securityTokenAddress;
                 const listTokenId           = 0;
@@ -441,7 +475,10 @@ describe('Test: Marketplace Contract', async () => {
                 const expiryTime = makeTimestamp(180);
 
                 // update operators operation
-                updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, user, marketplaceAddress, tokenId);
+                updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, user, marketplaceAddress, currencyTokenId);
+                await updateOperatorsOperation.confirmation();
+
+                updateOperatorsOperation = await updateOperators(securityTokenInstance, user, marketplaceAddress, listTokenId);
                 await updateOperatorsOperation.confirmation();
 
                 // create listing operation
@@ -571,26 +608,33 @@ describe('Test: Marketplace Contract', async () => {
         it(`user (alice) should be able to purchase mallory's listing`, async () => {
             try {
 
+                const buyer     = alice.pkh;
+                const buyerSk   = alice.sk;
+                await signerFactory(tezos, buyerSk);
+
                 // check listing record exists
                 listingRecord = await marketplaceStorage.listingLedger.get(secondListingId);
                 assert.notEqual(listingRecord, null);
 
+                const seller      = listingRecord.initiator;
                 const amount      = listingRecord.amount;
                 const price       = listingRecord.price;
                 const currency    = listingRecord.currency;
 
+                const royaltyFee            = calculateRoyaltyFee(price, royalty);
+                const priceLessRoyalty      = price - royaltyFee
+
                 const currencyTokenAddress  = getTokenInfo(currency, "tokenContractAddress");
                 const currencyTokenId       = getTokenInfo(currency, "tokenId");
 
-                // get current user balance
-                // initial storage
-                let tokenStorage                  = await mockFa2TokenInstance.storage()
-                const initialUserTokenBalance     = await tokenStorage.ledger.get(user);
+                // get current user balance for currency 
+                let tokenStorage                           = await mockFa2TokenInstance.storage()
+                const initialBuyerCurrencyTokenBalance     = await tokenStorage.ledger.get(buyer);
+                const initialSellerCurrencyTokenBalance    = await tokenStorage.ledger.get(seller);
+                const initialTreasuryCurrencyTokenBalance  = await tokenStorage.ledger.get(treasuryAddress);
 
-                const totalPrice = amount * price * (10 ** tokenDecimals);
-                
-                console.log(`totalPrice: ${totalPrice}`);
-                console.log(`initialUserTokenBalance: ${initialUserTokenBalance}`);
+                let securityTokenStorage                = await securityTokenInstance.storage()
+                const initialBuyerSecurityTokenBalance   = await securityTokenStorage.ledger.get({owner : buyer, token_id : 0});
                 
                 // update operators operation
                 updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, user, marketplaceAddress, currencyTokenId);
@@ -607,11 +651,393 @@ describe('Test: Marketplace Contract', async () => {
                 listingRecord         = await marketplaceStorage.listingLedger.get(secondListingId);
                 assert.equal(listingRecord, null);
 
-                tokenStorage                    = await mockFa2TokenInstance.storage()
-                const updateUserTokenBalance    = await tokenStorage.ledger.get(user);
+                tokenStorage                              = await mockFa2TokenInstance.storage()
+                const updatedBuyerCurrencyTokenBalance    = await tokenStorage.ledger.get(buyer);
+                const updatedSellerCurrencyTokenBalance   = await tokenStorage.ledger.get(seller);
+                const updatedTreasuryCurrencyTokenBalance = await tokenStorage.ledger.get(treasuryAddress);
 
-                console.log(`updateUserTokenBalance: ${updateUserTokenBalance}`);
-                console.log(`updateUserTokenBalance - initialUserTokenBalance: ${updateUserTokenBalance - initialUserTokenBalance}`);
+                securityTokenStorage                      = await securityTokenInstance.storage()
+                const updatedBuyerSecurityTokenBalance    = await securityTokenStorage.ledger.get({owner : buyer, token_id : 0});
+
+                // buyer receives correct amount of security token in listing 
+                assert.equal(+updatedBuyerSecurityTokenBalance, +initialBuyerSecurityTokenBalance + +amount);
+                
+                // buyer pays the price listed by seller
+                assert.equal(+updatedBuyerCurrencyTokenBalance, +initialBuyerCurrencyTokenBalance - +price);
+
+                // seller receives the price less royalty
+                assert.equal(+updatedSellerCurrencyTokenBalance, +initialSellerCurrencyTokenBalance + +priceLessRoyalty);
+
+                // treasury receives royalty fee
+                assert.equal(+updatedTreasuryCurrencyTokenBalance, +initialTreasuryCurrencyTokenBalance + +royaltyFee);
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+        it(`user (eve) should not be able to purchase mallory's listing if it has already been purchased`, async () => {
+            try {
+
+                const buyer     = eve.pkh;
+                const buyerSk   = eve.sk;
+                await signerFactory(tezos, buyerSk);
+
+                // check listing record exists
+                listingRecord = await marketplaceStorage.listingLedger.get(secondListingId);
+                assert.equal(listingRecord, null);
+
+                // purhcase operation
+                const purchaseOperation = await marketplaceInstance.methods.purchase(
+                    secondListingId
+                );
+                await chai.expect(purchaseOperation.send()).to.be.rejected;
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+    })
+
+    describe('%offer', function () {
+        
+        before("Setup another listing", async () => {
+            user    = mallory.pkh;
+            userSk  = mallory.sk;
+            await signerFactory(tezos, userSk);
+
+            marketplaceStorage    = await marketplaceInstance.storage()
+            listingId                   = marketplaceStorage.nextListingId;
+            thirdListingId              = listingId;
+
+            const amount                = 20;
+            const price                 = 3000000;
+            const expiryTime            = null;
+            const listTokenType         = "fa2Token";
+            const listToken             = securityTokenAddress;
+            const listTokenId           = 0;
+            const currencyTokenType     = "fa2";
+            const currencyTokenAddress  = mockFa2TokenAddress;
+            const currencyTokenId       = 0;
+
+            // update operators operation
+            updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, user, marketplaceAddress, currencyTokenId);
+            await updateOperatorsOperation.confirmation();
+
+            updateOperatorsOperation = await updateOperators(securityTokenInstance, user, marketplaceAddress, listTokenId);
+            await updateOperatorsOperation.confirmation();
+
+            // create listing operation
+            const createListingOperation = await marketplaceInstance.methods.createListing(
+                amount,
+                price,
+                expiryTime,
+                listTokenType,
+                listToken,
+                listTokenId,
+                currencyTokenType,
+                currencyTokenAddress,
+                currencyTokenId
+            ).send()
+            await createListingOperation.confirmation();
+
+            marketplaceStorage    = await marketplaceInstance.storage()
+            listingRecord         = await marketplaceStorage.listingLedger.get(listingId);
+
+            assert.notEqual(listingRecord                       , null);
+            assert.equal(listingRecord.initiator                , user);
+            assert.equal(listingRecord.price                    , price);
+            assert.equal(listingRecord.amount                   , amount);
+            assert.equal(listingRecord.expiryTime               , null);
+            
+        });
+
+        beforeEach("Set signer to user (alice)", async () => {
+            user    = alice.pkh;
+            userSk  = alice.sk;
+            await signerFactory(tezos, userSk);
+
+            marketplaceStorage    = await marketplaceInstance.storage()
+        });
+
+        it('user (alice) should be able to make an offer on a listing [no expiry | currency: Mock FA2 Token]', async () => {
+            try {
+
+                listingId       = thirdListingId
+                offerId         = marketplaceStorage.nextOfferId;
+                firstOfferId    = offerId // for subsequent test
+
+                // check listing record exists
+                listingRecord         = await marketplaceStorage.listingLedger.get(listingId);
+                assert.notEqual(listingRecord, null);
+
+                const offerPrice            = 1000000;
+                const expiryTime            = null;
+                const currencyTokenType     = "fa2";
+                const currencyTokenAddress  = mockFa2TokenAddress;
+                const currencyTokenId       = 0;
+
+                // make offer operation
+                const makeOfferOperation = await marketplaceInstance.methods.offer(
+                    listingId,
+                    offerPrice,
+                    expiryTime,
+                    currencyTokenType,
+                    currencyTokenAddress,
+                    currencyTokenId
+                ).send()
+                await makeOfferOperation.confirmation();
+
+                // check offer record is created
+                marketplaceStorage    = await marketplaceInstance.storage()
+                offerRecord           = await marketplaceStorage.offerLedger.get(offerId);
+                assert.notEqual(offerRecord, null);
+
+                assert.equal(offerRecord.initiator   , user);
+                assert.equal(+offerRecord.listingId  , +listingId);
+                assert.equal(offerRecord.price       , offerPrice);
+                assert.equal(offerRecord.expiryTime  , expiryTime);
+
+                assert.equal(getTokenInfo(offerRecord.currency, "tokenContractAddress"), currencyTokenAddress);
+                assert.equal(getTokenInfo(offerRecord.currency, "tokenId"), currencyTokenId);
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+        it('multiple users (eve, oscar) should be able to make an offer on a listing [no expiry | currency: Mock FA2 Token]', async () => {
+            try {
+
+                listingId = thirdListingId
+                offerId   = marketplaceStorage.nextOfferId;
+                secondOfferId = offerId;
+
+                // check listing record exists
+                listingRecord         = await marketplaceStorage.listingLedger.get(listingId);
+                assert.notEqual(listingRecord, null);
+
+                // make offer by first user
+                const firstUser     = eve.pkh;
+                const firstUserSk   = eve.sk;
+                await signerFactory(tezos, firstUserSk);
+
+                let offerPrice            = 500000;
+                let expiryTime            = null;
+                let currencyTokenType     = "fa2";
+                let currencyTokenAddress  = mockFa2TokenAddress;
+                let currencyTokenId       = 0;
+
+                // update operators operation
+                updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, firstUser, marketplaceAddress, currencyTokenId);
+                await updateOperatorsOperation.confirmation();
+
+                // make offer operation
+                let makeOfferOperation = await marketplaceInstance.methods.offer(
+                    listingId,
+                    offerPrice,
+                    expiryTime,
+                    currencyTokenType,
+                    currencyTokenAddress,
+                    currencyTokenId
+                ).send()
+                await makeOfferOperation.confirmation();
+
+                // check offer record is created
+                marketplaceStorage    = await marketplaceInstance.storage()
+                offerRecord           = await marketplaceStorage.offerLedger.get(offerId);
+                assert.notEqual(offerRecord, null);
+
+                assert.equal(offerRecord.initiator   , firstUser);
+                assert.equal(+offerRecord.listingId  , +listingId);
+                assert.equal(offerRecord.price       , offerPrice);
+                assert.equal(offerRecord.expiryTime  , expiryTime);
+
+                assert.equal(getTokenInfo(offerRecord.currency, "tokenContractAddress"), currencyTokenAddress);
+                assert.equal(getTokenInfo(offerRecord.currency, "tokenId"), currencyTokenId);
+
+                // make offer by second user
+                const secondUser     = eve.pkh;
+                const secondUserSk   = eve.sk;
+                await signerFactory(tezos,secondUserSk);
+
+                marketplaceStorage    = await marketplaceInstance.storage()
+                offerId               = marketplaceStorage.nextOfferId;
+                thirdOfferId          = offerId;
+
+                offerPrice            = 750000;
+                expiryTime            = makeTimestamp(180);
+                currencyTokenType     = "fa2";
+                currencyTokenAddress  = mockFa2TokenAddress;
+                currencyTokenId       = 0;
+
+                // update operators operation
+                updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, secondUser, marketplaceAddress, currencyTokenId);
+                await updateOperatorsOperation.confirmation();
+
+                // make offer operation
+                makeOfferOperation = await marketplaceInstance.methods.offer(
+                    listingId,
+                    offerPrice,
+                    expiryTime,
+                    currencyTokenType,
+                    currencyTokenAddress,
+                    currencyTokenId
+                ).send()
+                await makeOfferOperation.confirmation();
+
+                // check offer record is created
+                marketplaceStorage    = await marketplaceInstance.storage()
+                offerRecord           = await marketplaceStorage.offerLedger.get(offerId);
+                assert.notEqual(offerRecord, null);
+
+                assert.equal(offerRecord.initiator   , secondUser);
+                assert.equal(+offerRecord.listingId  , +listingId);
+                assert.equal(offerRecord.price       , offerPrice);
+                assert.equal(offerRecord.expiryTime  , showMillisecondsDateFormat(expiryTime));
+
+                assert.equal(getTokenInfo(offerRecord.currency, "tokenContractAddress"), currencyTokenAddress);
+                assert.equal(getTokenInfo(offerRecord.currency, "tokenId"), currencyTokenId);
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+    })
+
+    describe('%acceptOffer', function () {
+        
+        beforeEach("Set signer to lister (mallory)", async () => {
+            user    = mallory.pkh;
+            userSk  = mallory.sk;
+            await signerFactory(tezos, userSk);
+
+            marketplaceStorage    = await marketplaceInstance.storage()
+        });
+
+        it('user (mallory) should not be able to accept a non-existent offer', async () => {
+            try {
+
+                listingId       = thirdListingId
+                offerId         = marketplaceStorage.nextOfferId;
+
+                // check listing record exists
+                listingRecord         = await marketplaceStorage.listingLedger.get(listingId);
+                assert.notEqual(listingRecord, null);
+
+                // accept offer operation
+                const acceptOfferOperation = await marketplaceInstance.methods.acceptOffer(
+                    offerId
+                );
+                await chai.expect(acceptOfferOperation.send()).to.be.rejected;
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+        it('user (mallory) should be able to accept an offer on his listing', async () => {
+            try {
+
+                const lister     = mallory.pkh;
+                const listerSk   = mallory.sk;
+                await signerFactory(tezos, listerSk);
+                
+                listingId       = thirdListingId
+                offerId         = firstOfferId;
+
+                // check listing record exists
+                listingRecord         = await marketplaceStorage.listingLedger.get(listingId);
+                assert.notEqual(listingRecord, null);
+
+                // security token amount
+                const amount = listingRecord.amount;
+
+                // check offer record exists
+                offerRecord           = await marketplaceStorage.offerLedger.get(offerId);
+                assert.notEqual(offerRecord, null);
+
+                const offerer               = offerRecord.initiator
+                const price                 = offerRecord.price
+                const currency              = offerRecord.currency
+                const currencyTokenAddress  = getTokenInfo(currency, "tokenContractAddress")
+                const currencyTokenId       = getTokenInfo(currency, "tokenId")
+
+                const royaltyFee            = calculateRoyaltyFee(price, royalty);
+                const priceLessRoyalty      = price - royaltyFee
+
+                // get current user balance for currency 
+                let tokenStorage                           = await mockFa2TokenInstance.storage()
+                const initialListerCurrencyTokenBalance    = await tokenStorage.ledger.get(lister);
+                const initialTreasuryCurrencyTokenBalance  = await tokenStorage.ledger.get(treasuryAddress);
+
+                let securityTokenStorage                   = await securityTokenInstance.storage()
+                const initialOffererSecurityTokenBalance   = await securityTokenStorage.ledger.get({owner : offerer, token_id : 0});
+                
+                // accept offer operation
+                const acceptOfferOperation = await marketplaceInstance.methods.acceptOffer(
+                    offerId
+                ).send();
+                await acceptOfferOperation.confirmation();
+
+                // check listing record is removed (purchased)
+                marketplaceStorage    = await marketplaceInstance.storage()
+                listingRecord         = await marketplaceStorage.listingLedger.get(listingId);
+                assert.equal(listingRecord, null);
+
+                tokenStorage                              = await mockFa2TokenInstance.storage()
+                const updatedListerCurrencyTokenBalance   = await tokenStorage.ledger.get(lister);
+                const updatedTreasuryCurrencyTokenBalance = await tokenStorage.ledger.get(treasuryAddress);
+
+                securityTokenStorage                      = await securityTokenInstance.storage()
+                const updatedOffererSecurityTokenBalance  = await securityTokenStorage.ledger.get({owner : offerer, token_id : 0});
+
+                console.log(`amount: ${amount}`);
+                console.log(`price: ${price}`);
+
+                console.log(`royaltyFee: ${royaltyFee}`);
+                console.log(`priceLessRoyalty: ${priceLessRoyalty}`);
+                
+                console.log(`initialOffererSecurityTokenBalance: ${initialOffererSecurityTokenBalance}`);
+                console.log(`updatedOffererSecurityTokenBalance: ${updatedOffererSecurityTokenBalance}`);
+                console.log(`updatedOffererSecurityTokenBalance - initialOffererSecurityTokenBalance: ${updatedOffererSecurityTokenBalance - initialOffererSecurityTokenBalance}`);
+
+                console.log(`initialListerCurrencyTokenBalance: ${initialListerCurrencyTokenBalance}`);
+                console.log(`updatedListerCurrencyTokenBalance: ${updatedListerCurrencyTokenBalance}`);
+                console.log(`updatedListerCurrencyTokenBalance - initialListerCurrencyTokenBalance: ${+updatedListerCurrencyTokenBalance - +initialListerCurrencyTokenBalance}`);
+                console.log(`initialListerCurrencyTokenBalance + priceLessRoyalty: ${+initialListerCurrencyTokenBalance + +priceLessRoyalty}`);
+
+                // offerer receives correct amount of security token in listing 
+                assert.equal(+updatedOffererSecurityTokenBalance, +initialOffererSecurityTokenBalance + +amount);
+
+                // lister receives the price less royalty
+                assert.equal(+updatedListerCurrencyTokenBalance, +initialListerCurrencyTokenBalance + +priceLessRoyalty);
+
+                // treasury receives royalty fee
+                assert.equal(+updatedTreasuryCurrencyTokenBalance, +initialTreasuryCurrencyTokenBalance + +royaltyFee);
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+        it('user (mallory) should not be able to accept another offer on his listing', async () => {
+            try {
+
+                listingId       = thirdListingId
+                offerId         = secondListingId
+
+                // listing record should no longer exist
+                listingRecord         = await marketplaceStorage.listingLedger.get(listingId);
+                assert.equal(listingRecord, null);
+
+                // accept offer operation
+                const acceptOfferOperation = await marketplaceInstance.methods.acceptOffer(
+                    offerId
+                );
+                await chai.expect(acceptOfferOperation.send()).to.be.rejected;
 
             } catch (e) {
                 console.log(e)
