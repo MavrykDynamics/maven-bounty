@@ -632,12 +632,12 @@ block {
                             operations := transferTez((Tezos.get_contract_with_error(treasuryAddress, "Error. Contract not found at given address") : contract(unit)), royaltyFeeTotal * 1mutez) # operations;
                         } 
                     |   Fa12(_address)  -> {
-                            operations := transferFa12Token(sender, lister, offerPriceLessRoyalty, _address) # operations;
-                            operations := transferFa12Token(sender, treasuryAddress, royaltyFeeTotal, _address) # operations;
+                            operations := transferFa12Token(marketplace, lister, offerPriceLessRoyalty, _address) # operations;
+                            operations := transferFa12Token(marketplace, treasuryAddress, royaltyFeeTotal, _address) # operations;
                         }
                     |   Fa2(_fa2Token)  -> {
-                            operations := transferFa2Token(sender, lister, offerPriceLessRoyalty, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
-                            operations := transferFa2Token(sender, treasuryAddress, royaltyFeeTotal, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
+                            operations := transferFa2Token(marketplace, lister, offerPriceLessRoyalty, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
+                            operations := transferFa2Token(marketplace, treasuryAddress, royaltyFeeTotal, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
                         }
                 ];
 
