@@ -51,13 +51,13 @@ type action is
     |   TogglePauseEntrypoint       of launchpadTogglePauseEntrypointType
 
         // Launchpad Entrypoints
-    |   CreateTokenSale             of createTokenSaleActionType
-    |   SetSaleWhitelist            of setSaleWhitelistActionType
-    |   EditSale                    of (unit)
-    |   StartSale                   of (nat)
-    |   CloseSale                   of (nat)
-    |   PauseSale                   of (nat)
-    |   UnpauseSale                 of (nat)
+    |   CreateTokenLaunch           of createTokenLaunchActionType
+    |   SetLaunchWhitelist          of setLaunchWhitelistActionType
+    |   EditTokenLaunch             of editTokenLaunchActionType
+    |   StartLaunch                 of (nat)
+    |   CloseLaunch                 of (nat)
+    |   PauseLaunch                 of (nat)
+    |   UnpauseLaunch               of (nat)
     |   DistributeTokens            of (nat)
 
         // User Entrypoints
@@ -129,13 +129,13 @@ function main (const action : action; const s : launchpadStorageType) : return i
         |   TogglePauseEntrypoint(parameters)     -> togglePauseEntrypoint(parameters, s)
 
             // Launchpad Entrypoints
-        |   CreateTokenSale(parameters)           -> createTokenSale(parameters, s)  
-        |   SetSaleWhitelist(parameters)          -> setSaleWhitelist(parameters, s)  
-        |   StartSale(parameters)                 -> startSale(parameters, s)  
-        |   CloseSale(parameters)                 -> closeSale(parameters, s)  
-        |   EditSale(parameters)                  -> editSale(parameters, s)
-        |   PauseSale(parameters)                 -> pauseSale(parameters, s)
-        |   UnpauseSale(parameters)               -> unpauseSale(parameters, s)
+        |   CreateTokenLaunch(parameters)         -> createTokenLaunch(parameters, s)  
+        |   SetLaunchWhitelist(parameters)        -> setLaunchWhitelist(parameters, s)  
+        |   StartLaunch(parameters)               -> startLaunch(parameters, s)  
+        |   CloseLaunch(parameters)               -> closeLaunch(parameters, s)  
+        |   EditTokenLaunch(parameters)           -> editTokenLaunch(parameters, s)
+        |   PauseLaunch(parameters)               -> pauseLaunch(parameters, s)
+        |   UnpauseLaunch(parameters)             -> unpauseLaunch(parameters, s)
         |   DistributeTokens(parameters)          -> distributeTokens(parameters, s)
 
             // User Entrypoints

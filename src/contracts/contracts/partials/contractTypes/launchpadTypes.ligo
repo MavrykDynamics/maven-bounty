@@ -3,15 +3,15 @@
 // ------------------------------------------------------------------------------
 
 type launchpadBreakGlassConfigType is [@layout:comb] record [
-    createTokenSaleIsPaused         : bool;
-    startSaleIsPaused               : bool;
-    closeSaleIsPaused               : bool;
-    setSaleWhitelistIsPaused        : bool;
-    editSaleIsPaused                : bool;
-    pauseSaleIsPaused               : bool;
-    unpauseSaleIsPaused             : bool;
-    distributeTokensIsPaused        : bool;
-    purchaseIsPaused                : bool;
+    createTokenLaunchIsPaused         : bool;
+    startLaunchIsPaused               : bool;
+    closeLaunchIsPaused               : bool;
+    setLaunchWhitelistIsPaused        : bool;
+    editTokenLaunchIsPaused           : bool;
+    pauseLaunchIsPaused               : bool;
+    unpauseLaunchIsPaused             : bool;
+    distributeTokensIsPaused          : bool;
+    purchaseIsPaused                  : bool;
 ]
 
 type launchpadConfigType is [@layout:comb] record [
@@ -20,10 +20,10 @@ type launchpadConfigType is [@layout:comb] record [
 ];
 
 
-type saleWhitelistRecordType is [@layout:comb] record [
+type launchWhitelistRecordType is [@layout:comb] record [
     allowed         : map(string, nat);
 ]
-type saleWhitelistLedgerType is big_map((nat * address), saleWhitelistRecordType)
+type launchWhitelistLedgerType is big_map((nat * address), launchWhitelistRecordType)
 
 
 type tokenSaleOptionType is [@layout:comb] record [    
@@ -33,7 +33,7 @@ type tokenSaleOptionType is [@layout:comb] record [
     price                       : nat; 
     currency                    : tokenType;
 ]
-type saleRecordType is [@layout:comb] record [
+type launchRecordType is [@layout:comb] record [
     name                        : string;
     isPaused                    : bool;     // TRUE / FALSE
     status                      : string;   // ACTIVE / INACTIVE / PAUSED / CLOSED
@@ -46,14 +46,14 @@ type saleRecordType is [@layout:comb] record [
     saleOptions                 : map(string, tokenSaleOptionType);
     defaultWhitelistOptions     : map(string, nat);
 ]
-type saleLedgerType is big_map(nat, saleRecordType)
+type launchLedgerType is big_map(nat, launchRecordType)
 
 
-type salePurchaseRecordType is [@layout:comb] record [
+type purchaseRecordType is [@layout:comb] record [
     purchased       : map(string, nat);  // breakdown by sale options (if there's multiple)
     totalPurchased  : nat;               // total purchased (model only assumes one token)
 ]
-type salePurchaseLedgerType is big_map((nat * address), salePurchaseRecordType)
+type purchaseLedgerType is big_map((nat * address), purchaseRecordType)
 
 // ------------------------------------------------------------------------------
 // Action Types
@@ -71,15 +71,15 @@ type launchpadUpdateConfigParamsType is [@layout:comb] record [
 
 
 type launchpadPausableEntrypointType is
-        CreateTokenSale             of bool
-    |   SetSaleWhitelist            of bool
-    |   StartSale                   of bool
-    |   CloseSale                   of bool
-    |   EditSale                    of bool
-    |   PauseSale                   of bool
-    |   UnpauseSale                 of bool
-    |   DistributeTokens            of bool
-    |   Purchase                    of bool
+        CreateTokenLaunch             of bool
+    |   SetLaunchWhitelist            of bool
+    |   EditTokenLaunch               of bool
+    |   StartLaunch                   of bool
+    |   CloseLaunch                   of bool
+    |   PauseLaunch                   of bool
+    |   UnpauseLaunch                 of bool
+    |   DistributeTokens              of bool
+    |   Purchase                      of bool
     
 type launchpadTogglePauseEntrypointType is [@layout:comb] record [
     targetEntrypoint  : launchpadPausableEntrypointType;
@@ -87,7 +87,7 @@ type launchpadTogglePauseEntrypointType is [@layout:comb] record [
 ];
 
 
-type createTokenSaleActionType is [@layout:comb] record [
+type createTokenLaunchActionType is [@layout:comb] record [
     name                        : string;
     tokenIssuanceType           : string;       // mint / transfer
     tokenDistributionType       : string;       // auto / manual
@@ -99,18 +99,31 @@ type createTokenSaleActionType is [@layout:comb] record [
     defaultWhitelistOptions     : map(string, nat);
 ]
 
-type setSaleWhitelistSingleType is [@layout:comb] record [
-    saleId                      : nat;
+type editTokenLaunchActionType is [@layout:comb] record [
+    launchId                    : nat;
+    name                        : option(string);
+    tokenIssuanceType           : option(string);       // mint / transfer
+    tokenDistributionType       : option(string);       // auto / manual
+    tokenContractAddress        : option(address);
+    tokenId                     : option(nat);
+    saleStart                   : option(timestamp);
+    saleEnd                     : option(timestamp);
+    saleOptions                 : option(map(string, tokenSaleOptionType)); // default / whitelist / ABCDEF
+    defaultWhitelistOptions     : option(map(string, nat));
+]
+
+type setLaunchWhitelistSingleType is [@layout:comb] record [
+    launchId                    : nat;
     whitelistUserAddress        : address;
     defaultWhitelistOption      : bool;     // if true, follow default whitelist options in token sale
     whitelistOptions            : option(map(string, nat));
 ]
 
-type setSaleWhitelistActionType is list(setSaleWhitelistSingleType)
+type setLaunchWhitelistActionType is list(setLaunchWhitelistSingleType)
 
 
 type purchaseActionType is [@layout:comb] record [
-    saleId                      : nat;
+    launchId                    : nat;
     amount                      : nat;
     saleOption                  : string;  // default / whitelist / ABCDEF
 ]
@@ -141,13 +154,13 @@ type launchpadLambdaActionType is
     |   LambdaTogglePauseEntrypoint       of launchpadTogglePauseEntrypointType
 
         // Launchpad Lambdas
-    |   LambdaCreateTokenSale             of createTokenSaleActionType
-    |   LambdaSetSaleWhitelist            of setSaleWhitelistActionType
-    |   LambdaEditSale                    of (unit)
-    |   LambdaStartSale                   of (nat)
-    |   LambdaCloseSale                   of (nat)
-    |   LambdaPauseSale                   of (nat)
-    |   LambdaUnpauseSale                 of (nat)
+    |   LambdaCreateTokenLaunch           of createTokenLaunchActionType
+    |   LambdaSetLaunchWhitelist          of setLaunchWhitelistActionType
+    |   LambdaEditTokenLaunch             of editTokenLaunchActionType
+    |   LambdaStartLaunch                 of (nat)
+    |   LambdaCloseLaunch                 of (nat)
+    |   LambdaPauseLaunch                 of (nat)
+    |   LambdaUnpauseLaunch               of (nat)
     |   LambdaDistributeTokens            of (nat)
 
         // User Lambdas
@@ -171,10 +184,10 @@ type launchpadStorageType is [@layout:comb] record [
     whitelistContracts        : whitelistContractsType;    
     generalContracts          : generalContractsType;
 
-    saleLedger                : saleLedgerType;
-    saleWhitelistLedger       : saleWhitelistLedgerType;
-    salePurchaseLedger        : salePurchaseLedgerType;
-    lastSaleId                : nat;
+    launchLedger              : launchLedgerType;
+    launchWhitelistLedger     : launchWhitelistLedgerType;
+    purchaseLedger            : purchaseLedgerType;
+    lastLaunchId              : nat;
     
     lambdaLedger              : lambdaLedgerType;
 ]

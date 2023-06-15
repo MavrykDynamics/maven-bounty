@@ -14,10 +14,10 @@ export type launchpadStorageType = {
     whitelistContracts      : MichelsonMap<MichelsonMapKey, unknown>;
     generalContracts        : MichelsonMap<MichelsonMapKey, unknown>;
 
-    saleLedger              : MichelsonMap<MichelsonMapKey, unknown>;
-    saleWhitelistLedger     : MichelsonMap<MichelsonMapKey, unknown>;
-    salePurchaseLedger      : MichelsonMap<MichelsonMapKey, unknown>;
-    lastSaleId              : BigNumber;
+    launchLedger            : MichelsonMap<MichelsonMapKey, unknown>;
+    launchWhitelistLedger   : MichelsonMap<MichelsonMapKey, unknown>;
+    purchaseLedger          : MichelsonMap<MichelsonMapKey, unknown>;
+    lastLaunchId            : BigNumber;
     
     lambdaLedger            : MichelsonMap<MichelsonMapKey, unknown>;
 

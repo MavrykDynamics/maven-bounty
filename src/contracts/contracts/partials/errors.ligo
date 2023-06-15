@@ -93,7 +93,7 @@
 // ------------------------------------------------------------------------------
 
 
-[@inline] const error_SALE_RECORD_NOT_FOUND                                                                              = 50n;
+[@inline] const error_LAUNCH_RECORD_NOT_FOUND                                                                            = 50n;
 [@inline] const error_SALE_OPTION_NOT_FOUND                                                                              = 51n;
 [@inline] const error_MAX_AMOUNT_PER_WALLET_FOR_SALE_OPTION_TOTAL_EXCEEDED                                               = 52n;
 [@inline] const error_MAX_AMOUNT_CAP_FOR_SALE_OPTION_EXCEEDED                                                            = 53n;

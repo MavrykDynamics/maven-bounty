@@ -83,14 +83,17 @@ describe('Test: Launchpad Contract', async () => {
     let sender
     let receiver 
 
-    let saleRecord
+    let launchRecord
     let currencyRecord
     let listingRecord
     let offerRecord
 
-    let listingId
-    let firstListingId
-    let secondListingId
+    let launchWhitelistRecord
+
+    let launchId
+    let firstLaunchId
+    let secondLaunchId
+    let thirdLaunchId
 
     // contract map value
     let storageMap
@@ -148,18 +151,20 @@ describe('Test: Launchpad Contract', async () => {
         launchpadStorage            = await launchpadInstance.storage()
     })
 
-    describe('%createTokenSale', function () {
+    describe('%createTokenLaunch', function () {
         
         beforeEach("Set signer to admin (eve)", async () => {
             launchpadStorage = await launchpadInstance.storage()
             await signerFactory(tezos, adminSk);
         });
 
-        it('admin (eve) should be able to create a new token sale [Token Issuance: Auto | Token Distribution : Auto | Empty Sale Options and Whitelist Options]', async () => {
+        it('admin (eve) should be able to create a new token launch [Token Issuance: Auto | Token Distribution : Auto | Empty Sale Options and Whitelist Options]', async () => {
             try {
 
-                const saleId                    = launchpadStorage.lastSaleId;
-                const name                      = "testTokenSale";
+                const launchId                  = launchpadStorage.lastLaunchId;
+                firstLaunchId                   = launchId; // for use in subsequent test
+
+                const name                      = "testTokenLaunch";
                 const tokenIssuanceType         = "mint";
                 const tokenDistributionType     = "auto";
                 const tokenContractAddress      = mockFa2TokenAddress;
@@ -171,7 +176,7 @@ describe('Test: Launchpad Contract', async () => {
                 const emptyWhitelistOptions     = MichelsonMap.fromLiteral({});
 
                 // create token sale operation
-                const createTokenSaleOperation = await launchpadInstance.methods.createTokenSale(
+                const createTokenLaunchOperation = await launchpadInstance.methods.createTokenLaunch(
                     name,
                     tokenIssuanceType,
                     tokenDistributionType,
@@ -182,34 +187,36 @@ describe('Test: Launchpad Contract', async () => {
                     emptySaleOptions,
                     emptyWhitelistOptions
                 ).send()
-                await createTokenSaleOperation.confirmation();
+                await createTokenLaunchOperation.confirmation();
 
                 launchpadStorage    = await launchpadInstance.storage()
-                saleRecord          = await launchpadStorage.saleLedger.get(saleId);
+                launchRecord          = await launchpadStorage.launchLedger.get(launchId);
 
-                assert.notEqual(saleRecord                      , null);
+                assert.notEqual(launchRecord                      , null);
 
-                assert.equal(saleRecord.name                    , name);
-                assert.equal(saleRecord.tokenIssuanceType       , tokenIssuanceType);
-                assert.equal(saleRecord.tokenDistributionType   , tokenDistributionType);
-                assert.equal(saleRecord.tokenContractAddress    , tokenContractAddress);
-                assert.equal(saleRecord.tokenId                 , tokenId);
-                assert.equal(saleRecord.saleStart               , showMillisecondsDateFormat(saleStart));
-                assert.equal(saleRecord.saleEnd                 , showMillisecondsDateFormat(saleEnd));
+                assert.equal(launchRecord.name                    , name);
+                assert.equal(launchRecord.tokenIssuanceType       , tokenIssuanceType);
+                assert.equal(launchRecord.tokenDistributionType   , tokenDistributionType);
+                assert.equal(launchRecord.tokenContractAddress    , tokenContractAddress);
+                assert.equal(launchRecord.tokenId                 , tokenId);
+                assert.equal(launchRecord.saleStart               , showMillisecondsDateFormat(saleStart));
+                assert.equal(launchRecord.saleEnd                 , showMillisecondsDateFormat(saleEnd));
                 
-                // assert.equal(saleRecord.saleOptions             , emptySaleOptions);
-                // assert.equal(saleRecord.defaultWhitelistOptions , emptyWhitelistOptions);
+                // assert.equal(launchRecord.saleOptions             , emptySaleOptions);
+                // assert.equal(launchRecord.defaultWhitelistOptions , emptyWhitelistOptions);
 
             } catch (e) {
                 console.log(e)
             }
         })
 
-        it('admin (eve) should be able to create a new token sale [Token Issuance: Auto | Token Distribution : Auto | Empty Sale Options and Whitelist Options]', async () => {
+        it('admin (eve) should be able to create a new token launch [Token Issuance: Auto | Token Distribution : Auto | Empty Sale Options and Whitelist Options]', async () => {
             try {
 
-                const saleId                    = launchpadStorage.lastSaleId;
-                const name                      = "testTokenSale";
+                const launchId                  = launchpadStorage.lastLaunchId;
+                secondLaunchId                  = launchId; // for use in subsequent test
+
+                const name                      = "testTokenLaunch";
                 const tokenIssuanceType         = "mint";
                 const tokenDistributionType     = "auto";
                 const tokenContractAddress      = mockFa2TokenAddress;
@@ -226,7 +233,7 @@ describe('Test: Launchpad Contract', async () => {
                 });
 
                 // create token sale operation
-                const createTokenSaleOperation = await launchpadInstance.methods.createTokenSale(
+                const createTokenLaunchOperation = await launchpadInstance.methods.createTokenLaunch(
                     name,
                     tokenIssuanceType,
                     tokenDistributionType,
@@ -237,35 +244,37 @@ describe('Test: Launchpad Contract', async () => {
                     emptySaleOptions,
                     defaultWhitelistOptions
                 ).send()
-                await createTokenSaleOperation.confirmation();
+                await createTokenLaunchOperation.confirmation();
 
-                launchpadStorage    = await launchpadInstance.storage()
-                saleRecord          = await launchpadStorage.saleLedger.get(saleId);
+                launchpadStorage      = await launchpadInstance.storage()
+                launchRecord          = await launchpadStorage.launchLedger.get(launchId);
                 
-                const whitelistOption = await saleRecord.defaultWhitelistOptions.get(defaultWhitelistOptionKey.toString());
+                const whitelistOption = await launchRecord.defaultWhitelistOptions.get(defaultWhitelistOptionKey.toString());
 
-                console.log(saleRecord);
+                // console.log(launchRecord);
 
-                assert.notEqual(saleRecord                      , null);
-                assert.equal(saleRecord.name                    , name);
-                assert.equal(saleRecord.tokenIssuanceType       , tokenIssuanceType);
-                assert.equal(saleRecord.tokenDistributionType   , tokenDistributionType);
-                assert.equal(saleRecord.tokenContractAddress    , tokenContractAddress);
-                assert.equal(saleRecord.tokenId                 , tokenId);
-                assert.equal(saleRecord.saleStart               , showMillisecondsDateFormat(saleStart));
-                assert.equal(saleRecord.saleEnd                 , showMillisecondsDateFormat(saleEnd));
-                assert.equal(whitelistOption                    , defaultWhitelistOptionValue);
+                assert.notEqual(launchRecord                      , null);
+                assert.equal(launchRecord.name                    , name);
+                assert.equal(launchRecord.tokenIssuanceType       , tokenIssuanceType);
+                assert.equal(launchRecord.tokenDistributionType   , tokenDistributionType);
+                assert.equal(launchRecord.tokenContractAddress    , tokenContractAddress);
+                assert.equal(launchRecord.tokenId                 , tokenId);
+                assert.equal(launchRecord.saleStart               , showMillisecondsDateFormat(saleStart));
+                assert.equal(launchRecord.saleEnd                 , showMillisecondsDateFormat(saleEnd));
+                assert.equal(whitelistOption                      , defaultWhitelistOptionValue);
 
             } catch (e) {
                 console.log(e)
             }
         })
 
-        it('admin (eve) should be able to create a new token sale [Token Issuance: Auto | Token Distribution : Auto | No expiry | Empty Sale Options and Whitelist Options]', async () => {
+        it('admin (eve) should be able to create a new token launch [Token Issuance: Auto | Token Distribution : Auto | No expiry | Empty Sale Options and Whitelist Options]', async () => {
             try {
 
-                const saleId                    = launchpadStorage.lastSaleId;
-                const name                      = "testTokenSale";
+                const launchId                  = launchpadStorage.lastLaunchId;
+                thirdLaunchId                   = launchId; // for use in subsequent test
+
+                const name                      = "testTokenLaunch";
                 const tokenIssuanceType         = "mint";
                 const tokenDistributionType     = "auto";
                 const tokenContractAddress      = mockFa2TokenAddress;
@@ -282,7 +291,7 @@ describe('Test: Launchpad Contract', async () => {
                 });
 
                 // create token sale operation
-                const createTokenSaleOperation = await launchpadInstance.methods.createTokenSale(
+                const createTokenLaunchOperation = await launchpadInstance.methods.createTokenLaunch(
                     name,
                     tokenIssuanceType,
                     tokenDistributionType,
@@ -293,27 +302,122 @@ describe('Test: Launchpad Contract', async () => {
                     emptySaleOptions,
                     defaultWhitelistOptions
                 ).send()
-                await createTokenSaleOperation.confirmation();
+                await createTokenLaunchOperation.confirmation();
 
-                launchpadStorage    = await launchpadInstance.storage()
-                saleRecord          = await launchpadStorage.saleLedger.get(saleId);
+                launchpadStorage      = await launchpadInstance.storage()
+                launchRecord          = await launchpadStorage.launchLedger.get(launchId);
                 
-                const whitelistOption = await saleRecord.defaultWhitelistOptions.get(defaultWhitelistOptionKey.toString());
+                const whitelistOption = await launchRecord.defaultWhitelistOptions.get(defaultWhitelistOptionKey.toString());
 
-                assert.notEqual(saleRecord                      , null);
-                assert.equal(saleRecord.name                    , name);
-                assert.equal(saleRecord.tokenIssuanceType       , tokenIssuanceType);
-                assert.equal(saleRecord.tokenDistributionType   , tokenDistributionType);
-                assert.equal(saleRecord.tokenContractAddress    , tokenContractAddress);
-                assert.equal(saleRecord.tokenId                 , tokenId);
-                assert.equal(saleRecord.saleStart               , showMillisecondsDateFormat(saleStart));
-                assert.equal(saleRecord.saleEnd                 , null)
+                assert.notEqual(launchRecord                      , null);
+                assert.equal(launchRecord.name                    , name);
+                assert.equal(launchRecord.tokenIssuanceType       , tokenIssuanceType);
+                assert.equal(launchRecord.tokenDistributionType   , tokenDistributionType);
+                assert.equal(launchRecord.tokenContractAddress    , tokenContractAddress);
+                assert.equal(launchRecord.tokenId                 , tokenId);
+                assert.equal(launchRecord.saleStart               , showMillisecondsDateFormat(saleStart));
+                assert.equal(launchRecord.saleEnd                 , null)
                 assert.equal(whitelistOption                    , defaultWhitelistOptionValue);
 
             } catch (e) {
                 console.log(e)
             }
         })
+
+    })
+
+
+    describe('%setLaunchWhitelist', function () {
+        
+        beforeEach("Set signer to admin (eve)", async () => {
+            launchpadStorage = await launchpadInstance.storage()
+            await signerFactory(tezos, adminSk);
+        });
+
+        it('admin (eve) should be able to set a whitelisted user for token launch (defaultWhitelistOptions : True)', async () => {
+            try {
+
+                launchId                        = secondLaunchId;
+                const whitelistedUser           = alice.pkh;
+                
+                // set launch whitelist operation
+                const setLaunchWhitelistOperation = await launchpadInstance.methods.setLaunchWhitelist(
+                    [
+                        {
+                            launchId                : launchId,
+                            whitelistUserAddress    : whitelistedUser,
+                            defaultWhitelistOption  : true,
+                            whitelistOptions        : null
+                        }
+                    ]
+                ).send()
+                await setLaunchWhitelistOperation.confirmation();
+
+                launchpadStorage    = await launchpadInstance.storage()
+                launchRecord        = await launchpadStorage.launchLedger.get(launchId);
+
+                const launchDefaultWhitelistOptions = launchRecord.defaultWhitelistOptions;
+                console.log(launchDefaultWhitelistOptions);
+
+                launchWhitelistRecord        = await launchpadStorage.launchWhitelistLedger.get([launchId, whitelistedUser]);
+                console.log(launchWhitelistRecord);
+
+                // assert.notEqual(launchRecord                      , null);
+                // assert.equal(launchRecord.saleOptions             , emptySaleOptions);
+                // assert.equal(launchRecord.defaultWhitelistOptions , emptyWhitelistOptions);
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+        it('admin (eve) should be able to set a whitelisted user for token launch (defaultWhitelistOptions : False - custom whitelist options)', async () => {
+            try {
+
+                launchId                        = secondLaunchId;
+
+                const whitelistedUser               = mallory.pkh;
+                const defaultWhitelistOptionKey     = 'custom';
+                const defaultWhitelistOptionValue   = 200000;
+                const defaultWhitelistOptions       = MichelsonMap.fromLiteral({
+                    'custom' : defaultWhitelistOptionValue
+                });
+
+                // set launch whitelist operation
+                const setLaunchWhitelistOperation = await launchpadInstance.methods.setLaunchWhitelist(
+                    [
+                        {
+                            launchId                : launchId,
+                            whitelistUserAddress    : whitelistedUser,
+                            defaultWhitelistOption  : true,
+                            whitelistOptions        : null
+                        }
+                    ]
+                ).send()
+                await setLaunchWhitelistOperation.confirmation();
+
+                // launchpadStorage    = await launchpadInstance.storage()
+                // launchRecord          = await launchpadStorage.launchLedger.get(launchId);
+
+                // assert.notEqual(launchRecord                      , null);
+
+
+                // assert.equal(launchRecord.saleOptions             , emptySaleOptions);
+                // assert.equal(launchRecord.defaultWhitelistOptions , emptyWhitelistOptions);
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+    })
+
+    describe('%startLaunch', function () {
+        
+        beforeEach("Set signer to admin (eve)", async () => {
+            launchpadStorage = await launchpadInstance.storage()
+            await signerFactory(tezos, adminSk);
+        });
 
     })
 

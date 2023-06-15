@@ -238,15 +238,15 @@ block{
 // Launchpad Entrypoints Begin
 // ------------------------------------------------------------------------------
 
-(*  createTokenSale entrypoint *)
-function createTokenSale(const createTokenSaleParams : createTokenSaleActionType; var s : launchpadStorageType) : return is
+(*  createTokenLaunch entrypoint *)
+function createTokenLaunch(const createTokenLaunchParams : createTokenLaunchActionType; var s : launchpadStorageType) : return is
 block {
 
     // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaCreateTokenSale", s.lambdaLedger);
+    const lambdaBytes : bytes = getLambdaBytes("lambdaCreateTokenLaunch", s.lambdaLedger);
 
     // init launchpad lambda action
-    const launchpadLambdaAction : launchpadLambdaActionType = LambdaCreateTokenSale(createTokenSaleParams);
+    const launchpadLambdaAction : launchpadLambdaActionType = LambdaCreateTokenLaunch(createTokenLaunchParams);
 
     // init response
     const response : return = unpackLambda(lambdaBytes, launchpadLambdaAction, s);  
@@ -255,15 +255,15 @@ block {
 
 
 
-(*  startSale entrypoint *)
-function startSale(const startSaleParams : nat; var s : launchpadStorageType) : return is
+(*  startLaunch entrypoint *)
+function startLaunch(const startLaunchParams : nat; var s : launchpadStorageType) : return is
 block {
 
     // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaStartSale", s.lambdaLedger);
+    const lambdaBytes : bytes = getLambdaBytes("lambdaStartLaunch", s.lambdaLedger);
 
     // init launchpad lambda action
-    const launchpadLambdaAction : launchpadLambdaActionType = LambdaStartSale(startSaleParams);
+    const launchpadLambdaAction : launchpadLambdaActionType = LambdaStartLaunch(startLaunchParams);
 
     // init response
     const response : return = unpackLambda(lambdaBytes, launchpadLambdaAction, s);  
@@ -272,15 +272,15 @@ block {
 
 
 
-(*  setSaleWhitelist entrypoint *)
-function setSaleWhitelist(const setSaleWhitelistParams : setSaleWhitelistActionType; var s : launchpadStorageType) : return is
+(*  setLaunchWhitelist entrypoint *)
+function setLaunchWhitelist(const setLaunchWhitelistParams : setLaunchWhitelistActionType; var s : launchpadStorageType) : return is
 block {
 
     // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaSetSaleWhitelist", s.lambdaLedger);
+    const lambdaBytes : bytes = getLambdaBytes("lambdaSetLaunchWhitelist", s.lambdaLedger);
 
     // init launchpad lambda action
-    const launchpadLambdaAction : launchpadLambdaActionType = LambdaSetSaleWhitelist(setSaleWhitelistParams);
+    const launchpadLambdaAction : launchpadLambdaActionType = LambdaSetLaunchWhitelist(setLaunchWhitelistParams);
 
     // init response
     const response : return = unpackLambda(lambdaBytes, launchpadLambdaAction, s);  
@@ -289,15 +289,15 @@ block {
 
 
 
-(*  editSale entrypoint *)
-function editSale(const editSaleParams : unit; var s : launchpadStorageType) : return is
+(*  editTokenLaunch entrypoint *)
+function editTokenLaunch(const editTokenLaunchParams : editTokenLaunchActionType; var s : launchpadStorageType) : return is
 block {
 
     // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaEditSale", s.lambdaLedger);
+    const lambdaBytes : bytes = getLambdaBytes("lambdaEditTokenLaunch", s.lambdaLedger);
 
     // init launchpad lambda action
-    const launchpadLambdaAction : launchpadLambdaActionType = LambdaEditSale(editSaleParams);
+    const launchpadLambdaAction : launchpadLambdaActionType = LambdaEditTokenLaunch(editTokenLaunchParams);
 
     // init response
     const response : return = unpackLambda(lambdaBytes, launchpadLambdaAction, s);  
@@ -306,15 +306,15 @@ block {
 
 
 
-(*  pauseSale entrypoint *)
-function pauseSale(const pauseSaleParams : nat; var s : launchpadStorageType) : return is
+(*  pauseLaunch entrypoint *)
+function pauseLaunch(const pauseLaunchParams : nat; var s : launchpadStorageType) : return is
 block{
     
     // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaPauseSale", s.lambdaLedger);
+    const lambdaBytes : bytes = getLambdaBytes("lambdaPauseLaunch", s.lambdaLedger);
 
     // init launchpad lambda action
-    const launchpadLambdaAction : launchpadLambdaActionType = LambdaPauseSale(pauseSaleParams);
+    const launchpadLambdaAction : launchpadLambdaActionType = LambdaPauseLaunch(pauseLaunchParams);
 
     // init response
     const response : return = unpackLambda(lambdaBytes, launchpadLambdaAction, s);  
@@ -323,15 +323,15 @@ block{
 
 
 
-(*  unpauseSale entrypoint *)
-function unpauseSale(const unpauseSaleParams : nat; var s : launchpadStorageType) : return is
+(*  unpauseLaunch entrypoint *)
+function unpauseLaunch(const unpauseLaunchParams : nat; var s : launchpadStorageType) : return is
 block{
     
     // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaUnpauseSale", s.lambdaLedger);
+    const lambdaBytes : bytes = getLambdaBytes("lambdaUnpauseLaunch", s.lambdaLedger);
 
     // init launchpad lambda action
-    const launchpadLambdaAction : launchpadLambdaActionType = LambdaUnpauseSale(unpauseSaleParams);
+    const launchpadLambdaAction : launchpadLambdaActionType = LambdaUnpauseLaunch(unpauseLaunchParams);
 
     // init response
     const response : return = unpackLambda(lambdaBytes, launchpadLambdaAction, s);  
@@ -340,15 +340,15 @@ block{
 
 
 
-(*  closeSale entrypoint *)
-function closeSale(const closeSaleParams : nat; var s : launchpadStorageType) : return is
+(*  closeLaunch entrypoint *)
+function closeLaunch(const closeLaunchParams : nat; var s : launchpadStorageType) : return is
 block{
     
     // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaCloseSale", s.lambdaLedger);
+    const lambdaBytes : bytes = getLambdaBytes("lambdaCloseLaunch", s.lambdaLedger);
 
     // init launchpad lambda action
-    const launchpadLambdaAction : launchpadLambdaActionType = LambdaCloseSale(closeSaleParams);
+    const launchpadLambdaAction : launchpadLambdaActionType = LambdaCloseLaunch(closeLaunchParams);
 
     // init response
     const response : return = unpackLambda(lambdaBytes, launchpadLambdaAction, s);  

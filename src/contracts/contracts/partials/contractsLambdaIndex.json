@@ -58,13 +58,13 @@
         "lambdaUnpauseAll",
         "lambdaTogglePauseEntrypoint",
     
-        "lambdaCreateTokenSale",
-        "lambdaSetSaleWhitelist",
-        "lambdaStartSale",
-        "lambdaCloseSale",
-        "lambdaEditSale",
-        "lambdaPauseSale",
-        "lambdaUnpauseSale",
+        "lambdaCreateTokenLaunch",
+        "lambdaSetLaunchWhitelist",
+        "lambdaEditTokenLaunch",
+        "lambdaStartLaunch",
+        "lambdaCloseLaunch",
+        "lambdaPauseLaunch",
+        "lambdaUnpauseLaunch",
         "lambdaDistributeTokens",
 
         "lambdaPurchase"

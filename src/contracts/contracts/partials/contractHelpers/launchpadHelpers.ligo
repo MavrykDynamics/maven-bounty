@@ -24,26 +24,26 @@ function pauseAllLaunchpadEntrypoints(var s : launchpadStorageType) : launchpadS
 block {
 
     // set all pause configs to True
-    if s.breakGlassConfig.createTokenSaleIsPaused then skip
-    else s.breakGlassConfig.createTokenSaleIsPaused := True;
+    if s.breakGlassConfig.createTokenLaunchIsPaused then skip
+    else s.breakGlassConfig.createTokenLaunchIsPaused := True;
 
-    if s.breakGlassConfig.startSaleIsPaused then skip
-    else s.breakGlassConfig.startSaleIsPaused := True;
+    if s.breakGlassConfig.startLaunchIsPaused then skip
+    else s.breakGlassConfig.startLaunchIsPaused := True;
 
-    if s.breakGlassConfig.closeSaleIsPaused then skip
-    else s.breakGlassConfig.closeSaleIsPaused := True;
+    if s.breakGlassConfig.closeLaunchIsPaused then skip
+    else s.breakGlassConfig.closeLaunchIsPaused := True;
 
-    if s.breakGlassConfig.setSaleWhitelistIsPaused then skip
-    else s.breakGlassConfig.setSaleWhitelistIsPaused := True;
+    if s.breakGlassConfig.setLaunchWhitelistIsPaused then skip
+    else s.breakGlassConfig.setLaunchWhitelistIsPaused := True;
 
-    if s.breakGlassConfig.editSaleIsPaused then skip
-    else s.breakGlassConfig.editSaleIsPaused := True;
+    if s.breakGlassConfig.editTokenLaunchIsPaused then skip
+    else s.breakGlassConfig.editTokenLaunchIsPaused := True;
 
-    if s.breakGlassConfig.pauseSaleIsPaused then skip
-    else s.breakGlassConfig.pauseSaleIsPaused := True;
+    if s.breakGlassConfig.pauseLaunchIsPaused then skip
+    else s.breakGlassConfig.pauseLaunchIsPaused := True;
 
-    if s.breakGlassConfig.unpauseSaleIsPaused then skip
-    else s.breakGlassConfig.unpauseSaleIsPaused := True;
+    if s.breakGlassConfig.unpauseLaunchIsPaused then skip
+    else s.breakGlassConfig.unpauseLaunchIsPaused := True;
 
     if s.breakGlassConfig.distributeTokensIsPaused then skip
     else s.breakGlassConfig.distributeTokensIsPaused := True;
@@ -60,25 +60,25 @@ function unpauseAllLaunchpadEntrypoints(var s : launchpadStorageType) : launchpa
 block {
 
     // set all pause configs to False
-    if s.breakGlassConfig.createTokenSaleIsPaused then s.breakGlassConfig.createTokenSaleIsPaused := False
+    if s.breakGlassConfig.createTokenLaunchIsPaused then s.breakGlassConfig.createTokenLaunchIsPaused := False
     else skip;
 
-    if s.breakGlassConfig.createTokenSaleIsPaused then s.breakGlassConfig.createTokenSaleIsPaused := False
+    if s.breakGlassConfig.createTokenLaunchIsPaused then s.breakGlassConfig.createTokenLaunchIsPaused := False
     else skip;
 
-    if s.breakGlassConfig.closeSaleIsPaused then s.breakGlassConfig.closeSaleIsPaused := False
+    if s.breakGlassConfig.closeLaunchIsPaused then s.breakGlassConfig.closeLaunchIsPaused := False
     else skip;
 
-    if s.breakGlassConfig.setSaleWhitelistIsPaused then s.breakGlassConfig.setSaleWhitelistIsPaused := False
+    if s.breakGlassConfig.setLaunchWhitelistIsPaused then s.breakGlassConfig.setLaunchWhitelistIsPaused := False
     else skip;
     
-    if s.breakGlassConfig.editSaleIsPaused then s.breakGlassConfig.editSaleIsPaused := False
+    if s.breakGlassConfig.editTokenLaunchIsPaused then s.breakGlassConfig.editTokenLaunchIsPaused := False
     else skip;
 
-    if s.breakGlassConfig.pauseSaleIsPaused then s.breakGlassConfig.pauseSaleIsPaused := False
+    if s.breakGlassConfig.pauseLaunchIsPaused then s.breakGlassConfig.pauseLaunchIsPaused := False
     else skip;
 
-    if s.breakGlassConfig.unpauseSaleIsPaused then s.breakGlassConfig.unpauseSaleIsPaused := False
+    if s.breakGlassConfig.unpauseLaunchIsPaused then s.breakGlassConfig.unpauseLaunchIsPaused := False
     else skip;
 
     if s.breakGlassConfig.distributeTokensIsPaused then s.breakGlassConfig.distributeTokensIsPaused := False
@@ -169,6 +169,14 @@ block {
 
 } with contractAddress
 
+
+
+function verifyValidTokenIssuanceType(const tokenIssuanceType : string) : unit is
+block {
+
+    if tokenIssuanceType = "MINT" or "TRANSFER" then skip else failwith 
+
+}
 
 
 // function verifyValidCurrency(const currency : tokenType; const s : launchpadStorageType) : unit is 

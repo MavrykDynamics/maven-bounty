@@ -36,10 +36,10 @@ export const launchpadStorage : launchpadStorageType = {
     whitelistContracts        : MichelsonMap.fromLiteral({}),
     generalContracts          : MichelsonMap.fromLiteral({}),
 
-    saleLedger                : MichelsonMap.fromLiteral({}),
-    saleWhitelistLedger       : MichelsonMap.fromLiteral({}),
-    salePurchaseLedger        : MichelsonMap.fromLiteral({}),
-    lastSaleId                : new BigNumber(0),
+    launchLedger              : MichelsonMap.fromLiteral({}),
+    launchWhitelistLedger     : MichelsonMap.fromLiteral({}),
+    purchaseLedger            : MichelsonMap.fromLiteral({}),
+    lastLaunchId              : new BigNumber(0),
     
     lambdaLedger              : MichelsonMap.fromLiteral({})
 };

@@ -208,34 +208,34 @@ block {
 // Launchpad Lambdas Begin
 // ------------------------------------------------------------------------------
 
-(* createTokenSale lambda *)
-function lambdaCreateTokenSale(const launchpadLambdaAction : launchpadLambdaActionType; var s : launchpadStorageType) : return is
+(* createTokenLaunch lambda *)
+function lambdaCreateTokenLaunch(const launchpadLambdaAction : launchpadLambdaActionType; var s : launchpadStorageType) : return is
 block {
 
     verifySenderIsAdmin(s.admins); // check that sender is admin 
     
     case launchpadLambdaAction of [
-        |   LambdaCreateTokenSale(createTokenSaleParams) -> {
+        |   LambdaCreateTokenLaunch(createTokenLaunchParams) -> {
 
                 // init create params
-                const name                      : string                            = createTokenSaleParams.name;
-                const tokenIssuanceType         : string                            = createTokenSaleParams.tokenIssuanceType;
-                const tokenDistributionType     : string                            = createTokenSaleParams.tokenDistributionType;
-                const tokenContractAddress      : address                           = createTokenSaleParams.tokenContractAddress;
-                const tokenId                   : nat                               = createTokenSaleParams.tokenId;
-                const saleStart                 : timestamp                         = createTokenSaleParams.saleStart;
-                const saleEnd                   : option(timestamp)                 = createTokenSaleParams.saleEnd;
-                const saleOptions               : map(string, tokenSaleOptionType)  = createTokenSaleParams.saleOptions;
-                const defaultWhitelistOptions   : map(string, nat)                  = createTokenSaleParams.defaultWhitelistOptions;
+                const name                      : string                            = createTokenLaunchParams.name;
+                const tokenIssuanceType         : string                            = createTokenLaunchParams.tokenIssuanceType;
+                const tokenDistributionType     : string                            = createTokenLaunchParams.tokenDistributionType;
+                const tokenContractAddress      : address                           = createTokenLaunchParams.tokenContractAddress;
+                const tokenId                   : nat                               = createTokenLaunchParams.tokenId;
+                const saleStart                 : timestamp                         = createTokenLaunchParams.saleStart;
+                const saleEnd                   : option(timestamp)                 = createTokenLaunchParams.saleEnd;
+                const saleOptions               : map(string, tokenSaleOptionType)  = createTokenLaunchParams.saleOptions;
+                const defaultWhitelistOptions   : map(string, nat)                  = createTokenLaunchParams.defaultWhitelistOptions;
 
                 // init storage params
-                const lastSaleId                : nat = s.lastSaleId;
+                const lastLaunchId              : nat = s.lastLaunchId;
 
-                // create saleRecord
-                const saleRecord : saleRecordType = record [
+                // create launchRecord
+                const launchRecord : launchRecordType = record [
                     name                        = name;
                     isPaused                    = False;
-                    status                      = "ACTIVE";
+                    status                      = "INACTIVE";
                     tokenIssuanceType           = tokenIssuanceType;
                     tokenDistributionType       = tokenDistributionType;
                     tokenContractAddress        = tokenContractAddress;
@@ -247,8 +247,8 @@ block {
                 ];
 
                 // update storage
-                s.saleLedger[lastSaleId]    := saleRecord;
-                s.lastSaleId                := lastSaleId + 1n;
+                s.launchLedger[lastLaunchId]   := launchRecord;
+                s.lastLaunchId                 := lastLaunchId + 1n;
 
             }
         |   _ -> skip
@@ -258,19 +258,19 @@ block {
 
 
 
-(* setSaleWhitelist lambda *)
-function lambdaSetSaleWhitelist(const launchpadLambdaAction : launchpadLambdaActionType; var s : launchpadStorageType) : return is
+(* setLaunchWhitelist lambda *)
+function lambdaSetLaunchWhitelist(const launchpadLambdaAction : launchpadLambdaActionType; var s : launchpadStorageType) : return is
 block {
 
     verifySenderIsAdmin(s.admins); // check that sender is admin 
     
     case launchpadLambdaAction of [
-        |   LambdaSetSaleWhitelist(saleWhitelist) -> {
+        |   LambdaSetLaunchWhitelist(launchWhitelist) -> {
 
-                for whitelistUser in list saleWhitelist block {
+                for whitelistUser in list launchWhitelist block {
 
                     // init params 
-                    const saleId                    : nat               = whitelistUser.saleId;
+                    const launchId                  : nat               = whitelistUser.launchId;
                     const whitelistUserAddress      : address           = whitelistUser.whitelistUserAddress;
                     const defaultWhitelistOption    : bool              = whitelistUser.defaultWhitelistOption;
                     const whitelistOptions          : map(string, nat)  = case whitelistUser.whitelistOptions of [
@@ -278,27 +278,27 @@ block {
                         |   None          -> (map[] : map(string, nat))
                     ];
 
-                    // get sale record
-                    const saleRecord : saleRecordType = case s.saleLedger[saleId] of [
+                    // get launch record
+                    const launchRecord : launchRecordType = case s.launchLedger[launchId] of [
                             Some(_record) -> _record
-                        |   None          -> failwith(error_SALE_RECORD_NOT_FOUND)
+                        |   None          -> failwith(error_LAUNCH_RECORD_NOT_FOUND)
                     ];
 
-                    const whitelistUserKey : (nat * address) = (saleId, whitelistUserAddress);
+                    const whitelistUserKey : (nat * address) = (launchId, whitelistUserAddress);
                     var allowed : map(string, nat) := map[];
                     
                     // set allowed options
                     if defaultWhitelistOption = True then block {
-                        allowed := saleRecord.defaultWhitelistOptions;
+                        allowed := launchRecord.defaultWhitelistOptions;
                     } else {
                         allowed := whitelistOptions;
                     };
 
-                    const saleWhitelistRecord : saleWhitelistRecordType = record [
+                    const launchWhitelistRecord : launchWhitelistRecordType = record [
                         allowed = allowed;
                     ];
 
-                    s.saleWhitelistLedger[whitelistUserKey] := saleWhitelistRecord;
+                    s.launchWhitelistLedger[whitelistUserKey] := launchWhitelistRecord;
 
                 }
 
@@ -310,62 +310,69 @@ block {
 
 
 
-(* editSale lambda *)
-function lambdaEditSale(const launchpadLambdaAction : launchpadLambdaActionType; var s : launchpadStorageType) : return is
+(* editTokenLaunch lambda *)
+function lambdaEditTokenLaunch(const launchpadLambdaAction : launchpadLambdaActionType; var s : launchpadStorageType) : return is
 block {
 
     verifySenderIsAdmin(s.admins); // check that sender is admin 
     
     case launchpadLambdaAction of [
-        |   LambdaEditSale(_editSaleParams) -> {
+        |   LambdaEditTokenLaunch(editTokenLaunchParams) -> {
 
-                skip
+                const launchId                  : nat                               = editTokenLaunchParams.launchId;
+                var launchRecord : launchRecordType := case s.launchLedger[launchId] of [
+                            Some(_record) -> _record
+                        |   None          -> failwith(error_LAUNCH_RECORD_NOT_FOUND)
+                    ];
 
-            }
-        |   _ -> skip
-    ];
-
-} with (noOperations, s)
-
-
-
-(* startSale lambda *)
-function lambdaStartSale(const launchpadLambdaAction : launchpadLambdaActionType; var s : launchpadStorageType) : return is
-block {
-
-    verifySenderIsAdmin(s.admins); // check that sender is admin 
-    
-    case launchpadLambdaAction of [
-        |   LambdaStartSale(_startSaleParams) -> {
-
-                skip
-
-            }
-        |   _ -> skip
-    ];
-
-} with (noOperations, s)
-
-
-
-(* pauseSale lambda *)
-function lambdaPauseSale(const launchpadLambdaAction : launchpadLambdaActionType; var s : launchpadStorageType) : return is
-block {
-
-    verifySenderIsAdmin(s.admins); // check that sender is admin 
-    
-    case launchpadLambdaAction of [
-        |   LambdaPauseSale(saleId) -> {
-
-                // get sale record
-                var saleRecord : saleRecordType := case s.saleLedger[saleId] of [
-                        Some(_record) -> _record
-                    |   None          -> failwith(error_SALE_RECORD_NOT_FOUND)
+                // edit launch record if option found
+                case editTokenLaunchParams.name of [
+                        Some(_newName) -> launchRecord.name := _newName
+                    |   None -> skip
                 ];
 
-                saleRecord.status       := "PAUSED";
-                saleRecord.isPaused     := True;
-                s.saleLedger[saleId]    := saleRecord;
+                case editTokenLaunchParams.tokenIssuanceType of [
+                        Some(_newIssuanceType) -> launchRecord.tokenIssuanceType := _newIssuanceType
+                    |   None -> skip
+                ];
+
+                case editTokenLaunchParams.tokenDistributionType of [
+                        Some(_newDistributionType) -> launchRecord.tokenDistributionType := _newDistributionType
+                    |   None -> skip
+                ];
+
+                case editTokenLaunchParams.tokenContractAddress of [
+                        Some(_newTokenContractAddress) -> launchRecord.tokenContractAddress := _newTokenContractAddress
+                    |   None -> skip
+                ];
+
+                case editTokenLaunchParams.tokenId of [
+                        Some(_newTokenId) -> launchRecord.tokenId := _newTokenId
+                    |   None -> skip
+                ];
+
+                case editTokenLaunchParams.saleStart of [
+                        Some(_newSaleStart) -> launchRecord.saleStart := _newSaleStart
+                    |   None -> skip
+                ];
+
+                case editTokenLaunchParams.saleEnd of [
+                        Some(_newSaleEnd) -> launchRecord.saleEnd := _newSaleEnd
+                    |   None -> skip
+                ];
+
+                case editTokenLaunchParams.saleOptions of [
+                        Some(_newSaleOptions) -> launchRecord.saleOptions := _newSaleOptions
+                    |   None -> skip
+                ];
+
+                case editTokenLaunchParams.defaultWhitelistOptions of [
+                        Some(_newDefaultWhitelistOptions) -> launchRecord.defaultWhitelistOptions := _newDefaultWhitelistOptions
+                    |   None -> skip
+                ];
+
+                // update storage
+                s.launchLedger[launchId] := launchRecord;
 
             }
         |   _ -> skip
@@ -375,23 +382,31 @@ block {
 
 
 
-(* unpauseSale lambda *)
-function lambdaUnpauseSale(const launchpadLambdaAction : launchpadLambdaActionType; var s : launchpadStorageType) : return is
+(* startLaunch lambda *)
+function lambdaStartLaunch(const launchpadLambdaAction : launchpadLambdaActionType; var s : launchpadStorageType) : return is
 block {
 
     verifySenderIsAdmin(s.admins); // check that sender is admin 
     
     case launchpadLambdaAction of [
-        |   LambdaUnpauseSale(saleId) -> {
+        |   LambdaStartLaunch(_startLaunchParams) -> {
 
-                var saleRecord : saleRecordType := case s.saleLedger[saleId] of [
+                // get launch record
+                var launchRecord : launchRecordType := case s.launchLedger[launchId] of [
                         Some(_record) -> _record
-                    |   None          -> failwith(error_SALE_RECORD_NOT_FOUND)
+                    |   None          -> failwith(error_LAUNCH_RECORD_NOT_FOUND)
                 ];
 
-                saleRecord.status       := "ACTIVE";
-                saleRecord.isPaused     := False;
-                s.saleLedger[saleId]    := saleRecord;                
+                launchRecord.status         = "ACTIVE";
+                
+                // reset sale end if it has been closed
+                const currentSaleEnd : timestamp = case launchRecord.saleEnd of [
+                        Some(_timestamp) -> _timestamp
+                    |   None             -> zeroTimestamp
+                ];
+                if Tezos.get_now() > currentSaleEnd then launchRecord.saleEnd := (None : option(timestamp)) else skip;
+
+                s.launchLedger[launchId]    := launchRecord;
 
             }
         |   _ -> skip
@@ -401,23 +416,76 @@ block {
 
 
 
-(* closeSale lambda *)
-function lambdaCloseSale(const launchpadLambdaAction : launchpadLambdaActionType; var s : launchpadStorageType) : return is
+(* pauseLaunch lambda *)
+function lambdaPauseLaunch(const launchpadLambdaAction : launchpadLambdaActionType; var s : launchpadStorageType) : return is
 block {
 
     verifySenderIsAdmin(s.admins); // check that sender is admin 
     
     case launchpadLambdaAction of [
-        |   LambdaCloseSale(saleId) -> {
+        |   LambdaPauseLaunch(launchId) -> {
 
-                var saleRecord : saleRecordType := case s.saleLedger[saleId] of [
+                // get launch record
+                var launchRecord : launchRecordType := case s.launchLedger[launchId] of [
                         Some(_record) -> _record
-                    |   None          -> failwith(error_SALE_RECORD_NOT_FOUND)
+                    |   None          -> failwith(error_LAUNCH_RECORD_NOT_FOUND)
                 ];
 
-                saleRecord.status       := "CLOSED";
-                saleRecord.saleEnd      := Some(Tezos.get_now());
-                s.saleLedger[saleId]    := saleRecord;      
+                launchRecord.status       := "PAUSED";
+                launchRecord.isPaused     := True;
+                s.launchLedger[launchId]  := launchRecord;
+
+            }
+        |   _ -> skip
+    ];
+
+} with (noOperations, s)
+
+
+
+(* unpauseLaunch lambda *)
+function lambdaUnpauseLaunch(const launchpadLambdaAction : launchpadLambdaActionType; var s : launchpadStorageType) : return is
+block {
+
+    verifySenderIsAdmin(s.admins); // check that sender is admin 
+    
+    case launchpadLambdaAction of [
+        |   LambdaUnpauseLaunch(launchId) -> {
+
+                var launchRecord : launchRecordType := case s.launchLedger[launchId] of [
+                        Some(_record) -> _record
+                    |   None          -> failwith(error_LAUNCH_RECORD_NOT_FOUND)
+                ];
+
+                launchRecord.status       := "ACTIVE";
+                launchRecord.isPaused     := False;
+                s.launchLedger[launchId]  := launchRecord;                
+
+            }
+        |   _ -> skip
+    ];
+
+} with (noOperations, s)
+
+
+
+(* closeLaunch lambda *)
+function lambdaCloseLaunch(const launchpadLambdaAction : launchpadLambdaActionType; var s : launchpadStorageType) : return is
+block {
+
+    verifySenderIsAdmin(s.admins); // check that sender is admin 
+    
+    case launchpadLambdaAction of [
+        |   LambdaCloseLaunch(launchId) -> {
+
+                var launchRecord : launchRecordType := case s.launchLedger[launchId] of [
+                        Some(_record) -> _record
+                    |   None          -> failwith(error_LAUNCH_RECORD_NOT_FOUND)
+                ];
+
+                launchRecord.status       := "CLOSED";
+                launchRecord.saleEnd      := Some(Tezos.get_now());
+                s.launchLedger[launchId]  := launchRecord;      
 
             }
         |   _ -> skip
@@ -505,15 +573,15 @@ block {
         |   LambdaTogglePauseEntrypoint(params) -> {
 
                 case params.targetEntrypoint of [
-                        CreateTokenSale (_v)        -> s.breakGlassConfig.createTokenSaleIsPaused       := _v
-                    |   StartSale (_v)              -> s.breakGlassConfig.startSaleIsPaused             := _v
-                    |   SetSaleWhitelist (_v)       -> s.breakGlassConfig.setSaleWhitelistIsPaused      := _v
-                    |   EditSale (_v)               -> s.breakGlassConfig.editSaleIsPaused              := _v
-                    |   CloseSale (_v)              -> s.breakGlassConfig.closeSaleIsPaused             := _v
-                    |   PauseSale (_v)              -> s.breakGlassConfig.pauseSaleIsPaused             := _v
-                    |   UnpauseSale (_v)            -> s.breakGlassConfig.unpauseSaleIsPaused           := _v
-                    |   DistributeTokens (_v)       -> s.breakGlassConfig.distributeTokensIsPaused      := _v
-                    |   Purchase (_v)               -> s.breakGlassConfig.purchaseIsPaused              := _v
+                        CreateTokenLaunch (_v)        -> s.breakGlassConfig.createTokenLaunchIsPaused       := _v
+                    |   StartLaunch (_v)              -> s.breakGlassConfig.startLaunchIsPaused             := _v
+                    |   SetLaunchWhitelist (_v)       -> s.breakGlassConfig.setLaunchWhitelistIsPaused      := _v
+                    |   EditTokenLaunch (_v)          -> s.breakGlassConfig.editTokenLaunchIsPaused         := _v
+                    |   CloseLaunch (_v)              -> s.breakGlassConfig.closeLaunchIsPaused             := _v
+                    |   PauseLaunch (_v)              -> s.breakGlassConfig.pauseLaunchIsPaused             := _v
+                    |   UnpauseLaunch (_v)            -> s.breakGlassConfig.unpauseLaunchIsPaused           := _v
+                    |   DistributeTokens (_v)         -> s.breakGlassConfig.distributeTokensIsPaused        := _v
+                    |   Purchase (_v)                 -> s.breakGlassConfig.purchaseIsPaused                := _v
                 ]
                 
             }
@@ -544,26 +612,26 @@ block {
 
                 // init params
                 const sender            : address   = Tezos.get_sender();
-                const saleId            : nat       = purchaseParams.saleId;
+                const launchId          : nat       = purchaseParams.launchId;
                 const amount            : nat       = purchaseParams.amount;
                 const saleOptionName    : string    = purchaseParams.saleOption;
                 
                 // create sale user key
-                const saleUserKey   : (nat * address) = (saleId, sender);
+                const saleUserKey   : (nat * address) = (launchId, sender);
 
-                // get sale record
-                var saleRecord : saleRecordType := case s.saleLedger[saleId] of [
+                // get launch record
+                var launchRecord : launchRecordType := case s.launchLedger[launchId] of [
                         Some(_record) -> _record
-                    |   None          -> failwith(error_SALE_RECORD_NOT_FOUND)
+                    |   None          -> failwith(error_LAUNCH_RECORD_NOT_FOUND)
                 ];
 
-                const tokenId                : nat      = saleRecord.tokenId;
-                const tokenContractAddress   : address  = saleRecord.tokenContractAddress;
-                const tokenIssuanceType      : string   = saleRecord.tokenIssuanceType;
-                const tokenDistributionType  : string   = saleRecord.tokenDistributionType;
+                const tokenId                : nat      = launchRecord.tokenId;
+                const tokenContractAddress   : address  = launchRecord.tokenContractAddress;
+                const tokenIssuanceType      : string   = launchRecord.tokenIssuanceType;
+                const tokenDistributionType  : string   = launchRecord.tokenDistributionType;
 
                 // get sale option
-                var saleOption : tokenSaleOptionType := case saleRecord.saleOptions[saleOptionName] of [
+                var saleOption : tokenSaleOptionType := case launchRecord.saleOptions[saleOptionName] of [
                         Some(_saleOption) -> _saleOption
                     |   None              -> failwith(error_SALE_OPTION_NOT_FOUND)
                 ];
@@ -578,8 +646,8 @@ block {
                 if (totalBought + amount) > maxAmountCap then failwith(error_MAX_AMOUNT_CAP_FOR_SALE_OPTION_EXCEEDED) else skip;
 
                 // get total purchased of user
-                var userSalePurchaseRecord : salePurchaseRecordType := case s.salePurchaseLedger[saleUserKey] of [
-                        Some(_salePurchaseRecord) -> _salePurchaseRecord
+                var userPurchaseRecord : purchaseRecordType := case s.purchaseLedger[saleUserKey] of [
+                        Some(_purchaseRecord) -> _purchaseRecord
                     |   None -> record [
                             purchased       = (map[] : map(string, nat));
                             totalPurchased  = 0n;
@@ -587,7 +655,7 @@ block {
                 ];
 
                 // get total purchased of user for this particular sale option
-                var userSaleOptionPurchased : nat := case userSalePurchaseRecord.purchased[saleOptionName] of [
+                var userSaleOptionPurchased : nat := case userPurchaseRecord.purchased[saleOptionName] of [
                         Some(_amount) -> _amount
                     |   None          -> 0n
                 ];
@@ -621,16 +689,16 @@ block {
                 ];
 
                 // update user sale purchase ledger
-                userSalePurchaseRecord.purchased[saleOptionName]    := finalSaleOptionPurchasedTotal;
-                userSalePurchaseRecord.totalPurchased               := userSalePurchaseRecord.totalPurchased + amount;
-                s.salePurchaseLedger[saleUserKey]                   := userSalePurchaseRecord;
+                userPurchaseRecord.purchased[saleOptionName]    := finalSaleOptionPurchasedTotal;
+                userPurchaseRecord.totalPurchased               := userPurchaseRecord.totalPurchased + amount;
+                s.purchaseLedger[saleUserKey]                   := userPurchaseRecord;
 
                 // update sale option
                 saleOption.totalBought                              := saleOption.totalBought + amount;
-                saleRecord.saleOptions[saleOptionName]              := saleOption;
+                launchRecord.saleOptions[saleOptionName]            := saleOption;
 
                 // update sale record
-                s.saleLedger[saleId]                                := saleRecord;
+                s.launchLedger[launchId]                            := launchRecord;
 
                 // transfer or mint if tokenDistributionType is AUTO
                 if tokenDistributionType = "MANUAL" then skip 
