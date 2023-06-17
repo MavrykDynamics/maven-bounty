@@ -36,6 +36,7 @@
         "lambdaSetCurrency",
 
         "lambdaCreateListing",
+        "lambdaEditListing",
         "lambdaRemoveListing",
         "lambdaPurchase",
         "lambdaOffer",

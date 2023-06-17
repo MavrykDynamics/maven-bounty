@@ -52,6 +52,7 @@ type action is
 
         // Marketplace Entrypoints
     |   CreateListing               of createListingActionType
+    |   EditListing                 of editListingActionType
     |   RemoveListing               of removeListingActionType
     |   Purchase                    of purchaseActionType
     |   Offer                       of offerActionType
@@ -128,6 +129,7 @@ function main (const action : action; const s : marketplaceStorageType) : return
 
             // Marketplace Entrypoints
         |   CreateListing(parameters)             -> createListing(parameters, s)  
+        |   EditListing(parameters)               -> editListing(parameters, s)  
         |   RemoveListing(parameters)             -> removeListing(parameters, s)  
         |   Purchase(parameters)                  -> purchase(parameters, s)
         |   Offer(parameters)                     -> offer(parameters, s)

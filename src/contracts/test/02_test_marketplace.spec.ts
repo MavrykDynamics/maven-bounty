@@ -519,6 +519,7 @@ describe('Test: Marketplace Contract', async () => {
             userSk  = mallory.sk;
             await signerFactory(tezos, userSk);
 
+            securityTokenStorage  = await securityTokenInstance.storage()
             marketplaceStorage    = await marketplaceInstance.storage()
         });
 
@@ -527,7 +528,11 @@ describe('Test: Marketplace Contract', async () => {
 
                 // check listing record exists
                 listingRecord         = await marketplaceStorage.listingLedger.get(firstListingId);
+                const listingAmount   = listingRecord.amount;
                 assert.notEqual(listingRecord, null);
+
+                securityTokenStorage                = await securityTokenInstance.storage()
+                const initialUserSecurityTokenBalance   = await securityTokenStorage.ledger.get({owner : user, token_id : 0});
 
                 // remove listing operation
                 const removeListingOperation = await marketplaceInstance.methods.removeListing(
@@ -538,7 +543,13 @@ describe('Test: Marketplace Contract', async () => {
                 // check listing record is removed
                 marketplaceStorage    = await marketplaceInstance.storage()
                 listingRecord         = await marketplaceStorage.listingLedger.get(firstListingId);
-                assert.equal(listingRecord, null);
+                assert.equal(listingRecord.status, "CLOSED");
+
+                // check that user has received her listed tokens back
+                securityTokenStorage                    = await securityTokenInstance.storage()
+                const updatedUserSecurityTokenBalance   = await securityTokenStorage.ledger.get({owner : user, token_id : 0});
+
+                assert.equal(+updatedUserSecurityTokenBalance, +initialUserSecurityTokenBalance + +listingAmount);
 
             } catch (e) {
                 console.log(e)
@@ -550,7 +561,7 @@ describe('Test: Marketplace Contract', async () => {
 
                 // check listing record exists
                 listingRecord         = await marketplaceStorage.listingLedger.get(firstListingId);
-                assert.equal(listingRecord, null);
+                assert.equal(listingRecord.status, "CLOSED");
 
                 // remove listing operation
                 const removeListingOperation = await marketplaceInstance.methods.removeListing(
@@ -561,7 +572,7 @@ describe('Test: Marketplace Contract', async () => {
                 // check listing record is removed
                 marketplaceStorage    = await marketplaceInstance.storage()
                 listingRecord         = await marketplaceStorage.listingLedger.get(firstListingId);
-                assert.equal(listingRecord, null);
+                assert.equal(listingRecord.status, "CLOSED");
 
             } catch (e) {
                 console.log(e)
@@ -586,7 +597,7 @@ describe('Test: Marketplace Contract', async () => {
                 // check listing record is not removed
                 marketplaceStorage    = await marketplaceInstance.storage()
                 listingRecord         = await marketplaceStorage.listingLedger.get(secondListingId);
-                assert.notEqual(listingRecord, null);
+                assert.equal(listingRecord.status, "ACTIVE");
 
             } catch (e) {
                 console.log(e)
@@ -649,7 +660,7 @@ describe('Test: Marketplace Contract', async () => {
                 // check listing record is removed (purchased)
                 marketplaceStorage    = await marketplaceInstance.storage()
                 listingRecord         = await marketplaceStorage.listingLedger.get(secondListingId);
-                assert.equal(listingRecord, null);
+                assert.equal(listingRecord.status, "CLOSED");
 
                 tokenStorage                              = await mockFa2TokenInstance.storage()
                 const updatedBuyerCurrencyTokenBalance    = await tokenStorage.ledger.get(buyer);
@@ -999,7 +1010,7 @@ describe('Test: Marketplace Contract', async () => {
 
                 console.log(`royaltyFee: ${royaltyFee}`);
                 console.log(`priceLessRoyalty: ${priceLessRoyalty}`);
-                
+
                 console.log(`initialOffererSecurityTokenBalance: ${initialOffererSecurityTokenBalance}`);
                 console.log(`updatedOffererSecurityTokenBalance: ${updatedOffererSecurityTokenBalance}`);
                 console.log(`updatedOffererSecurityTokenBalance - initialOffererSecurityTokenBalance: ${updatedOffererSecurityTokenBalance - initialOffererSecurityTokenBalance}`);

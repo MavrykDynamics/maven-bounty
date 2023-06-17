@@ -121,13 +121,19 @@
 [@inline] const error_SET_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 62n;
 [@inline] const error_REMOVE_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                          = 63n;
 [@inline] const error_CREATE_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                           = 64n;
-[@inline] const error_REMOVE_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                           = 65n;
-[@inline] const error_PURCHASE_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                                 = 66n;
-[@inline] const error_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                                    = 67n;
-[@inline] const error_ACCEPT_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 68n;
-[@inline] const error_REMOVE_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 69n;
+[@inline] const error_EDIT_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 65n;
+[@inline] const error_REMOVE_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                           = 66n;
+[@inline] const error_PURCHASE_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                                 = 67n;
+[@inline] const error_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                                    = 68n;
+[@inline] const error_ACCEPT_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 69n;
+[@inline] const error_REMOVE_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 70n;
 
 
+[@inline] const error_PURCHASE_AMOUNT_CANNOT_BE_GREATER_THAN_LISTING_AMOUNT                                              = 71n;
+[@inline] const error_OFFER_AMOUNT_CANNOT_BE_GREATER_THAN_LISTING_AMOUNT                                                 = 72n;
+[@inline] const error_OFFER_STATUS_IS_NOT_OPEN                                                                           = 73n;
+[@inline] const error_LISTING_STATUS_IS_NOT_ACTIVE                                                                       = 74n;
+[@inline] const error_QUICK_BUY_OPTION_DOES_NOT_EXIST_ON_LISTING                                                         = 75n;
 
 
 // ------------------------------------------------------------------------------
@@ -136,10 +142,10 @@
 //
 // ------------------------------------------------------------------------------
 
-[@inline] const error_TREASURY_NOT_FOUND                                                                                 = 70n;
+[@inline] const error_TREASURY_NOT_FOUND                                                                                 = 76n;
 
-[@inline] const error_DOORMAN_CONTRACT_NOT_FOUND                                                                         = 71n;
-[@inline] const error_MVK_TOKEN_CONTRACT_NOT_FOUND                                                                       = 72n;
-[@inline] const error_UPDATE_OPERATORS_ENTRYPOINT_IN_MVK_TOKEN_CONTRACT_NOT_FOUND                                        = 73n;
-[@inline] const error_STAKE_ENTRYPOINT_IN_DOORMAN_CONTRACT_NOT_FOUND                                                     = 74n;
-[@inline] const error_UNSTAKE_ENTRYPOINT_IN_DOORMAN_CONTRACT_NOT_FOUND                                                   = 75n;
+[@inline] const error_DOORMAN_CONTRACT_NOT_FOUND                                                                         = 77n;
+[@inline] const error_MVK_TOKEN_CONTRACT_NOT_FOUND                                                                       = 78n;
+[@inline] const error_UPDATE_OPERATORS_ENTRYPOINT_IN_MVK_TOKEN_CONTRACT_NOT_FOUND                                        = 79n;
+[@inline] const error_STAKE_ENTRYPOINT_IN_DOORMAN_CONTRACT_NOT_FOUND                                                     = 80n;
+[@inline] const error_UNSTAKE_ENTRYPOINT_IN_DOORMAN_CONTRACT_NOT_FOUND                                                   = 81n;

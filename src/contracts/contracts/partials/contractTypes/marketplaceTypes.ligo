@@ -10,6 +10,7 @@ type listTokenType is
 
 type marketplaceBreakGlassConfigType is [@layout:comb] record [
     createListingIsPaused    : bool;
+    editListingIsPaused      : bool;
     removeListingIsPaused    : bool;
     purchaseIsPaused         : bool;
     offerIsPaused            : bool;
@@ -19,26 +20,32 @@ type marketplaceBreakGlassConfigType is [@layout:comb] record [
 ]
 
 type marketplaceConfigType is [@layout:comb] record [
-    minOfferAmount   : nat;
-    royalty          : nat;
+    minOfferAmount      : nat;
+    standardUnit        : nat; // e.g. 0.1 of 10^6 token -> 100000
+    royalty             : nat;
+    marketplaceFee      : nat;
 ];
 
 type listingRecordType is [@layout:comb] record [
-    initiator   : address;
-    token       : listTokenType;
-    price       : nat;
-    amount      : nat; 
-    currency    : tokenType;
-    expiryTime  : option(timestamp);
+    initiator           : address;
+    status              : string;
+    token               : listTokenType;
+    amount              : nat;
+    pricePerUnit        : nat; 
+    currency            : tokenType;
+    quickBuyPrice       : option(nat);
+    expiryTime          : option(timestamp);
 ]
 type listingLedgerType is big_map(nat, listingRecordType)
 
 type offerRecordType is [@layout:comb] record [
-    initiator   : address;
-    listingId   : nat;
-    price       : nat;
-    currency    : tokenType;
-    expiryTime  : option(timestamp);
+    initiator       : address;
+    status          : string;
+    listingId       : nat;
+    price           : nat;
+    amount          : nat;
+    currency        : tokenType;
+    expiryTime      : option(timestamp);
 ]
 type offerLedgerType is big_map(nat, offerRecordType)
 
@@ -58,30 +65,54 @@ type setCurrencyActionType is [@layout:comb] record [
 ]
 
 type removeListingActionType is nat
-type purchaseActionType is nat
+
+type partialPurchaseActionType is [@layout:comb] record [  
+    listingId   : nat;
+    amount      : nat;
+]
+
+type quickBuyPurchaseActionType is nat // listingId
+
+type purchaseActionType is 
+    |   PartialPurchase     of partialPurchaseActionType
+    |   QuickBuyPurchase    of quickBuyPurchaseActionType
 
 type acceptOfferActionType is nat
 type removeOfferActionType is nat
 
 type createListingActionType is [@layout:comb] record [
-    amount      : nat;
-    price       : nat;
-    expiryTime  : option(timestamp);
-    token       : listTokenType;
-    currency    : tokenType;
+    amount              : nat;
+    pricePerUnit        : nat;
+    quickBuyPrice       : option(nat);
+    expiryTime          : option(timestamp);
+    token               : listTokenType;
+    currency            : tokenType;
 ]
 
+
+type editListingActionType is [@layout:comb] record [
+    listingId       : nat;
+    amount          : option(nat);
+    pricePerUnit    : option(nat);
+    quickBuyPrice   : option(nat);
+    expiryTime      : option(timestamp);
+    currency        : option(tokenType);
+]
+
+
 type offerActionType is [@layout:comb] record [
-    listingId   : nat;
-    price       : nat;
-    expiryTime  : option(timestamp);
-    currency    : tokenType;
+    listingId       : nat;
+    price           : nat;
+    amount          : nat; 
+    expiryTime      : option(timestamp);
+    currency        : tokenType;
 ]
 
 type marketplaceUpdateConfigNewValueType is nat
 type marketplaceUpdateConfigActionType is 
         ConfigMinOfferAmount          of unit
     |   ConfigRoyalty                 of unit
+    |   ConfigMarketplaceFee          of unit
 
 type marketplaceUpdateConfigParamsType is [@layout:comb] record [
     updateConfigNewValue    : marketplaceUpdateConfigNewValueType; 
@@ -90,6 +121,7 @@ type marketplaceUpdateConfigParamsType is [@layout:comb] record [
 
 type marketplacePausableEntrypointType is
         CreateListing                of bool
+    |   EditListing                  of bool
     |   RemoveListing                of bool
     |   Purchase                     of bool
     |   Offer                        of bool
@@ -133,6 +165,7 @@ type marketplaceLambdaActionType is
         
         // Marketplace Lambdas
     |   LambdaCreateListing               of createListingActionType
+    |   LambdaEditListing                 of editListingActionType
     |   LambdaRemoveListing               of removeListingActionType
     |   LambdaPurchase                    of purchaseActionType
     |   LambdaOffer                       of offerActionType

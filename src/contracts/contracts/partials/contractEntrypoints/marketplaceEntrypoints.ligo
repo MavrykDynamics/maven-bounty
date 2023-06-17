@@ -276,6 +276,23 @@ block {
 
 
 
+(*  editListing entrypoint *)
+function editListing(const editListingParams : editListingActionType; var s : marketplaceStorageType) : return is
+block {
+
+    // get lambda bytes
+    const lambdaBytes : bytes = getLambdaBytes("lambdaEditListing", s.lambdaLedger);
+
+    // init marketplace lambda action
+    const marketplaceLambdaAction : marketplaceLambdaActionType = LambdaEditListing(editListingParams);
+
+    // init response
+    const response : return = unpackLambda(lambdaBytes, marketplaceLambdaAction, s);  
+
+} with response
+
+
+
 (*  removelist entrypoint *)
 function removeListing(const removeListingParams : removeListingActionType; var s : marketplaceStorageType) : return is
 block {

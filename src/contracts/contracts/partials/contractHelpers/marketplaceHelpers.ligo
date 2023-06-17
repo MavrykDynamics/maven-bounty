@@ -27,6 +27,9 @@ block {
     if s.breakGlassConfig.createListingIsPaused then skip
     else s.breakGlassConfig.createListingIsPaused := True;
 
+    if s.breakGlassConfig.editListingIsPaused then skip
+    else s.breakGlassConfig.editListingIsPaused := True;
+
     if s.breakGlassConfig.removeListingIsPaused then skip
     else s.breakGlassConfig.removeListingIsPaused := True;
 
@@ -55,6 +58,9 @@ block {
 
     // set all pause configs to False
     if s.breakGlassConfig.createListingIsPaused then s.breakGlassConfig.createListingIsPaused := False
+    else skip;
+
+    if s.breakGlassConfig.editListingIsPaused then s.breakGlassConfig.editListingIsPaused := False
     else skip;
 
     if s.breakGlassConfig.removeListingIsPaused then s.breakGlassConfig.removeListingIsPaused := False
@@ -159,10 +165,29 @@ block {
 } with unit
 
 
+
 function verifyNotExpired(const expiryTime : timestamp; const errorCode : nat) : unit is
 block {
 
     if Tezos.get_now() > expiryTime then failwith(errorCode) else skip;
+
+} with unit
+
+
+
+function verifyOfferIsOpen(const offerStatus : string) : unit is 
+block {
+
+    if offerStatus = "OPEN" then skip else failwith(error_OFFER_STATUS_IS_NOT_OPEN);
+
+} with unit
+
+
+
+function verifyListingIsActive(const listingStatus : string) : unit is 
+block {
+
+    if listingStatus = "ACTIVE" then skip else failwith(error_LISTING_STATUS_IS_NOT_ACTIVE);
 
 } with unit
 

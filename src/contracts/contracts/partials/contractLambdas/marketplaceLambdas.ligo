@@ -133,6 +133,7 @@ block {
                 case updateConfigAction of [
                     |   ConfigMinOfferAmount (_v)  -> s.config.minOfferAmount         := updateConfigNewValue
                     |   ConfigRoyalty (_v)         -> s.config.royalty                := updateConfigNewValue
+                    |   ConfigMarketplaceFee (_v)  -> s.config.marketplaceFee         := updateConfigNewValue
                 ];
             }
         |   _ -> skip
@@ -260,6 +261,7 @@ block {
 
                 case params.targetEntrypoint of [
                         CreateListing (_v)     -> s.breakGlassConfig.createListingIsPaused      := _v
+                    |   EditListing (_v)       -> s.breakGlassConfig.editListingIsPaused        := _v
                     |   RemoveListing (_v)     -> s.breakGlassConfig.removeListingIsPaused      := _v
                     |   Purchase (_v)          -> s.breakGlassConfig.purchaseIsPaused           := _v
                     |   Offer (_v)             -> s.breakGlassConfig.offerIsPaused              := _v
@@ -378,25 +380,29 @@ block {
     case marketplaceLambdaAction of [
         |   LambdaCreateListing(listingParams) -> {
 
-                const token : listTokenType          = listingParams.token;
-                const amount : nat                   = listingParams.amount;
-                const price : nat                    = listingParams.price;
-                const expiryTime : option(timestamp) = listingParams.expiryTime;
-                const currency : tokenType           = listingParams.currency;
-                const sender : address               = Tezos.get_sender();
-                const nextListingId : nat            = s.nextListingId;
-                const marketplace : address          = Tezos.get_self_address();
+                const token             : listTokenType     = listingParams.token;
+                const amount            : nat               = listingParams.amount;
+                const pricePerUnit      : nat               = listingParams.pricePerUnit;
+                const quickBuyPrice     : option(nat)       = listingParams.quickBuyPrice;
+                const expiryTime        : option(timestamp) = listingParams.expiryTime;
+                const currency          : tokenType         = listingParams.currency;
+                
+                const sender            : address           = Tezos.get_sender();
+                const nextListingId     : nat               = s.nextListingId;
+                const marketplace       : address           = Tezos.get_self_address();
 
                 // verify that currency is accepted
                 verifyValidCurrency(currency, s);
 
                 const listingRecord : listingRecordType = record [
-                    initiator   = sender;
-                    token       = token; 
-                    price       = price;
-                    amount      = amount;
-                    currency    = currency;
-                    expiryTime  = expiryTime; 
+                    initiator       = sender;
+                    status          = "ACTIVE";
+                    token           = token; 
+                    pricePerUnit    = pricePerUnit;
+                    amount          = amount;
+                    currency        = currency;
+                    quickBuyPrice   = quickBuyPrice;
+                    expiryTime      = expiryTime; 
                 ];                
 
                 // create new listing
@@ -418,6 +424,85 @@ block {
 
 
 
+(*  editListing lambda *)
+function lambdaEditListing(const marketplaceLambdaAction : marketplaceLambdaActionType; var s : marketplaceStorageType) : return is
+block {
+
+    verifyEntrypointIsNotPaused(s.breakGlassConfig.editListingIsPaused, error_EDIT_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED);
+
+    var operations : list(operation) := nil;
+
+    case marketplaceLambdaAction of [
+        |   LambdaEditListing(editListingParams) -> {
+
+                const sender    : address   = Tezos.get_sender();
+                const listingId : nat       = editListingParams.listingId;
+                const marketplace : address = Tezos.get_self_address();
+
+                var listingRecord : listingRecordType := case s.listingLedger[listingId] of [
+                        Some(_record) -> _record
+                    |   None          -> failwith(error_LISTING_RECORD_NOT_FOUND)
+                ];
+                const token     : listTokenType  = listingRecord.token;
+                const currentListingAmount : nat = listingRecord.amount;
+                
+                // verify sender is listing initiator
+                verifyOwnership(listingRecord.initiator, sender);
+
+                // 
+                case editListingParams.amount of [
+                        Some(_newAmount) -> {
+
+                            const amountDiff : int = _newAmount - currentListingAmount;
+                            if _newAmount > currentListingAmount then {
+                                // increase in listing amount: transfer difference in amount to marketplace
+                                operations := case token of [
+                                        Fa12Token(fa12TokenAddress) -> transferFa12Token(sender, marketplace, abs(amountDiff), fa12TokenAddress) # operations
+                                    |   Fa2Token(fa2Token)          -> transferFa2Token(sender, marketplace, abs(amountDiff), fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
+                                ];
+
+                            } else {
+                                // decrease in listing amount: transfer difference in amount back to sender
+                                operations := case token of [
+                                        Fa12Token(_address) -> transferFa12Token(marketplace, sender, abs(amountDiff), _address) # operations
+                                    |   Fa2Token(_fa2Token) -> transferFa2Token(marketplace, sender, abs(amountDiff), _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations
+                                ];
+                            }
+                        }
+                    |   None -> skip
+                ];
+
+                case editListingParams.pricePerUnit of [
+                        Some(_newPricePerUnit) -> listingRecord.pricePerUnit := _newPricePerUnit
+                    |   None            -> skip
+                ];
+
+                case editListingParams.quickBuyPrice of [
+                        Some(_newQuickBuyPrice) -> listingRecord.quickBuyPrice := Some(_newQuickBuyPrice)
+                    |   None            -> skip
+                ];
+
+                case editListingParams.expiryTime of [
+                        Some(_newExpiryTime) -> listingRecord.expiryTime := Some(_newExpiryTime)
+                    |   None                 -> skip
+                ];
+
+                case editListingParams.currency of [
+                        Some(_newCurrency) -> listingRecord.currency := _newCurrency
+                    |   None -> skip
+                ];
+
+                // update storage
+                s.listingLedger[listingId] := listingRecord;
+                
+            }
+        |   _ -> skip
+    ];
+
+} with (operations, s)
+
+
+
 (*  removeListing lambda *)
 function lambdaRemoveListing(const marketplaceLambdaAction : marketplaceLambdaActionType; var s : marketplaceStorageType) : return is
 block {
@@ -429,16 +514,28 @@ block {
     case marketplaceLambdaAction of [
         |   LambdaRemoveListing(listingId) -> {
 
-                const sender : address  = Tezos.get_sender();
+                const sender        : address  = Tezos.get_sender();
+                const marketplace   : address  = Tezos.get_self_address();
 
-                const listingRecord : listingRecordType = case s.listingLedger[listingId] of [
+                var listingRecord : listingRecordType := case s.listingLedger[listingId] of [
                         Some(_record) -> _record
                     |   None          -> failwith(error_LISTING_RECORD_NOT_FOUND)
                 ];
 
                 verifyOwnership(listingRecord.initiator, sender);
 
-                remove listingId from map s.listingLedger;
+                const token     : listTokenType  = listingRecord.token;
+                const amount    : nat            = listingRecord.amount;
+
+                // update listing status
+                listingRecord.status        := "CLOSED";
+                s.listingLedger[listingId]  := listingRecord;
+
+                // transfer tokens back to listing initiator
+                operations := case token of [
+                        Fa12Token(_address) -> transferFa12Token(marketplace, sender, amount, _address) # operations
+                    |   Fa2Token(_fa2Token) -> transferFa2Token(marketplace, sender, amount, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations
+                ];
 
             }
         |   _ -> skip
@@ -457,57 +554,117 @@ block {
     var operations : list(operation) := nil;
 
     case marketplaceLambdaAction of [
-        |   LambdaPurchase(listingId) -> {
+        |   LambdaPurchase(purchaseParams) -> {
 
-                const sender : address          = Tezos.get_sender();
-                const marketplace : address     = Tezos.get_self_address();
-                const listingRecord : listingRecordType = case s.listingLedger[listingId] of [
+                // init variables
+                const sender            : address   = Tezos.get_sender();
+                const marketplace       : address   = Tezos.get_self_address();
+                const standardUnit      : nat       = s.config.standardUnit;
+                
+                const listingId : nat = case purchaseParams of [
+                    |   PartialPurchase(_partialPurchase) -> _partialPurchase.listingId
+                    |   QuickBuyPurchase(_listingId)      -> _listingId
+                ];
+
+                // get listing record
+                var listingRecord : listingRecordType := case s.listingLedger[listingId] of [
                         Some(_record) -> _record
                     |   None          -> failwith(error_LISTING_RECORD_NOT_FOUND)
                 ];
+                
+                const lister                    : address        = listingRecord.initiator;
+                const token                     : listTokenType  = listingRecord.token;
+                const pricePerUnit              : nat            = listingRecord.pricePerUnit;
+                const listingAmount             : nat            = listingRecord.amount;
+
+                const purchaseAmount            : nat = case purchaseParams of [
+                    |   PartialPurchase(_partialPurchase) -> _partialPurchase.amount
+                    |   QuickBuyPurchase(_v)              -> listingAmount
+                ];
+
+                // ------------------------------------------------------
+                // Verification Checks
+                // ------------------------------------------------------
+
+                // verify listing is active 
+                verifyListingIsActive(listingRecord.status);
 
                 // verify purchaser is not initiator
                 verifyPurchaserIsNotInitiator(sender, listingRecord.initiator);
+
+                // verify listing amount is greater than or equal to purchase amount
+                verifyGreaterThanOrEqual(listingAmount, purchaseAmount, error_PURCHASE_AMOUNT_CANNOT_BE_GREATER_THAN_LISTING_AMOUNT);
 
                 // verify listing is not expired
                 case listingRecord.expiryTime of [
                         Some(_timestamp) -> verifyNotExpired(_timestamp, error_LISTING_HAS_EXPIRED)
                     |   None             -> skip
                 ];
-                
-                const lister    : address        = listingRecord.initiator;
-                const token     : listTokenType  = listingRecord.token;
-                const price     : nat            = listingRecord.price;
-                const amount    : nat            = listingRecord.amount;
 
-                const treasuryAddress    : address  = getAddressFromGeneralContracts("treasury", s, error_TREASURY_NOT_FOUND);           
-                const royalty            : nat      = s.config.royalty;
-                const royaltyFeeTotal    : nat      = (price * fixedPointAccuracy * royalty) / (fixedPointAccuracy * 10000n);
-                const priceLessRoyalty   : nat      = abs(price - royaltyFeeTotal);
+                // ------------------------------------------------------
+                // Calculations
+                // ------------------------------------------------------
+
+                const treasuryAddress           : address        = getAddressFromGeneralContracts("treasury", s, error_TREASURY_NOT_FOUND);           
+                const royalty                   : nat            = s.config.royalty;
+                const marketplaceFee            : nat            = s.config.marketplaceFee;
+
+                // const totalPaid                 : nat            = pricePerUnit * ( ( (purchaseAmount * fixedPointAccuracy) / standardUnit) / fixedPointAccuracy);
+
+                const totalPaid                 : nat            = case listingRecord.quickBuyPrice of [
+                        Some(_v) -> _v
+                    |   None     -> case purchaseParams of [
+                            |   PartialPurchase(_partialPurchase) -> pricePerUnit * ( ( (purchaseAmount * fixedPointAccuracy) / standardUnit) / fixedPointAccuracy)
+                            |   QuickBuyPurchase(_v)              -> failwith(error_QUICK_BUY_OPTION_DOES_NOT_EXIST_ON_LISTING)
+                        ]
+                ];
+
+                const marketplaceFeeTotal       : nat            = (totalPaid * fixedPointAccuracy * marketplaceFee) / (fixedPointAccuracy * 10000n);
+                const totalPaidLessFee          : nat            = abs(totalPaid - marketplaceFeeTotal);
+
+                const royaltyAmount             : nat            = (purchaseAmount * fixedPointAccuracy * royalty) / (fixedPointAccuracy * 10000n);
+                const purchaseAmountLessRoyalty : nat            = abs(purchaseAmount - royaltyAmount);
+
+                // ------------------------------------------------------
+                // Transfers
+                // ------------------------------------------------------
 
                 // transfer price/fees to lister and treasury
                 case listingRecord.currency of [
                         Tez        -> {
-                            operations := transferTez((Tezos.get_contract_with_error(lister, "Error. Contract not found at given address") : contract(unit)), priceLessRoyalty * 1mutez) # operations;
-                            operations := transferTez((Tezos.get_contract_with_error(treasuryAddress, "Error. Contract not found at given address") : contract(unit)), royaltyFeeTotal * 1mutez) # operations;
+                            operations := transferTez((Tezos.get_contract_with_error(lister, "Error. Contract not found at given address") : contract(unit)), totalPaidLessFee * 1mutez) # operations;
+                            operations := transferTez((Tezos.get_contract_with_error(treasuryAddress, "Error. Contract not found at given address") : contract(unit)), marketplaceFeeTotal * 1mutez) # operations;
                         } 
                     |   Fa12(_address)  -> {
-                            operations := transferFa12Token(sender, lister, priceLessRoyalty, _address) # operations;
-                            operations := transferFa12Token(sender, treasuryAddress, royaltyFeeTotal, _address) # operations;
+                            operations := transferFa12Token(sender, lister, totalPaidLessFee, _address) # operations;
+                            operations := transferFa12Token(sender, treasuryAddress, marketplaceFeeTotal, _address) # operations;
                         }
                     |   Fa2(_fa2Token)  -> {
-                            operations := transferFa2Token(sender, lister, priceLessRoyalty, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
-                            operations := transferFa2Token(sender, treasuryAddress, royaltyFeeTotal, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
+                            operations := transferFa2Token(sender, lister, totalPaidLessFee, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
+                            operations := transferFa2Token(sender, treasuryAddress, marketplaceFeeTotal, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
                         }
                 ];
 
-                // transfer purchased token amount to sender
-                operations := case token of [
-                        Fa12Token(_address) -> transferFa12Token(marketplace, sender, amount, _address) # operations
-                    |   Fa2Token(_fa2Token) -> transferFa2Token(marketplace, sender, amount, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations
+                // transfer purchased token amount to sender and treasury
+                case token of [
+                        Fa12Token(_address) -> {
+                            operations := transferFa12Token(marketplace, sender, purchaseAmountLessRoyalty, _address) # operations;
+                            operations := transferFa12Token(marketplace, treasuryAddress, royaltyAmount, _address) # operations;
+                        }
+                    |   Fa2Token(_fa2Token) -> {
+                            operations := transferFa2Token(marketplace, sender, purchaseAmountLessRoyalty, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
+                            operations := transferFa2Token(marketplace, treasuryAddress, royaltyAmount, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
+                        }
                 ];
 
-                remove listingId from map s.listingLedger;
+
+                // ------------------------------------------------------
+                // Update Storage
+                // ------------------------------------------------------
+
+                // update listing status
+                listingRecord.status        := "CLOSED";
+                s.listingLedger[listingId]  := listingRecord;
 
             }
         |   _ -> skip
@@ -530,26 +687,32 @@ block {
 
                 const listingId : nat                = offerParams.listingId;
                 const price : nat                    = offerParams.price;
+                const amount : nat                   = offerParams.amount;
                 const expiryTime : option(timestamp) = offerParams.expiryTime;
                 const currency : tokenType           = offerParams.currency;
 
                 const sender : address               = Tezos.get_sender();
                 const nextOfferId : nat              = s.nextOfferId;
                 const marketplace : address          = Tezos.get_self_address();
+                // const standardUnit  : nat            = s.config.standardUnit;
 
                 // verify that currency is accepted
                 verifyValidCurrency(currency, s);
 
                 const offerRecord : offerRecordType = record [
-                    initiator   = sender;
-                    listingId   = listingId;
-                    price       = price;
-                    currency    = currency;
-                    expiryTime  = expiryTime; 
+                    initiator       = sender;
+                    status          = "OPEN";
+                    listingId       = listingId;
+                    price           = price;
+                    amount          = amount;
+                    currency        = currency;
+                    expiryTime      = expiryTime; 
                 ];                
 
                 // create new offer
                 s.offerLedger[nextOfferId] := offerRecord;
+
+                // const totalCurrencyAmount : nat = pricePerUnit * ( ( (amount * fixedPointAccuracy) / standardUnit) / fixedPointAccuracy);
 
                 // transfer offer to contract (custodial solution)
                 operations := case currency of [
@@ -580,10 +743,11 @@ block {
     case marketplaceLambdaAction of [
         |   LambdaAcceptOffer(offerId) -> {
 
-                const sender : address               = Tezos.get_sender();
-                const marketplace : address          = Tezos.get_self_address();
+                const sender        : address   = Tezos.get_sender();
+                const marketplace   : address   = Tezos.get_self_address();
+                // const standardUnit  : nat       = s.config.standardUnit;
 
-                const offerRecord : offerRecordType = case s.offerLedger[offerId] of [
+                var offerRecord : offerRecordType := case s.offerLedger[offerId] of [
                         Some(_record) -> _record
                     |   None          -> failwith(error_OFFER_RECORD_NOT_FOUND)
                 ];
@@ -598,9 +762,11 @@ block {
                 ];
 
                 const listingId          : nat       = offerRecord.listingId;
+                // const offerPricePerUnit  : nat       = offerRecord.pricePerUnit;
                 const offerPrice         : nat       = offerRecord.price;
+                const offerAmount        : nat       = offerRecord.amount;
 
-                const listingRecord : listingRecordType = case s.listingLedger[listingId] of [
+                var listingRecord : listingRecordType := case s.listingLedger[listingId] of [
                         Some(_record) -> _record
                     |   None          -> failwith(error_LISTING_RECORD_NOT_FOUND)
                 ];
@@ -610,8 +776,21 @@ block {
                 const token              : listTokenType = listingRecord.token;
                 const listingAmount      : nat           = listingRecord.amount;
                 
+                // ------------------------------------------------------
+                // Verification Checks
+                // ------------------------------------------------------
+
+                // verify offer is open 
+                verifyOfferIsOpen(offerRecord.status);
+
+                // verify listing is active 
+                verifyListingIsActive(listingRecord.status);
+
                 // verify sender is listing creator
                 verifyOwnership(lister, sender);
+
+                // verify listing amount is greater than or equal to offer amount
+                verifyGreaterThanOrEqual(listingAmount, offerAmount, error_OFFER_AMOUNT_CANNOT_BE_GREATER_THAN_LISTING_AMOUNT);
 
                 // do we want to allow lister to accept an offer even if his listing has expired?
                 // verify listing is not expired
@@ -620,36 +799,58 @@ block {
                     |   None             -> skip
                 ];
 
+                // ------------------------------------------------------
+
+                // const totalOfferPrice           : nat      = offerPricePerUnit * ( ( (offerAmount * fixedPointAccuracy) / standardUnit) / fixedPointAccuracy);
+
                 const treasuryAddress           : address  = getAddressFromGeneralContracts("treasury", s, error_TREASURY_NOT_FOUND);           
                 const royalty                   : nat      = s.config.royalty;
-                const royaltyFeeTotal           : nat      = (offerPrice * fixedPointAccuracy * royalty) / (fixedPointAccuracy * 10000n);
-                const offerPriceLessRoyalty     : nat      = abs(offerPrice - royaltyFeeTotal);
+                const marketplaceFee            : nat      = s.config.marketplaceFee;
+
+                const marketplaceFeeTotal       : nat      = (offerPrice * fixedPointAccuracy * marketplaceFee) / (fixedPointAccuracy * 10000n);
+                const offerPriceLessFee         : nat      = abs(offerPrice - marketplaceFeeTotal);
+
+                const royaltyAmount             : nat      = (offerAmount * fixedPointAccuracy * royalty) / (fixedPointAccuracy * 10000n);
+                const offerAmountLessRoyalty    : nat      = abs(offerAmount - royaltyAmount);
 
                 // transfer offer price/fees to lister and treasury
                 case offerRecord.currency of [
                         Tez        -> {
-                            operations := transferTez((Tezos.get_contract_with_error(lister, "Error. Contract not found at given address") : contract(unit)), offerPriceLessRoyalty * 1mutez) # operations;
-                            operations := transferTez((Tezos.get_contract_with_error(treasuryAddress, "Error. Contract not found at given address") : contract(unit)), royaltyFeeTotal * 1mutez) # operations;
+                            operations := transferTez((Tezos.get_contract_with_error(lister, "Error. Contract not found at given address") : contract(unit)), offerPriceLessFee * 1mutez) # operations;
+                            operations := transferTez((Tezos.get_contract_with_error(treasuryAddress, "Error. Contract not found at given address") : contract(unit)), marketplaceFeeTotal * 1mutez) # operations;
                         } 
                     |   Fa12(_address)  -> {
-                            operations := transferFa12Token(marketplace, lister, offerPriceLessRoyalty, _address) # operations;
-                            operations := transferFa12Token(marketplace, treasuryAddress, royaltyFeeTotal, _address) # operations;
+                            operations := transferFa12Token(marketplace, lister, offerPriceLessFee, _address) # operations;
+                            operations := transferFa12Token(marketplace, treasuryAddress, marketplaceFeeTotal, _address) # operations;
                         }
                     |   Fa2(_fa2Token)  -> {
-                            operations := transferFa2Token(marketplace, lister, offerPriceLessRoyalty, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
-                            operations := transferFa2Token(marketplace, treasuryAddress, royaltyFeeTotal, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
+                            operations := transferFa2Token(marketplace, lister, offerPriceLessFee, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
+                            operations := transferFa2Token(marketplace, treasuryAddress, marketplaceFeeTotal, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
                         }
                 ];
 
-                // transfer listing token amount to offerer
-                operations := case token of [
-                        Fa12Token(_address) -> transferFa12Token(marketplace, offerer, listingAmount, _address) # operations
-                    |   Fa2Token(_fa2Token) -> transferFa2Token(marketplace, offerer, listingAmount, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations
+                // transfer offer token amount to offerer and treasury
+                case token of [
+                        Fa12Token(_address) -> {
+                            operations := transferFa12Token(marketplace, offerer, offerAmountLessRoyalty, _address) # operations;
+                            operations := transferFa12Token(marketplace, treasuryAddress, royaltyAmount, _address) # operations;
+                        }
+                    |   Fa2Token(_fa2Token) -> {
+                            operations := transferFa2Token(marketplace, offerer, offerAmountLessRoyalty, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
+                            operations := transferFa2Token(marketplace, treasuryAddress, royaltyAmount, _fa2Token.tokenId, _fa2Token.tokenContractAddress) # operations;
+                        }
                 ];
 
-                // remove listing and offer
-                remove listingId from map s.listingLedger;
-                remove offerId from map s.offerLedger;
+                // calc remaining amount in listing
+                const remainingAmount : nat = abs(listingAmount - offerAmount);
+
+                // update listing record
+                listingRecord.amount        := remainingAmount;
+                s.listingLedger[listingId]  := listingRecord; 
+
+                // update offer record status
+                offerRecord.status          := "ACCEPTED";
+                s.offerLedger[offerId]      := offerRecord;
                 
             }
         |   _ -> skip
@@ -670,16 +871,33 @@ block {
     case marketplaceLambdaAction of [
         |   LambdaRemoveOffer(offerId) -> {
 
-                const sender : address  = Tezos.get_sender();
+                const sender : address          = Tezos.get_sender();
+                const marketplace : address     = Tezos.get_self_address();
+                // const standardUnit  : nat       = s.config.standardUnit;
 
-                const offerRecord : offerRecordType = case s.offerLedger[offerId] of [
+                var offerRecord : offerRecordType := case s.offerLedger[offerId] of [
                         Some(_record) -> _record
                     |   None          -> failwith(error_OFFER_RECORD_NOT_FOUND)
                 ];
 
                 verifyOwnership(offerRecord.initiator, sender);
 
-                remove offerId from map s.offerLedger;
+                const price : nat            = offerRecord.price;
+                // const amount : nat           = offerRecord.amount;
+                const currency : tokenType   = offerRecord.currency;
+
+                // update offer status
+                offerRecord.status          := "CLOSED";
+                s.offerLedger[offerId]      := offerRecord;
+
+                // const totalCurrencyAmount : nat = pricePerUnit * ( ( (amount * fixedPointAccuracy) / standardUnit) / fixedPointAccuracy);
+
+                // transfer offer amount back to offerer
+                operations := case currency of [
+                        Tez                     -> transferTez((Tezos.get_contract_with_error(sender, "Error. Contract not found at given address") : contract(unit)), price * 1mutez) # operations
+                    |   Fa12(fa12TokenAddress)  -> transferFa12Token(marketplace, sender, price, fa12TokenAddress) # operations
+                    |   Fa2(fa2Token)           -> transferFa2Token(marketplace, sender, price, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
+                ];
 
             }
         |   _ -> skip

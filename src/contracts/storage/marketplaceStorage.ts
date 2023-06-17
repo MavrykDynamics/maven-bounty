@@ -5,7 +5,8 @@ import { marketplaceStorageType } from "./storageTypes/marketplaceStorageType"
 
 const config = {
     minOfferAmount             : 1, 
-    royalty                    : 100
+    royalty                    : 100,
+    marketplaceFee             : 100
 }
 
 
