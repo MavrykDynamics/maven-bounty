@@ -231,6 +231,10 @@ block {
                 // init storage params
                 const lastLaunchId              : nat = s.lastLaunchId;
 
+                verifyValidTokenIssuanceType(tokenIssuanceType);
+
+                verifyValidTokenDistributionType(tokenDistributionType);
+
                 // create launchRecord
                 const launchRecord : launchRecordType = record [
                     name                        = name;
@@ -357,7 +361,7 @@ block {
                 ];
 
                 case editTokenLaunchParams.saleEnd of [
-                        Some(_newSaleEnd) -> launchRecord.saleEnd := _newSaleEnd
+                        Some(_newSaleEnd) -> launchRecord.saleEnd := Some(_newSaleEnd)
                     |   None -> skip
                 ];
 
@@ -389,7 +393,7 @@ block {
     verifySenderIsAdmin(s.admins); // check that sender is admin 
     
     case launchpadLambdaAction of [
-        |   LambdaStartLaunch(_startLaunchParams) -> {
+        |   LambdaStartLaunch(launchId) -> {
 
                 // get launch record
                 var launchRecord : launchRecordType := case s.launchLedger[launchId] of [
@@ -397,7 +401,7 @@ block {
                     |   None          -> failwith(error_LAUNCH_RECORD_NOT_FOUND)
                 ];
 
-                launchRecord.status         = "ACTIVE";
+                launchRecord.status := "ACTIVE";
                 
                 // reset sale end if it has been closed
                 const currentSaleEnd : timestamp = case launchRecord.saleEnd of [
@@ -406,7 +410,7 @@ block {
                 ];
                 if Tezos.get_now() > currentSaleEnd then launchRecord.saleEnd := (None : option(timestamp)) else skip;
 
-                s.launchLedger[launchId]    := launchRecord;
+                s.launchLedger[launchId] := launchRecord;
 
             }
         |   _ -> skip
@@ -430,6 +434,8 @@ block {
                         Some(_record) -> _record
                     |   None          -> failwith(error_LAUNCH_RECORD_NOT_FOUND)
                 ];
+
+                if launchRecord.status = "ACTIVE" then skip else failwith(error_LAUNCH_IS_NOT_ACTIVE);
 
                 launchRecord.status       := "PAUSED";
                 launchRecord.isPaused     := True;
@@ -456,6 +462,8 @@ block {
                         Some(_record) -> _record
                     |   None          -> failwith(error_LAUNCH_RECORD_NOT_FOUND)
                 ];
+
+                if launchRecord.status = "PAUSED" then skip else failwith(error_LAUNCH_IS_NOT_PAUSED);
 
                 launchRecord.status       := "ACTIVE";
                 launchRecord.isPaused     := False;
@@ -629,6 +637,9 @@ block {
                 const tokenContractAddress   : address  = launchRecord.tokenContractAddress;
                 const tokenIssuanceType      : string   = launchRecord.tokenIssuanceType;
                 const tokenDistributionType  : string   = launchRecord.tokenDistributionType;
+
+                // verify launch is active
+                verifyLaunchIsActive(launchRecord.status);
 
                 // get sale option
                 var saleOption : tokenSaleOptionType := case launchRecord.saleOptions[saleOptionName] of [

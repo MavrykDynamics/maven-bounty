@@ -25,6 +25,7 @@ import {
     showMillisecondsDateFormat,
     updateOperators
 } from './helpers/helperFunctions'
+import { sign } from 'crypto'
 
 
 
@@ -165,8 +166,8 @@ describe('Test: Launchpad Contract', async () => {
                 firstLaunchId                   = launchId; // for use in subsequent test
 
                 const name                      = "testTokenLaunch";
-                const tokenIssuanceType         = "mint";
-                const tokenDistributionType     = "auto";
+                const tokenIssuanceType         = "MINT";
+                const tokenDistributionType     = "AUTO";
                 const tokenContractAddress      = mockFa2TokenAddress;
                 const tokenId                   = 0;
                 const saleStart                 = makeTimestamp(30);
@@ -217,8 +218,8 @@ describe('Test: Launchpad Contract', async () => {
                 secondLaunchId                  = launchId; // for use in subsequent test
 
                 const name                      = "testTokenLaunch";
-                const tokenIssuanceType         = "mint";
-                const tokenDistributionType     = "auto";
+                const tokenIssuanceType         = "MINT";
+                const tokenDistributionType     = "AUTO";
                 const tokenContractAddress      = mockFa2TokenAddress;
                 const tokenId                   = 0;
                 const saleStart                 = makeTimestamp(30);
@@ -275,8 +276,8 @@ describe('Test: Launchpad Contract', async () => {
                 thirdLaunchId                   = launchId; // for use in subsequent test
 
                 const name                      = "testTokenLaunch";
-                const tokenIssuanceType         = "mint";
-                const tokenDistributionType     = "auto";
+                const tokenIssuanceType         = "MINT";
+                const tokenDistributionType     = "AUTO";
                 const tokenContractAddress      = mockFa2TokenAddress;
                 const tokenId                   = 0;
                 const saleStart                 = makeTimestamp(30);
@@ -327,6 +328,89 @@ describe('Test: Launchpad Contract', async () => {
     })
 
 
+    describe('%editTokenLaunch', function () {
+        
+        beforeEach("Set signer to admin (eve)", async () => {
+            launchpadStorage = await launchpadInstance.storage()
+            await signerFactory(tezos, adminSk);
+        });
+
+        it('admin (eve) should be able to edit a token launch', async () => {
+            try {
+
+                launchId                        = firstLaunchId;
+
+                const newName                   = "newTestTokenLaunch";
+                const newTokenIssuanceType      = "TRANSFER";
+                const newTokenDistributionType  = "MANUAL";
+                const newTokenContractAddress   = mockFa12TokenAddress;
+                const newTokenId                = 1;
+                const newSaleStart              = makeTimestamp(60);
+                const newSaleEnd                = makeTimestamp(600);
+
+                const newSaleOptions            = MichelsonMap.fromLiteral({
+                    'default' : {
+                        maxAmountCap : 1000000000,
+                        totalBought : 0, 
+                        minPurchaseAmount : 1000000,
+                        maxAmountPerWalletTotal : 10000000,
+                        price : 1000000,
+                        currency : {
+                            "fa2": {
+                                tokenContractAddress : mockFa2TokenAddress,
+                                tokenId              : 0
+                            }
+                        }
+                    }
+                });
+                const newWhitelistOptions       = MichelsonMap.fromLiteral({});
+
+                // const emptySaleOptions          = MichelsonMap.fromLiteral({});
+
+                // const defaultWhitelistOptionKey     = 'default';
+                // const defaultWhitelistOptionValue   = 100000;
+                // const defaultWhitelistOptions       = MichelsonMap.fromLiteral({
+                //     'default' : defaultWhitelistOptionValue
+                // });
+
+
+                // edit token sale operation
+                const editTokenLaunchOperation = await launchpadInstance.methods.editTokenLaunch(
+                    newName,
+                    newTokenIssuanceType,
+                    newTokenDistributionType,
+                    newTokenContractAddress,
+                    newTokenId,
+                    newSaleStart,
+                    newSaleEnd,
+                    newSaleOptions,
+                    newWhitelistOptions
+                ).send()
+                await editTokenLaunchOperation.confirmation();
+
+                launchpadStorage    = await launchpadInstance.storage()
+                launchRecord          = await launchpadStorage.launchLedger.get(launchId);
+
+                assert.notEqual(launchRecord                      , null);
+
+                assert.equal(launchRecord.name                    , newName);
+                assert.equal(launchRecord.tokenIssuanceType       , newTokenIssuanceType);
+                assert.equal(launchRecord.tokenDistributionType   , newTokenDistributionType);
+                assert.equal(launchRecord.tokenContractAddress    , newTokenContractAddress);
+                assert.equal(launchRecord.tokenId                 , newTokenId);
+                assert.equal(launchRecord.saleStart               , showMillisecondsDateFormat(newSaleStart));
+                assert.equal(launchRecord.saleEnd                 , showMillisecondsDateFormat(newSaleEnd));
+                
+                // assert.equal(launchRecord.saleOptions             , emptySaleOptions);
+                // assert.equal(launchRecord.defaultWhitelistOptions , emptyWhitelistOptions);
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+    })
+
+
     describe('%setLaunchWhitelist', function () {
         
         beforeEach("Set signer to admin (eve)", async () => {
@@ -357,10 +441,11 @@ describe('Test: Launchpad Contract', async () => {
                 launchRecord        = await launchpadStorage.launchLedger.get(launchId);
 
                 const launchDefaultWhitelistOptions = launchRecord.defaultWhitelistOptions;
-                console.log(launchDefaultWhitelistOptions);
+                // console.log(launchDefaultWhitelistOptions);
 
                 launchWhitelistRecord        = await launchpadStorage.launchWhitelistLedger.get([launchId, whitelistedUser]);
-                console.log(launchWhitelistRecord);
+                
+                // console.log(launchWhitelistRecord);
 
                 // assert.notEqual(launchRecord                      , null);
                 // assert.equal(launchRecord.saleOptions             , emptySaleOptions);
@@ -374,7 +459,7 @@ describe('Test: Launchpad Contract', async () => {
         it('admin (eve) should be able to set a whitelisted user for token launch (defaultWhitelistOptions : False - custom whitelist options)', async () => {
             try {
 
-                launchId                        = secondLaunchId;
+                launchId                            = secondLaunchId;
 
                 const whitelistedUser               = mallory.pkh;
                 const defaultWhitelistOptionKey     = 'custom';
@@ -401,7 +486,6 @@ describe('Test: Launchpad Contract', async () => {
 
                 // assert.notEqual(launchRecord                      , null);
 
-
                 // assert.equal(launchRecord.saleOptions             , emptySaleOptions);
                 // assert.equal(launchRecord.defaultWhitelistOptions , emptyWhitelistOptions);
 
@@ -419,7 +503,238 @@ describe('Test: Launchpad Contract', async () => {
             await signerFactory(tezos, adminSk);
         });
 
+
+        it('admin (eve) should be able to start a launch', async () => {
+            try {
+
+                launchId                   = firstLaunchId;
+                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                assert.equal(launchRecord.status , "INACTIVE");
+
+                // start launch operation
+                const startLaunchOperation = await launchpadInstance.methods.startLaunch(launchId).send();
+                await startLaunchOperation.confirmation();
+
+                launchpadStorage        = await launchpadInstance.storage()
+                launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+
+                assert.equal(launchRecord.status , "ACTIVE");
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+
+        it('non-admin (mallory) should not be able to start a launch', async () => {
+            try {
+
+                launchId                   = secondLaunchId;
+                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                assert.equal(launchRecord.status , "INACTIVE");
+                
+                // set signer to non-admin (mallory)
+                await signerFactory(tezos, mallory.sk);
+
+                // start launch operation
+                const startLaunchOperation = await launchpadInstance.methods.startLaunch(launchId);
+                await chai.expect(startLaunchOperation.send()).to.be.rejected;
+
+                launchpadStorage        = await launchpadInstance.storage()
+                launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+
+                assert.equal(launchRecord.status , "INACTIVE");
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
     })
+
+
+    describe('%pauseLaunch and %unpauseLaunch', function () {
+        
+        beforeEach("Set signer to admin (eve)", async () => {
+            launchpadStorage = await launchpadInstance.storage()
+            await signerFactory(tezos, adminSk);
+        });
+
+
+        it('admin (eve) should be able to pause a launch', async () => {
+            try {
+
+                launchId                   = firstLaunchId;
+                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                assert.equal(launchRecord.status , "ACTIVE");
+
+                // pause launch operation
+                const pauseLaunchOperation = await launchpadInstance.methods.pauseLaunch(launchId).send();
+                await pauseLaunchOperation.confirmation();
+
+                launchpadStorage        = await launchpadInstance.storage()
+                launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+
+                assert.equal(launchRecord.status , "PAUSED");
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+        it('admin (eve) should not be able to pause a launch if it is already paused', async () => {
+            try {
+
+                launchId                   = firstLaunchId;
+                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                assert.equal(launchRecord.status , "PAUSED");
+
+                // pause launch operation
+                const pauseLaunchOperation = await launchpadInstance.methods.pauseLaunch(launchId);
+                await chai.expect(pauseLaunchOperation.send()).to.be.rejected;
+
+                launchpadStorage        = await launchpadInstance.storage()
+                launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+
+                assert.equal(launchRecord.status , "PAUSED");
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+        it('admin (eve) should not be able to pause a launch if it is not active (not yet started)', async () => {
+            try {
+
+                launchId                   = secondLaunchId;
+                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                assert.equal(launchRecord.status , "INACTIVE");
+
+                // pause launch operation
+                const pauseLaunchOperation = await launchpadInstance.methods.pauseLaunch(launchId);
+                await chai.expect(pauseLaunchOperation.send()).to.be.rejected;
+
+                launchpadStorage        = await launchpadInstance.storage()
+                launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+
+                assert.equal(launchRecord.status , "INACTIVE");
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+        it('non-admin (mallory) should not be able to unpause a launch', async () => {
+            try {
+
+                // set signer to mallory
+                await signerFactory(tezos, mallory.sk)
+
+                launchId                   = firstLaunchId;
+                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                assert.equal(launchRecord.status , "PAUSED");
+
+                // unpause launch operation
+                const unpauseLaunchOperation = await launchpadInstance.methods.unpauseLaunch(launchId);
+                await chai.expect(unpauseLaunchOperation.send()).to.be.rejected;
+
+                launchpadStorage        = await launchpadInstance.storage()
+                launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+
+                assert.equal(launchRecord.status , "PAUSED");
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+        it('admin (eve) should be able to unpause a launch', async () => {
+            try {
+
+                launchId                   = firstLaunchId;
+                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                assert.equal(launchRecord.status , "PAUSED");
+
+                // unpause launch operation
+                const unpauseLaunchOperation = await launchpadInstance.methods.unpauseLaunch(launchId).send();
+                await unpauseLaunchOperation.confirmation();
+
+                launchpadStorage        = await launchpadInstance.storage()
+                launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+
+                assert.equal(launchRecord.status , "ACTIVE");
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+
+        it('admin (eve) should not be able to unpause a launch that is not paused', async () => {
+            try {
+
+                // set signer to mallory
+
+                launchId                   = firstLaunchId;
+                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                assert.equal(launchRecord.status , "ACTIVE");
+
+                // unpause launch operation
+                const unpauseLaunchOperation = await launchpadInstance.methods.unpauseLaunch(launchId);
+                await chai.expect(unpauseLaunchOperation.send()).to.be.rejected;
+
+                launchpadStorage        = await launchpadInstance.storage()
+                launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+
+                assert.equal(launchRecord.status , "ACTIVE");
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+    
+    })
+
+    describe('%purchase', function () {
+        
+        beforeEach("Set signer to user (mallory)", async () => {
+            user    = mallory.pkh;
+            userSk  = mallory.sk;
+            launchpadStorage = await launchpadInstance.storage()
+            await signerFactory(tezos, userSk);
+        });
+
+
+        it('user (mallory) should be able to purchase tokens from launch', async () => {
+            try {
+
+                launchId                   = firstLaunchId;
+                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                assert.equal(launchRecord.status , "ACTIVE");
+
+                const amount        = 1000000;
+                const saleOption    = "default";
+
+                // purchase operation
+                const purchaseOperation = await launchpadInstance.methods.purchase(
+                    launchId,
+                    amount,
+                    saleOption
+                ).send();
+                await purchaseOperation.confirmation();
+
+                // launchpadStorage        = await launchpadInstance.storage()
+                // launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+
+                // assert.equal(launchRecord.status , "PAUSED");
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+    })
+
 
     
 })

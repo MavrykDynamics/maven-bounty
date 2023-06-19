@@ -174,9 +174,28 @@ block {
 function verifyValidTokenIssuanceType(const tokenIssuanceType : string) : unit is
 block {
 
-    if tokenIssuanceType = "MINT" or "TRANSFER" then skip else failwith 
+    if tokenIssuanceType = "MINT" or tokenIssuanceType = "TRANSFER" then skip else failwith (error_INVALID_TOKEN_ISSUANCE_TYPE);
 
-}
+} with unit
+
+
+
+function verifyLaunchIsActive(const status : string) : unit is
+block {
+
+    if status = "ACTIVE" then skip else failwith(error_LAUNCH_IS_NOT_ACTIVE);
+
+} with unit
+
+
+
+function verifyValidTokenDistributionType(const tokenDistributionType : string) : unit is
+block {
+
+    if tokenDistributionType = "MANUAL" or tokenDistributionType = "AUTO" then skip else failwith (error_INVALID_TOKEN_DISTRIBUTION_TYPE);
+
+} with unit
+
 
 
 // function verifyValidCurrency(const currency : tokenType; const s : launchpadStorageType) : unit is 

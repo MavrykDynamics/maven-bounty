@@ -29,6 +29,7 @@ type launchWhitelistLedgerType is big_map((nat * address), launchWhitelistRecord
 type tokenSaleOptionType is [@layout:comb] record [    
     maxAmountCap                : nat;
     totalBought                 : nat;
+    minPurchaseAmount           : nat;
     maxAmountPerWalletTotal     : option(nat);
     price                       : nat; 
     currency                    : tokenType;
