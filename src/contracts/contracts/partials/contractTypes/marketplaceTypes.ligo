@@ -31,6 +31,7 @@ type listingRecordType is [@layout:comb] record [
     status              : string;
     token               : listTokenType;
     amount              : nat;
+    // price               : nat;
     pricePerUnit        : nat; 
     currency            : tokenType;
     quickBuyPrice       : option(nat);
@@ -83,6 +84,7 @@ type removeOfferActionType is nat
 type createListingActionType is [@layout:comb] record [
     amount              : nat;
     pricePerUnit        : nat;
+    // price               : nat;
     quickBuyPrice       : option(nat);
     expiryTime          : option(timestamp);
     token               : listTokenType;
@@ -94,6 +96,7 @@ type editListingActionType is [@layout:comb] record [
     listingId       : nat;
     amount          : option(nat);
     pricePerUnit    : option(nat);
+    // price           : option(nat);
     quickBuyPrice   : option(nat);
     expiryTime      : option(timestamp);
     currency        : option(tokenType);

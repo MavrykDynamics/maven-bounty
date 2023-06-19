@@ -383,6 +383,7 @@ block {
                 const token             : listTokenType     = listingParams.token;
                 const amount            : nat               = listingParams.amount;
                 const pricePerUnit      : nat               = listingParams.pricePerUnit;
+                // const price             : nat               = listingParams.price;
                 const quickBuyPrice     : option(nat)       = listingParams.quickBuyPrice;
                 const expiryTime        : option(timestamp) = listingParams.expiryTime;
                 const currency          : tokenType         = listingParams.currency;
@@ -399,6 +400,7 @@ block {
                     status          = "ACTIVE";
                     token           = token; 
                     pricePerUnit    = pricePerUnit;
+                    // price           = price;
                     amount          = amount;
                     currency        = currency;
                     quickBuyPrice   = quickBuyPrice;
@@ -476,6 +478,11 @@ block {
                         Some(_newPricePerUnit) -> listingRecord.pricePerUnit := _newPricePerUnit
                     |   None            -> skip
                 ];
+
+                // case editListingParams.price of [
+                //         Some(_newPrice) -> listingRecord.price := _newPrice
+                //     |   None            -> skip
+                // ];
 
                 case editListingParams.quickBuyPrice of [
                         Some(_newQuickBuyPrice) -> listingRecord.quickBuyPrice := Some(_newQuickBuyPrice)
@@ -579,8 +586,11 @@ block {
 
                 const purchaseAmount            : nat = case purchaseParams of [
                     |   PartialPurchase(_partialPurchase) -> _partialPurchase.amount
-                    |   QuickBuyPurchase(_v)              -> listingAmount
+                    |   QuickBuyPurchase(_listingId)      -> listingAmount
                 ];
+
+                // const price                     : nat           = listingRecord.price;
+                // const pricePerUnit              : nat           = ((price * fixedPointAccuracy) / listingAmount);
 
                 // ------------------------------------------------------
                 // Verification Checks
@@ -611,13 +621,29 @@ block {
 
                 // const totalPaid                 : nat            = pricePerUnit * ( ( (purchaseAmount * fixedPointAccuracy) / standardUnit) / fixedPointAccuracy);
 
-                const totalPaid                 : nat            = case listingRecord.quickBuyPrice of [
-                        Some(_v) -> _v
-                    |   None     -> case purchaseParams of [
-                            |   PartialPurchase(_partialPurchase) -> pricePerUnit * ( ( (purchaseAmount * fixedPointAccuracy) / standardUnit) / fixedPointAccuracy)
-                            |   QuickBuyPurchase(_v)              -> failwith(error_QUICK_BUY_OPTION_DOES_NOT_EXIST_ON_LISTING)
+                // const totalPaid                 : nat            = case listingRecord.quickBuyPrice of [
+                //         Some(_v) -> _v
+                //     |   None     -> case purchaseParams of [
+                //             |   PartialPurchase(_partialPurchase) -> pricePerUnit * ( ( (purchaseAmount * fixedPointAccuracy) / standardUnit) / fixedPointAccuracy)
+                //             |   QuickBuyPurchase(_v)              -> failwith(error_QUICK_BUY_OPTION_DOES_NOT_EXIST_ON_LISTING)
+                //         ]
+                // ];
+
+                const totalPaid                 : nat = case purchaseParams of [
+                        PartialPurchase(_partialPurchase) -> pricePerUnit * ( ( (purchaseAmount * fixedPointAccuracy) / standardUnit) / fixedPointAccuracy)
+                    |   QuickBuyPurchase(_listingId)       ->  case listingRecord.quickBuyPrice of [
+                                Some(_quickBuyPrice) -> _quickBuyPrice
+                            |   None                 -> failwith(error_QUICK_BUY_OPTION_DOES_NOT_EXIST_ON_LISTING)
                         ]
                 ];
+
+                // const totalPaid                 : nat            = case listingRecord.quickBuyPrice of [
+                //         Some(_v) -> _v
+                //     |   None     -> case purchaseParams of [
+                //             |   PartialPurchase(_partialPurchase) -> (pricePerUnit * purchaseAmount) / fixedPointAccuracy
+                //             |   QuickBuyPurchase(_v)              -> failwith(error_QUICK_BUY_OPTION_DOES_NOT_EXIST_ON_LISTING)
+                //         ]
+                // ];
 
                 const marketplaceFeeTotal       : nat            = (totalPaid * fixedPointAccuracy * marketplaceFee) / (fixedPointAccuracy * 10000n);
                 const totalPaidLessFee          : nat            = abs(totalPaid - marketplaceFeeTotal);
