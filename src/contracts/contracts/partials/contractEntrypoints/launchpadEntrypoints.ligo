@@ -358,7 +358,7 @@ block{
 
 
 (*  distributeTokens entrypoint *)
-function distributeTokens(const distributeTokensParams : nat; var s : launchpadStorageType) : return is
+function distributeTokens(const distributeTokensParams : distributeTokensActionType; var s : launchpadStorageType) : return is
 block{
     
     // get lambda bytes

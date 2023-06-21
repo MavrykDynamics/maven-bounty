@@ -158,6 +158,45 @@ block{
 // General Helper Functions Begin
 // ------------------------------------------------------------------------------
 
+function getLaunchRecord(const launchId : nat; const s : launchpadStorageType) : launchRecordType is 
+block {
+
+    const launchRecord : launchRecordType = case s.launchLedger[launchId] of [
+            Some(_record) -> _record
+        |   None          -> failwith(error_LAUNCH_RECORD_NOT_FOUND)
+    ];
+
+} with launchRecord
+
+
+
+function getSaleOption(const launchRecord : launchRecordType; const saleOptionName : string) : tokenSaleOptionType is 
+block {
+
+    const saleOption : tokenSaleOptionType = case launchRecord.saleOptions[saleOptionName] of [
+            Some(_saleOption) -> _saleOption
+        |   None              -> failwith(error_SALE_OPTION_NOT_FOUND)
+    ];
+    
+} with saleOption
+
+
+
+function getOrCreatePurchaseRecord(const launchUserKey : (nat * address); const s : launchpadStorageType) : purchaseRecordType is 
+block {
+
+    const userPurchaseRecord : purchaseRecordType = case s.purchaseLedger[launchUserKey] of [
+            Some(_purchaseRecord) -> _purchaseRecord
+        |   None -> record [
+                purchased           = (map[] : map(string, nat));
+                totalPurchased      = 0n;
+                totalDistributed    = 0n;
+            ]
+    ];
+    
+} with userPurchaseRecord
+
+
 // helper function to get contract address from general contracts map
 function getAddressFromGeneralContracts(const contractName : string; const s : launchpadStorageType; const errorCode : nat) : address is 
 block {
@@ -189,10 +228,62 @@ block {
 
 
 
+function verifyLaunchHasNotEnded(const saleEnd : option(timestamp)) : unit is
+block {
+
+    case saleEnd of [
+            Some(_saleEndTimestamp) -> {
+                if Tezos.get_now() > _saleEndTimestamp then failwith(error_LAUNCH_HAS_ENDED) else skip;
+            }
+        |   None -> skip
+    ]
+
+} with unit
+
+
+
 function verifyValidTokenDistributionType(const tokenDistributionType : string) : unit is
 block {
 
     if tokenDistributionType = "MANUAL" or tokenDistributionType = "AUTO" then skip else failwith (error_INVALID_TOKEN_DISTRIBUTION_TYPE);
+
+} with unit
+
+
+
+function verifyValidSaleEnd(const saleStart : timestamp; const saleEnd : option(timestamp)) : unit is 
+block {
+
+    case saleEnd of [
+            Some(_saleEndTimestamp) -> if _saleEndTimestamp < saleStart then failwith(error_SALE_END_SHOULD_BE_AFTER_SALE_START) else skip
+        |   None -> skip // no sale end timestamp; sale has to be closed manually
+    ];
+
+} with unit
+
+
+
+function verifyValidWhitelistSaleEnd(const whitelistSaleStart : option(timestamp); const whitelistSaleEnd : option(timestamp)) : unit is 
+block {
+
+    case whitelistSaleStart of [
+            Some(_whitelistStartTimestamp) -> {
+                // check that whitelist sale end timestamp comes after whitelist start timestamp
+                case whitelistSaleEnd of [
+                        Some(_whitelistEndTimestamp) -> if _whitelistEndTimestamp < _whitelistStartTimestamp then failwith(error_WHITELIST_SALE_END_SHOULD_BE_AFTER_WHITELIST_SALE_START) else skip
+                    |   None -> skip
+                ];
+            }
+        |   None -> {
+            
+                // check that whitelist sale start timestamp exists if whitelist sale end is specified
+                case whitelistSaleEnd of [
+                        Some(_whitelistEndTimestamp) -> failwith(error_WHITELIST_SALE_START_NOT_SPECIFIED)
+                    |   None -> skip
+                ];
+            
+            }
+    ];
 
 } with unit
 
@@ -210,6 +301,40 @@ block {
 // } with unit
 
 
+function processTokenIssuance(
+    const tokenIssuanceType : string; 
+    const treasuryAddress : address; 
+    const recipient : address; 
+    const amount : nat; 
+    const tokenId : nat; 
+    const tokenContractAddress : address; 
+    var operations : list(operation)) : list(operation) is 
+block {
+
+    if tokenIssuanceType = "TRANSFER" then block {
+
+        const transferOperation : operation = transferFa2Token(
+            treasuryAddress,        // from_
+            recipient,              // to_
+            amount,                 // amount
+            tokenId,                // tokenId
+            tokenContractAddress    // tokenContractAddress
+        );
+        operations := transferOperation # operations;
+
+    } else if tokenIssuanceType = "MINT" then block {
+
+        const mintOperation : operation = mintFa2Token(
+            recipient,              // to_
+            amount,                 // amount
+            tokenId,                // tokenId
+            tokenContractAddress    // tokenContractAddress
+        );
+        operations := mintOperation # operations;
+
+    };
+
+} with operations
 
 // ------------------------------------------------------------------------------
 // Contract Helper Functions End

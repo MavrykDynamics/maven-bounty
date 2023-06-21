@@ -102,6 +102,13 @@
 [@inline] const error_INVALID_TOKEN_DISTRIBUTION_TYPE                                                                    = 55n;
 [@inline] const error_LAUNCH_IS_NOT_ACTIVE                                                                               = 55n;
 [@inline] const error_LAUNCH_IS_NOT_PAUSED                                                                               = 56n;
+[@inline] const error_LAUNCH_HAS_ENDED                                                                                   = 56n;
+[@inline] const error_USER_WHITELIST_RECORD_NOT_FOUND                                                                    = 56n;
+[@inline] const error_USER_WHITELIST_ALLOWED_AMOUNT_EXCEEDED                                                             = 56n;
+
+[@inline] const error_SALE_END_SHOULD_BE_AFTER_SALE_START                                                                = 56n;
+[@inline] const error_WHITELIST_SALE_END_SHOULD_BE_AFTER_WHITELIST_SALE_START                                            = 56n;
+[@inline] const error_WHITELIST_SALE_START_NOT_SPECIFIED                                                                 = 56n;
 
 
 // ------------------------------------------------------------------------------

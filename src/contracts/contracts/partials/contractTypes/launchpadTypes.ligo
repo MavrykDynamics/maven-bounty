@@ -21,7 +21,7 @@ type launchpadConfigType is [@layout:comb] record [
 
 
 type launchWhitelistRecordType is [@layout:comb] record [
-    allowed         : map(string, nat);
+    allowed         : map(string, nat);         // sale option name * allowed amount for sale option
 ]
 type launchWhitelistLedgerType is big_map((nat * address), launchWhitelistRecordType)
 
@@ -36,14 +36,16 @@ type tokenSaleOptionType is [@layout:comb] record [
 ]
 type launchRecordType is [@layout:comb] record [
     name                        : string;
-    isPaused                    : bool;     // TRUE / FALSE
-    status                      : string;   // ACTIVE / INACTIVE / PAUSED / CLOSED
-    tokenIssuanceType           : string;   // mint / transfer
-    tokenDistributionType       : string;   // auto / manual
+    isPaused                    : bool;         // TRUE / FALSE
+    status                      : string;       // ACTIVE / INACTIVE / PAUSED / CLOSED
+    tokenIssuanceType           : string;       // mint / transfer
+    tokenDistributionType       : string;       // auto / manual
     tokenContractAddress        : address;
     tokenId                     : nat;
     saleStart                   : timestamp;
     saleEnd                     : option(timestamp);
+    whitelistSaleStart          : option(timestamp);
+    whitelistSaleEnd            : option(timestamp);
     saleOptions                 : map(string, tokenSaleOptionType);
     defaultWhitelistOptions     : map(string, nat);
 ]
@@ -51,8 +53,9 @@ type launchLedgerType is big_map(nat, launchRecordType)
 
 
 type purchaseRecordType is [@layout:comb] record [
-    purchased       : map(string, nat);  // breakdown by sale options (if there's multiple)
-    totalPurchased  : nat;               // total purchased (model only assumes one token)
+    purchased           : map(string, nat);  // breakdown by sale options (if there's multiple)
+    totalPurchased      : nat;               // total purchased (model only assumes one token)
+    totalDistributed    : nat; 
 ]
 type purchaseLedgerType is big_map((nat * address), purchaseRecordType)
 
@@ -96,6 +99,8 @@ type createTokenLaunchActionType is [@layout:comb] record [
     tokenId                     : nat;
     saleStart                   : timestamp;
     saleEnd                     : option(timestamp);
+    whitelistSaleStart          : option(timestamp);
+    whitelistSaleEnd            : option(timestamp);
     saleOptions                 : map(string, tokenSaleOptionType); // default / whitelist / ABCDEF
     defaultWhitelistOptions     : map(string, nat);
 ]
@@ -109,6 +114,8 @@ type editTokenLaunchActionType is [@layout:comb] record [
     tokenId                     : option(nat);
     saleStart                   : option(timestamp);
     saleEnd                     : option(timestamp);
+    whitelistSaleStart          : option(timestamp);
+    whitelistSaleEnd            : option(timestamp);
     saleOptions                 : option(map(string, tokenSaleOptionType)); // default / whitelist / ABCDEF
     defaultWhitelistOptions     : option(map(string, nat));
 ]
@@ -128,6 +135,12 @@ type purchaseActionType is [@layout:comb] record [
     amount                      : nat;
     saleOption                  : string;  // default / whitelist / ABCDEF
 ]
+
+type distributeTokensSingleActionType is [@layout:comb] record [
+    userAddress                 : address; 
+    launchId                    : nat;
+]
+type distributeTokensActionType is list(distributeTokensSingleActionType)
 
 // ------------------------------------------------------------------------------
 // Lambda Action Types
@@ -162,7 +175,7 @@ type launchpadLambdaActionType is
     |   LambdaCloseLaunch                 of (nat)
     |   LambdaPauseLaunch                 of (nat)
     |   LambdaUnpauseLaunch               of (nat)
-    |   LambdaDistributeTokens            of (nat)
+    |   LambdaDistributeTokens            of distributeTokensActionType
 
         // User Lambdas
     |   LambdaPurchase                    of purchaseActionType

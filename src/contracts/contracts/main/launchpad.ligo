@@ -58,7 +58,7 @@ type action is
     |   CloseLaunch                 of (nat)
     |   PauseLaunch                 of (nat)
     |   UnpauseLaunch               of (nat)
-    |   DistributeTokens            of (nat)
+    |   DistributeTokens            of distributeTokensActionType
 
         // User Entrypoints
     |   Purchase                    of purchaseActionType

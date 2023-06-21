@@ -262,8 +262,7 @@ export function getTokenInfo(currency, field: "tokenContractAddress" | "tokenId"
 
     } else if (currency.fa12 !== undefined && field === "tokenContractAddress") {
         
-        console.log('fa12')
-        return currency.fa12.tokenContractAddress
+        return currency.fa12
 
     } else {
 
