@@ -225,6 +225,8 @@ block {
                 const tokenId                   : nat                               = createTokenLaunchParams.tokenId;
                 const saleStart                 : timestamp                         = createTokenLaunchParams.saleStart;
                 const saleEnd                   : option(timestamp)                 = createTokenLaunchParams.saleEnd;
+                const whitelistSaleStart        : option(timestamp)                 = createTokenLaunchParams.whitelistSaleStart;
+                const whitelistSaleEnd          : option(timestamp)                 = createTokenLaunchParams.whitelistSaleEnd;
                 const saleOptions               : map(string, tokenSaleOptionType)  = createTokenLaunchParams.saleOptions;
                 const defaultWhitelistOptions   : map(string, nat)                  = createTokenLaunchParams.defaultWhitelistOptions;
 
@@ -234,6 +236,10 @@ block {
                 verifyValidTokenIssuanceType(tokenIssuanceType);
 
                 verifyValidTokenDistributionType(tokenDistributionType);
+
+                verifyValidSaleEnd(saleStart, saleEnd);
+
+                verifyValidWhitelistSaleEnd(whitelistSaleStart, whitelistSaleEnd);
 
                 // create launchRecord
                 const launchRecord : launchRecordType = record [
@@ -246,6 +252,8 @@ block {
                     tokenId                     = tokenId;
                     saleStart                   = saleStart;
                     saleEnd                     = saleEnd;
+                    whitelistSaleStart          = whitelistSaleStart;
+                    whitelistSaleEnd            = whitelistSaleEnd;
                     saleOptions                 = saleOptions;
                     defaultWhitelistOptions     = defaultWhitelistOptions;
                 ];
@@ -283,10 +291,7 @@ block {
                     ];
 
                     // get launch record
-                    const launchRecord : launchRecordType = case s.launchLedger[launchId] of [
-                            Some(_record) -> _record
-                        |   None          -> failwith(error_LAUNCH_RECORD_NOT_FOUND)
-                    ];
+                    const launchRecord : launchRecordType = getLaunchRecord(launchId, s);
 
                     const whitelistUserKey : (nat * address) = (launchId, whitelistUserAddress);
                     var allowed : map(string, nat) := map[];
@@ -323,11 +328,8 @@ block {
     case launchpadLambdaAction of [
         |   LambdaEditTokenLaunch(editTokenLaunchParams) -> {
 
-                const launchId                  : nat                               = editTokenLaunchParams.launchId;
-                var launchRecord : launchRecordType := case s.launchLedger[launchId] of [
-                            Some(_record) -> _record
-                        |   None          -> failwith(error_LAUNCH_RECORD_NOT_FOUND)
-                    ];
+                const launchId    : nat               = editTokenLaunchParams.launchId;
+                var launchRecord  : launchRecordType := getLaunchRecord(launchId, s);
 
                 // edit launch record if option found
                 case editTokenLaunchParams.name of [
@@ -336,12 +338,18 @@ block {
                 ];
 
                 case editTokenLaunchParams.tokenIssuanceType of [
-                        Some(_newIssuanceType) -> launchRecord.tokenIssuanceType := _newIssuanceType
+                        Some(_newIssuanceType) -> {
+                            verifyValidTokenIssuanceType(_newIssuanceType);
+                            launchRecord.tokenIssuanceType := _newIssuanceType
+                        }
                     |   None -> skip
                 ];
 
                 case editTokenLaunchParams.tokenDistributionType of [
-                        Some(_newDistributionType) -> launchRecord.tokenDistributionType := _newDistributionType
+                        Some(_newDistributionType) -> {
+                            verifyValidTokenDistributionType(_newDistributionType);
+                            launchRecord.tokenDistributionType := _newDistributionType
+                        }
                     |   None -> skip
                 ];
 
@@ -361,7 +369,41 @@ block {
                 ];
 
                 case editTokenLaunchParams.saleEnd of [
-                        Some(_newSaleEnd) -> launchRecord.saleEnd := Some(_newSaleEnd)
+                        Some(_newSaleEnd) -> {
+
+                            // check that new sale end comes after sale start 
+                            case editTokenLaunchParams.saleStart of [
+                                    Some(_newSaleStart) -> if _newSaleEnd < _newSaleStart then failwith(error_SALE_END_SHOULD_BE_AFTER_SALE_START) else skip
+                                |   None -> if _newSaleEnd < launchRecord.saleStart then failwith(error_SALE_END_SHOULD_BE_AFTER_SALE_START) else skip
+                            ];
+
+                            launchRecord.saleEnd := Some(_newSaleEnd)
+                        }
+                    |   None -> skip
+                ];
+
+                case editTokenLaunchParams.whitelistSaleStart of [
+                        Some(_newWhitelistSaleStart) -> launchRecord.whitelistSaleStart := Some(_newWhitelistSaleStart)
+                    |   None -> skip
+                ];
+
+                case editTokenLaunchParams.whitelistSaleEnd of [
+                        Some(_newWhitelistSaleEnd) -> {
+
+                            // check that new whitelist sale end comes after whitelist sale start 
+                            case editTokenLaunchParams.whitelistSaleStart of [
+                                    Some(_newWhitelistSaleStart) -> if _newWhitelistSaleEnd < _newWhitelistSaleStart then failwith(error_WHITELIST_SALE_END_SHOULD_BE_AFTER_WHITELIST_SALE_START) else skip
+                                |   None -> {
+
+                                        case launchRecord.whitelistSaleStart of [
+                                                Some(_currentWhitelistSaleStart) -> if _newWhitelistSaleEnd < _currentWhitelistSaleStart then failwith(error_WHITELIST_SALE_END_SHOULD_BE_AFTER_WHITELIST_SALE_START) else skip
+                                            |   None -> failwith(error_WHITELIST_SALE_START_NOT_SPECIFIED)
+                                        ]    
+                                    }
+                            ];
+
+                            launchRecord.whitelistSaleEnd := Some(_newWhitelistSaleEnd)
+                        }
                     |   None -> skip
                 ];
 
@@ -396,19 +438,16 @@ block {
         |   LambdaStartLaunch(launchId) -> {
 
                 // get launch record
-                var launchRecord : launchRecordType := case s.launchLedger[launchId] of [
-                        Some(_record) -> _record
-                    |   None          -> failwith(error_LAUNCH_RECORD_NOT_FOUND)
-                ];
+                var launchRecord : launchRecordType := getLaunchRecord(launchId, s);
 
                 launchRecord.status := "ACTIVE";
                 
                 // reset sale end if it has been closed
-                const currentSaleEnd : timestamp = case launchRecord.saleEnd of [
-                        Some(_timestamp) -> _timestamp
-                    |   None             -> zeroTimestamp
-                ];
-                if Tezos.get_now() > currentSaleEnd then launchRecord.saleEnd := (None : option(timestamp)) else skip;
+                // const currentSaleEnd : timestamp = case launchRecord.saleEnd of [
+                //         Some(_timestamp) -> _timestamp
+                //     |   None             -> zeroTimestamp
+                // ];
+                // if Tezos.get_now() > currentSaleEnd then launchRecord.saleEnd := (None : option(timestamp)) else skip;
 
                 s.launchLedger[launchId] := launchRecord;
 
@@ -430,10 +469,7 @@ block {
         |   LambdaPauseLaunch(launchId) -> {
 
                 // get launch record
-                var launchRecord : launchRecordType := case s.launchLedger[launchId] of [
-                        Some(_record) -> _record
-                    |   None          -> failwith(error_LAUNCH_RECORD_NOT_FOUND)
-                ];
+                var launchRecord : launchRecordType := getLaunchRecord(launchId, s);
 
                 if launchRecord.status = "ACTIVE" then skip else failwith(error_LAUNCH_IS_NOT_ACTIVE);
 
@@ -458,10 +494,7 @@ block {
     case launchpadLambdaAction of [
         |   LambdaUnpauseLaunch(launchId) -> {
 
-                var launchRecord : launchRecordType := case s.launchLedger[launchId] of [
-                        Some(_record) -> _record
-                    |   None          -> failwith(error_LAUNCH_RECORD_NOT_FOUND)
-                ];
+                var launchRecord : launchRecordType := getLaunchRecord(launchId, s);
 
                 if launchRecord.status = "PAUSED" then skip else failwith(error_LAUNCH_IS_NOT_PAUSED);
 
@@ -508,11 +541,58 @@ function lambdaDistributeTokens(const launchpadLambdaAction : launchpadLambdaAct
 block {
 
     verifySenderIsAdmin(s.admins); // check that sender is admin 
+
+    var operations : list(operation) := nil;
     
     case launchpadLambdaAction of [
-        |   LambdaDistributeTokens(_distributeTokensParams) -> {
+        |   LambdaDistributeTokens(distributeTokensParams) -> {
 
-                skip
+                // get treasury address
+                const treasuryAddress : address = getAddressFromGeneralContracts("treasury", s, error_TREASURY_NOT_FOUND);
+
+                for distributeToken in list distributeTokensParams block {
+
+                    const userAddress   : address   = distributeToken.userAddress;
+                    const launchId      : nat       = distributeToken.launchId;
+
+                    // create launch user key
+                    const launchUserKey  : (nat * address) = (launchId, userAddress);
+
+                    // get launch record
+                    const launchRecord : launchRecordType = getLaunchRecord(launchId, s);
+
+                    const tokenId                : nat      = launchRecord.tokenId;
+                    const tokenContractAddress   : address  = launchRecord.tokenContractAddress;
+                    const tokenIssuanceType      : string   = launchRecord.tokenIssuanceType;
+
+                    // get user purchase record
+                    var userPurchaseRecord : purchaseRecordType := getOrCreatePurchaseRecord(launchUserKey, s);
+
+                    const totalPurchased : nat = userPurchaseRecord.totalPurchased;
+                    const totalDistributed : nat = userPurchaseRecord.totalDistributed;
+
+                    if totalPurchased > 0n then block {
+
+                        const amountToDistribute : nat = abs(totalPurchased - totalDistributed);
+
+                        // process token issuance - MINT or TRANSFER
+                        operations := processTokenIssuance(
+                            tokenIssuanceType,
+                            treasuryAddress,
+                            userAddress,
+                            amountToDistribute,
+                            tokenId,
+                            tokenContractAddress,
+                            operations
+                        );
+
+                        // update user purchase record : total distributed
+                        userPurchaseRecord.totalDistributed  := userPurchaseRecord.totalDistributed + amountToDistribute;
+                        s.purchaseLedger[launchUserKey]      := userPurchaseRecord;
+
+                    } else skip;
+
+                }
 
             }
         |   _ -> skip
@@ -624,14 +704,11 @@ block {
                 const amount            : nat       = purchaseParams.amount;
                 const saleOptionName    : string    = purchaseParams.saleOption;
                 
-                // create sale user key
-                const saleUserKey   : (nat * address) = (launchId, sender);
+                // create launch user key
+                const launchUserKey     : (nat * address) = (launchId, sender);
 
                 // get launch record
-                var launchRecord : launchRecordType := case s.launchLedger[launchId] of [
-                        Some(_record) -> _record
-                    |   None          -> failwith(error_LAUNCH_RECORD_NOT_FOUND)
-                ];
+                var launchRecord : launchRecordType := getLaunchRecord(launchId, s);
 
                 const tokenId                : nat      = launchRecord.tokenId;
                 const tokenContractAddress   : address  = launchRecord.tokenContractAddress;
@@ -641,11 +718,34 @@ block {
                 // verify launch is active
                 verifyLaunchIsActive(launchRecord.status);
 
-                // get sale option
-                var saleOption : tokenSaleOptionType := case launchRecord.saleOptions[saleOptionName] of [
-                        Some(_saleOption) -> _saleOption
-                    |   None              -> failwith(error_SALE_OPTION_NOT_FOUND)
+                // verify launch has not ended
+                verifyLaunchHasNotEnded(launchRecord.saleEnd);
+
+                // check if current period is in whitelist period
+                var inWhitelistPeriod : bool := False;
+                const _whitelistSaleStart : timestamp = case launchRecord.whitelistSaleStart of [
+                        Some(_whitelistSaleStartTimestamp) -> {
+
+                            // check whitelist sale start timestamp 
+                            if Tezos.get_now() > _whitelistSaleStartTimestamp then inWhitelistPeriod := True else skip;
+
+                            // check if whitelist sale end timestamp has passed
+                            case launchRecord.whitelistSaleEnd of [
+                                    Some(_whitelistSaleEndTimestamp) -> {
+                                        if Tezos.get_now() > _whitelistSaleEndTimestamp then inWhitelistPeriod := False else skip;
+                                    }
+                                |   None -> skip
+                            ];
+
+                            // check if main sale timestamp has started
+                            if Tezos.get_now() > launchRecord.saleStart then inWhitelistPeriod := False else skip;
+
+                        } with _whitelistSaleStartTimestamp
+                    |   None     -> zeroTimestamp
                 ];
+
+                // get sale option
+                var saleOption : tokenSaleOptionType := getSaleOption(launchRecord, saleOptionName);
 
                 // get sale option params
                 const maxAmountCap  : nat       = saleOption.maxAmountCap;
@@ -657,13 +757,7 @@ block {
                 if (totalBought + amount) > maxAmountCap then failwith(error_MAX_AMOUNT_CAP_FOR_SALE_OPTION_EXCEEDED) else skip;
 
                 // get total purchased of user
-                var userPurchaseRecord : purchaseRecordType := case s.purchaseLedger[saleUserKey] of [
-                        Some(_purchaseRecord) -> _purchaseRecord
-                    |   None -> record [
-                            purchased       = (map[] : map(string, nat));
-                            totalPurchased  = 0n;
-                        ]
-                ];
+                var userPurchaseRecord : purchaseRecordType := getOrCreatePurchaseRecord(launchUserKey, s);
 
                 // get total purchased of user for this particular sale option
                 var userSaleOptionPurchased : nat := case userPurchaseRecord.purchased[saleOptionName] of [
@@ -675,10 +769,31 @@ block {
                 const finalSaleOptionPurchasedTotal : nat = userSaleOptionPurchased + amount;
 
                 // check that max amount per wallet total is not exceeded for this sale option
+                // note: maxAmountPerWalletTotal takes precedence over userWhitelistAllowedAmount
                 case saleOption.maxAmountPerWalletTotal of [
                         Some(_maxAmount) -> if finalSaleOptionPurchasedTotal > _maxAmount then failwith(error_MAX_AMOUNT_PER_WALLET_FOR_SALE_OPTION_TOTAL_EXCEEDED) else skip
                     |   None -> skip
                 ];
+
+                // check user whitelist amount
+                if inWhitelistPeriod = True then block {
+
+                    // check if user is whitelisted
+                    const userLaunchWhitelistRecord : launchWhitelistRecordType = case s.launchWhitelistLedger[launchUserKey] of [
+                            Some(_record) -> _record
+                        |   None -> failwith(error_USER_WHITELIST_RECORD_NOT_FOUND)
+                    ];
+
+                    const userWhitelistAllowedAmount : nat = case userLaunchWhitelistRecord.allowed[saleOptionName] of [
+                            Some(_amount) -> _amount
+                        |   None -> 0n
+                    ];
+
+                    // check that userWhitelistAllowedAmount is not exceeded
+                    if (userSaleOptionPurchased + amount) > userWhitelistAllowedAmount then failwith(error_USER_WHITELIST_ALLOWED_AMOUNT_EXCEEDED) else skip;
+
+                } else skip;
+                
 
                 // get treasury address
                 const treasuryAddress : address = getAddressFromGeneralContracts("treasury", s, error_TREASURY_NOT_FOUND);
@@ -702,43 +817,35 @@ block {
                 // update user sale purchase ledger
                 userPurchaseRecord.purchased[saleOptionName]    := finalSaleOptionPurchasedTotal;
                 userPurchaseRecord.totalPurchased               := userPurchaseRecord.totalPurchased + amount;
-                s.purchaseLedger[saleUserKey]                   := userPurchaseRecord;
+                s.purchaseLedger[launchUserKey]                 := userPurchaseRecord;
 
                 // update sale option
-                saleOption.totalBought                              := saleOption.totalBought + amount;
-                launchRecord.saleOptions[saleOptionName]            := saleOption;
+                saleOption.totalBought                          := saleOption.totalBought + amount;
+                launchRecord.saleOptions[saleOptionName]        := saleOption;
 
                 // update sale record
-                s.launchLedger[launchId]                            := launchRecord;
+                s.launchLedger[launchId]                        := launchRecord;
 
-                // transfer or mint if tokenDistributionType is AUTO
                 if tokenDistributionType = "MANUAL" then skip 
                 else if tokenDistributionType = "AUTO" then block {
 
-                    if tokenIssuanceType = "TRANSFER" then block {
+                    // process token issuance - MINT or TRANSFER
+                    operations := processTokenIssuance(
+                        tokenIssuanceType,
+                        treasuryAddress,
+                        sender,
+                        amount,
+                        tokenId,
+                        tokenContractAddress,
+                        operations
+                    );
 
-                        const transferOperation : operation = transferFa2Token(
-                            treasuryAddress,        // from_
-                            sender,                 // to_
-                            amount,                 // amount
-                            tokenId,                // tokenId
-                            tokenContractAddress    // tokenContractAddress
-                        );
-                        operations := transferOperation # operations;
-
-                    } else if tokenIssuanceType = "MINT" then block {
-
-                        const mintOperation : operation = mintFa2Token(
-                            sender,                 // to_
-                            amount,                 // amount
-                            tokenId,                // tokenId
-                            tokenContractAddress    // tokenContractAddress
-                        );
-                        operations := mintOperation # operations;
-
-                    };
+                    // update user purchase record : total distributed
+                    userPurchaseRecord.totalDistributed  := userPurchaseRecord.totalDistributed + amount;
+                    s.purchaseLedger[launchUserKey]      := userPurchaseRecord;
 
                 };
+            
 
             }
         |   _ -> skip
