@@ -298,9 +298,15 @@ block {
                     
                     // set allowed options
                     if defaultWhitelistOption = True then block {
+
                         allowed := launchRecord.defaultWhitelistOptions;
+                        
                     } else {
+
+                        // verify that whitelist options exist
+                        verifyValidCustomWhitelistOptions(whitelistOptions, launchRecord);
                         allowed := whitelistOptions;
+
                     };
 
                     const launchWhitelistRecord : launchWhitelistRecordType = record [
@@ -737,9 +743,6 @@ block {
                                 |   None -> skip
                             ];
 
-                            // check if main sale timestamp has started
-                            if Tezos.get_now() > launchRecord.saleStart then inWhitelistPeriod := False else skip;
-
                         } with _whitelistSaleStartTimestamp
                     |   None     -> zeroTimestamp
                 ];
@@ -775,9 +778,10 @@ block {
                     |   None -> skip
                 ];
 
-                // check user whitelist amount
+                // check if in whitelist period
                 if inWhitelistPeriod = True then block {
 
+                    // inWhitelistPeriod: True
                     // check if user is whitelisted
                     const userLaunchWhitelistRecord : launchWhitelistRecordType = case s.launchWhitelistLedger[launchUserKey] of [
                             Some(_record) -> _record
@@ -792,7 +796,13 @@ block {
                     // check that userWhitelistAllowedAmount is not exceeded
                     if (userSaleOptionPurchased + amount) > userWhitelistAllowedAmount then failwith(error_USER_WHITELIST_ALLOWED_AMOUNT_EXCEEDED) else skip;
 
-                } else skip;
+                } else {
+                    
+                    // inWhitelistPeriod: False
+                    // check if main sale timestamp has started
+                    if Tezos.get_now() < launchRecord.saleStart then failwith(error_SALE_HAS_NOT_STARTED) else skip;
+
+                };
                 
 
                 // get treasury address

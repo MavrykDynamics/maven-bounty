@@ -789,7 +789,7 @@ block {
 
         const bootstrapSnapshot : (tokenContextType * securityTokenStorageType) = bootstrapSnapshot((tokenContext, tokenAmount.token_id), s);
         tokenContext  := bootstrapSnapshot.0;
-        s              := bootstrapSnapshot.1;
+        s             := bootstrapSnapshot.1;
 
         s := setSnapshotTotalSupply((tokenContext, tokenAmount.token_id), s);
         s := setSnapshotLedger((tokenContext, tokenAmount.token_id, tokenAmount.address), s);

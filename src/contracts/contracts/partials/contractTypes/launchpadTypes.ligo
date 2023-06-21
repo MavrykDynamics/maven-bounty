@@ -31,8 +31,12 @@ type tokenSaleOptionType is [@layout:comb] record [
     totalBought                 : nat;
     minPurchaseAmount           : nat;
     maxAmountPerWalletTotal     : option(nat);
+    
     price                       : nat; 
     currency                    : tokenType;
+    
+    // todo: accept multi currency and price
+    // currencyMap                 : map()
 ]
 type launchRecordType is [@layout:comb] record [
     name                        : string;

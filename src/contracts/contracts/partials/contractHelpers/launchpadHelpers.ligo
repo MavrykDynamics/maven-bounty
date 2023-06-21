@@ -288,6 +288,20 @@ block {
 } with unit
 
 
+function verifyValidCustomWhitelistOptions(const whitelistOptions : map(string, nat); const launchRecord : launchRecordType) : unit is
+block {
+
+    // verify that whitelist options exist
+    for optionName -> _allowedAmount in map whitelistOptions block {
+        case launchRecord.saleOptions[optionName] of [
+                Some(_v) -> skip
+            |   None -> failwith(error_WHITELIST_OPTION_DOES_NOT_EXIST)
+        ];
+    };
+    
+} with unit
+
+
 
 // function verifyValidCurrency(const currency : tokenType; const s : launchpadStorageType) : unit is 
 // block {

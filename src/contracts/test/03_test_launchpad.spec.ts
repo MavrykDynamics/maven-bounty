@@ -18,9 +18,10 @@ import { mockTokenSaleOptions } from 'test/helpers/mockSampleData'
 // Contract Helpers
 // ------------------------------------------------------------------------------
 
-import { bob, alice, eve, mallory } from '../scripts/sandbox/accounts'
+import { bob, alice, eve, mallory, oscar, david } from '../scripts/sandbox/accounts'
 import { 
-    signerFactory, 
+    signerFactory,
+    wait, 
     getStorageMapValue,
     makeTimestamp,
     showMillisecondsDateFormat,
@@ -339,6 +340,157 @@ describe('Test: Launchpad Contract', async () => {
             }
         })
 
+
+        it('admin (eve) should not be able to create a new token launch if the sale end time is before the sale start time', async () => {
+            try {
+
+                const name                      = "failTokenLaunch";
+                const tokenIssuanceType         = "MINT";
+                const tokenDistributionType     = "AUTO";
+                const tokenContractAddress      = mockFa2TokenAddress;
+                const tokenId                   = 0;
+                const saleStart                 = makeTimestamp(300);
+                const saleEnd                   = makeTimestamp(30);
+                const whitelistSaleStart        = null;
+                const whitelistSaleEnd          = null;
+
+                const emptySaleOptions          = MichelsonMap.fromLiteral({});
+                const emptyWhitelistOptions     = MichelsonMap.fromLiteral({});
+
+                // create token sale operation
+                const createTokenLaunchOperation = await launchpadInstance.methods.createTokenLaunch(
+                    name,
+                    tokenIssuanceType,
+                    tokenDistributionType,
+                    tokenContractAddress,
+                    tokenId,
+                    saleStart,
+                    saleEnd,
+                    whitelistSaleStart,
+                    whitelistSaleEnd,
+                    emptySaleOptions,
+                    emptyWhitelistOptions
+                );
+                await chai.expect(createTokenLaunchOperation.send()).to.be.rejected;
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+
+        it('admin (eve) should not be able to create a new token launch if the whitelist sale end time is before the whitelist sale start time', async () => {
+            try {
+
+                const name                      = "failTokenLaunch";
+                const tokenIssuanceType         = "MINT";
+                const tokenDistributionType     = "AUTO";
+                const tokenContractAddress      = mockFa2TokenAddress;
+                const tokenId                   = 0;
+                const saleStart                 = makeTimestamp(30);
+                const saleEnd                   = makeTimestamp(300);
+                const whitelistSaleStart        = makeTimestamp(300);
+                const whitelistSaleEnd          = makeTimestamp(30);
+
+                const emptySaleOptions          = MichelsonMap.fromLiteral({});
+                const emptyWhitelistOptions     = MichelsonMap.fromLiteral({});
+
+                // create token sale operation
+                const createTokenLaunchOperation = await launchpadInstance.methods.createTokenLaunch(
+                    name,
+                    tokenIssuanceType,
+                    tokenDistributionType,
+                    tokenContractAddress,
+                    tokenId,
+                    saleStart,
+                    saleEnd,
+                    whitelistSaleStart,
+                    whitelistSaleEnd,
+                    emptySaleOptions,
+                    emptyWhitelistOptions
+                );
+                await chai.expect(createTokenLaunchOperation.send()).to.be.rejected;
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+        it('admin (eve) should not be able to create a new token launch with an invalid token issuance type', async () => {
+            try {
+
+                const name                      = "failTokenLaunch";
+                const tokenIssuanceType         = "mint"; // should be all caps "MINT"
+                const tokenDistributionType     = "AUTO";
+                const tokenContractAddress      = mockFa2TokenAddress;
+                const tokenId                   = 0;
+                const saleStart                 = makeTimestamp(30);
+                const saleEnd                   = makeTimestamp(300);
+                const whitelistSaleStart        = null;
+                const whitelistSaleEnd          = null;
+
+                const emptySaleOptions          = MichelsonMap.fromLiteral({});
+                const emptyWhitelistOptions     = MichelsonMap.fromLiteral({});
+
+                // create token sale operation
+                const createTokenLaunchOperation = await launchpadInstance.methods.createTokenLaunch(
+                    name,
+                    tokenIssuanceType,
+                    tokenDistributionType,
+                    tokenContractAddress,
+                    tokenId,
+                    saleStart,
+                    saleEnd,
+                    whitelistSaleStart,
+                    whitelistSaleEnd,
+                    emptySaleOptions,
+                    emptyWhitelistOptions
+                );
+                await chai.expect(createTokenLaunchOperation.send()).to.be.rejected;
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+        it('admin (eve) should not be able to create a new token launch with an invalid token distribution type', async () => {
+            try {
+
+                const name                      = "failTokenLaunch";
+                const tokenIssuanceType         = "MINT"; 
+                const tokenDistributionType     = "auto"; // should be all caps "AUTO"
+                const tokenContractAddress      = mockFa2TokenAddress;
+                const tokenId                   = 0;
+                const saleStart                 = makeTimestamp(30);
+                const saleEnd                   = makeTimestamp(300);
+                const whitelistSaleStart        = null;
+                const whitelistSaleEnd          = null;
+
+                const emptySaleOptions          = MichelsonMap.fromLiteral({});
+                const emptyWhitelistOptions     = MichelsonMap.fromLiteral({});
+
+                // create token sale operation
+                const createTokenLaunchOperation = await launchpadInstance.methods.createTokenLaunch(
+                    name,
+                    tokenIssuanceType,
+                    tokenDistributionType,
+                    tokenContractAddress,
+                    tokenId,
+                    saleStart,
+                    saleEnd,
+                    whitelistSaleStart,
+                    whitelistSaleEnd,
+                    emptySaleOptions,
+                    emptyWhitelistOptions
+                );
+                await chai.expect(createTokenLaunchOperation.send()).to.be.rejected;
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+
     })
 
 
@@ -370,12 +522,12 @@ describe('Test: Launchpad Contract', async () => {
                     'whitelist'         : mockTokenSaleOptions.whitelist
                 });
 
-                const defaultWhitelistOptionValue   = 100000;
+                const defaultWhitelistOptionValue   = 5000000;
                 const newDefaultWhitelistOptions    = MichelsonMap.fromLiteral({
                     'whitelist' : defaultWhitelistOptionValue
                 });
 
-                // edit token sale operation
+                // edit token launch operation
                 const editTokenLaunchOperation = await launchpadInstance.methods.editTokenLaunch(
                     launchId,
                     newName,
@@ -449,6 +601,198 @@ describe('Test: Launchpad Contract', async () => {
             }
         })
 
+        it('admin (eve) should not be able to edit a token launch if the sale end time is before the sale start time', async () => {
+            try {
+
+                launchId                        = firstLaunchId;
+
+                const newName                   = "newTestTokenLaunch";
+                const newTokenIssuanceType      = "TRANSFER";
+                const newTokenDistributionType  = "MANUAL";
+                const newTokenContractAddress   = mockFa12TokenAddress;
+                const newTokenId                = 1;
+                const newSaleStart              = makeTimestamp(300);
+                const newSaleEnd                = makeTimestamp(30);
+                const newWhitelistSaleStart     = null;
+                const newWhitelistSaleEnd       = null;
+
+                const newSaleOptions            = MichelsonMap.fromLiteral({
+                    'default'           : mockTokenSaleOptions.default,
+                    'defaultWithFa12'   : mockTokenSaleOptions.defaultWithFa12,
+                    'whitelist'         : mockTokenSaleOptions.whitelist
+                });
+
+                const defaultWhitelistOptionValue   = 100000;
+                const newDefaultWhitelistOptions    = MichelsonMap.fromLiteral({
+                    'whitelist' : defaultWhitelistOptionValue
+                });
+
+                // edit token sale operation
+                const editTokenLaunchOperation = await launchpadInstance.methods.editTokenLaunch(
+                    launchId,
+                    newName,
+                    newTokenIssuanceType,
+                    newTokenDistributionType,
+                    newTokenContractAddress,
+                    newTokenId,
+                    newSaleStart,
+                    newSaleEnd,
+                    newWhitelistSaleStart,
+                    newWhitelistSaleEnd,
+                    newSaleOptions,
+                    newDefaultWhitelistOptions
+                )
+                await chai.expect(editTokenLaunchOperation.send()).to.be.rejected;
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+        it('admin (eve) should not be able to edit a token launch if the whitelist sale end time is before the whitelist sale start time', async () => {
+            try {
+
+                launchId                        = firstLaunchId;
+
+                const newName                   = "newTestTokenLaunch";
+                const newTokenIssuanceType      = "TRANSFER";
+                const newTokenDistributionType  = "MANUAL";
+                const newTokenContractAddress   = mockFa12TokenAddress;
+                const newTokenId                = 1;
+                const newSaleStart              = makeTimestamp(30);
+                const newSaleEnd                = makeTimestamp(300);
+                const newWhitelistSaleStart     = makeTimestamp(300);
+                const newWhitelistSaleEnd       = makeTimestamp(30);
+
+                const newSaleOptions            = MichelsonMap.fromLiteral({
+                    'default'           : mockTokenSaleOptions.default,
+                    'defaultWithFa12'   : mockTokenSaleOptions.defaultWithFa12,
+                    'whitelist'         : mockTokenSaleOptions.whitelist
+                });
+
+                const defaultWhitelistOptionValue   = 100000;
+                const newDefaultWhitelistOptions    = MichelsonMap.fromLiteral({
+                    'whitelist' : defaultWhitelistOptionValue
+                });
+
+                // edit token sale operation
+                const editTokenLaunchOperation = await launchpadInstance.methods.editTokenLaunch(
+                    launchId,
+                    newName,
+                    newTokenIssuanceType,
+                    newTokenDistributionType,
+                    newTokenContractAddress,
+                    newTokenId,
+                    newSaleStart,
+                    newSaleEnd,
+                    newWhitelistSaleStart,
+                    newWhitelistSaleEnd,
+                    newSaleOptions,
+                    newDefaultWhitelistOptions
+                )
+                await chai.expect(editTokenLaunchOperation.send()).to.be.rejected;
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+        it('admin (eve) should not be able to edit a token launch with an invalid token issuance type', async () => {
+            try {
+
+                launchId                        = firstLaunchId;
+
+                const newName                   = "newTestTokenLaunch";
+                const newTokenIssuanceType      = "transfer"; // should be all caps "TRANSFER"
+                const newTokenDistributionType  = "MANUAL";
+                const newTokenContractAddress   = mockFa12TokenAddress;
+                const newTokenId                = 1;
+                const newSaleStart              = makeTimestamp(30);
+                const newSaleEnd                = makeTimestamp(300);
+                const newWhitelistSaleStart     = null;
+                const newWhitelistSaleEnd       = null;
+
+                const newSaleOptions            = MichelsonMap.fromLiteral({
+                    'default'           : mockTokenSaleOptions.default,
+                    'defaultWithFa12'   : mockTokenSaleOptions.defaultWithFa12,
+                    'whitelist'         : mockTokenSaleOptions.whitelist
+                });
+
+                const defaultWhitelistOptionValue   = 100000;
+                const newDefaultWhitelistOptions    = MichelsonMap.fromLiteral({
+                    'whitelist' : defaultWhitelistOptionValue
+                });
+
+                // edit token sale operation
+                const editTokenLaunchOperation = await launchpadInstance.methods.editTokenLaunch(
+                    launchId,
+                    newName,
+                    newTokenIssuanceType,
+                    newTokenDistributionType,
+                    newTokenContractAddress,
+                    newTokenId,
+                    newSaleStart,
+                    newSaleEnd,
+                    newWhitelistSaleStart,
+                    newWhitelistSaleEnd,
+                    newSaleOptions,
+                    newDefaultWhitelistOptions
+                )
+                await chai.expect(editTokenLaunchOperation.send()).to.be.rejected;
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+        it('admin (eve) should not be able to edit a token launch with an invalid token distribution type', async () => {
+            try {
+
+                launchId                        = firstLaunchId;
+
+                const newName                   = "newTestTokenLaunch";
+                const newTokenIssuanceType      = "TRANSFER";
+                const newTokenDistributionType  = "manual"; // should be all caps "MANUAL"
+                const newTokenContractAddress   = mockFa12TokenAddress;
+                const newTokenId                = 1;
+                const newSaleStart              = makeTimestamp(30);
+                const newSaleEnd                = makeTimestamp(300);
+                const newWhitelistSaleStart     = null;
+                const newWhitelistSaleEnd       = null;
+
+                const newSaleOptions            = MichelsonMap.fromLiteral({
+                    'default'           : mockTokenSaleOptions.default,
+                    'defaultWithFa12'   : mockTokenSaleOptions.defaultWithFa12,
+                    'whitelist'         : mockTokenSaleOptions.whitelist
+                });
+
+                const defaultWhitelistOptionValue   = 100000;
+                const newDefaultWhitelistOptions    = MichelsonMap.fromLiteral({
+                    'whitelist' : defaultWhitelistOptionValue
+                });
+
+                // edit token sale operation
+                const editTokenLaunchOperation = await launchpadInstance.methods.editTokenLaunch(
+                    launchId,
+                    newName,
+                    newTokenIssuanceType,
+                    newTokenDistributionType,
+                    newTokenContractAddress,
+                    newTokenId,
+                    newSaleStart,
+                    newSaleEnd,
+                    newWhitelistSaleStart,
+                    newWhitelistSaleEnd,
+                    newSaleOptions,
+                    newDefaultWhitelistOptions
+                )
+                await chai.expect(editTokenLaunchOperation.send()).to.be.rejected;
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
         it('non-admin (mallory) should not be able to edit a token launch', async () => {
             try {
 
@@ -502,7 +846,7 @@ describe('Test: Launchpad Contract', async () => {
             await signerFactory(tezos, adminSk);
         });
 
-        it('admin (eve) should be able to set a whitelisted user for token launch (defaultWhitelistOptions : True)', async () => {
+        it('admin (eve) should be able to set a whitelisted user (alice) for token launch (defaultWhitelistOptions : True)', async () => {
             try {
 
                 launchId                        = secondLaunchId;
@@ -779,8 +1123,108 @@ describe('Test: Launchpad Contract', async () => {
     
     })
 
-    describe('%purchase', function () {
+    describe('Whitelist Period tests', function () {
         
+        before("setup launch", async() => {
+
+            launchId                        = firstLaunchId;
+
+            const newName                   = "editTokenLaunch";
+            const newTokenIssuanceType      = "TRANSFER";
+            const newTokenDistributionType  = "MANUAL";
+            const newTokenContractAddress   = null;
+            const newTokenId                = null;
+            const newSaleStart              = makeTimestamp(100);
+            const newSaleEnd                = makeTimestamp(1000);
+            const newWhitelistSaleStart     = makeTimestamp(15);
+            const newWhitelistSaleEnd       = makeTimestamp(120);
+
+            const newSaleOptions                = null
+            const newDefaultWhitelistOptions    = null
+
+            // edit token launch operation
+            const editTokenLaunchOperation = await launchpadInstance.methods.editTokenLaunch(
+                launchId,
+                newName,
+                newTokenIssuanceType,
+                newTokenDistributionType,
+                newTokenContractAddress,
+                newTokenId,
+                newSaleStart,
+                newSaleEnd,
+                newWhitelistSaleStart,
+                newWhitelistSaleEnd,
+                newSaleOptions,
+                newDefaultWhitelistOptions
+            ).send()
+            await editTokenLaunchOperation.confirmation();
+
+
+            // set launch whitelist operation 
+            // i) mallory - default whitelist option - "whitelist" : 5,000,000 
+            // ii) alice - custom whitelist option - "whitelist" : 2,000,000
+            // iii) oscar - custom whitelist option - "default" : 2,000,000, "whitelist" : 3,000,000
+
+
+            // i) mallory - default whitelist option - "whitelist" : 5,000,000 
+            let whitelistedUser = mallory.pkh;
+            let setLaunchWhitelistOperation = await launchpadInstance.methods.setLaunchWhitelist(
+                [
+                    {
+                        launchId                : launchId,
+                        whitelistUserAddress    : whitelistedUser,
+                        defaultWhitelistOption  : true,
+                        whitelistOptions        : null
+                    }
+                ]
+            ).send()
+            await setLaunchWhitelistOperation.confirmation();
+
+
+            // ii) alice - custom whitelist option - "whitelist" : 2,000,000
+            whitelistedUser            = alice.pkh;
+            let whitelistOptionValue   = 2000000;
+            let whitelistOptions       = MichelsonMap.fromLiteral({
+                'whitelist' : whitelistOptionValue
+            });
+
+            setLaunchWhitelistOperation = await launchpadInstance.methods.setLaunchWhitelist(
+                [
+                    {
+                        launchId                : launchId,
+                        whitelistUserAddress    : whitelistedUser,
+                        defaultWhitelistOption  : false,
+                        whitelistOptions        : whitelistOptions
+                    }
+                ]
+            ).send()
+            await setLaunchWhitelistOperation.confirmation();
+
+
+            // iii) oscar - custom whitelist option - "default" : 2,000,000, "whitelist" : 3,000,000
+            whitelistedUser        = oscar.pkh;
+            whitelistOptionValue   = 3000000;
+            let defaultOptionValue = 2000000;
+            whitelistOptions       = MichelsonMap.fromLiteral({
+                'default' : defaultOptionValue,
+                'whitelist': whitelistOptionValue
+            });
+
+            setLaunchWhitelistOperation = await launchpadInstance.methods.setLaunchWhitelist(
+                [
+                    {
+                        launchId                : launchId,
+                        whitelistUserAddress    : whitelistedUser,
+                        defaultWhitelistOption  : false,
+                        whitelistOptions        : whitelistOptions
+                    }
+                ]
+            ).send()
+            await setLaunchWhitelistOperation.confirmation();
+
+        })
+
+
         beforeEach("Set signer to user (mallory)", async () => {
             user    = mallory.pkh;
             userSk  = mallory.sk;
@@ -788,17 +1232,102 @@ describe('Test: Launchpad Contract', async () => {
             await signerFactory(tezos, userSk);
         });
 
-
-        it('user (mallory) should be able to purchase tokens from launch', async () => {
+        it('%purchase - whitelisted user (mallory) should not be able to purchase tokens from launch before whitelist sale start time', async () => {
             try {
 
                 launchId                   = firstLaunchId;
                 launchRecord               = await launchpadStorage.launchLedger.get(launchId);
                 assert.equal(launchRecord.status , "ACTIVE");
 
-                const amount        = 1000000;
-                const saleOption    = "default";
+                launchWhitelistRecord      = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
+                assert.notEqual(launchWhitelistRecord, undefined);
 
+                const whitelistSaleStartTimestamp    = launchRecord.whitelistSaleStart;
+                const currentTimestamp               = makeTimestamp(0);
+
+                const amount            = 1000000;
+                const saleOption        = "default";
+                
+                // purchase operation
+                const purchaseOperation = await launchpadInstance.methods.purchase(
+                    launchId,
+                    amount,
+                    saleOption
+                );
+                await chai.expect(purchaseOperation.send()).to.be.rejected;
+
+                launchpadStorage        = await launchpadInstance.storage()
+                launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+
+                assert.equal(whitelistSaleStartTimestamp > currentTimestamp, true);
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+        it('%purchase - non-whitelisted user (david) should not be able to purchase tokens from launch before whitelist sale start time', async () => {
+            try {
+
+                user   = david.pkh;
+                userSk = david.sk;
+                await signerFactory(tezos, userSk);
+
+                launchId                   = firstLaunchId;
+                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                assert.equal(launchRecord.status , "ACTIVE");
+
+                launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
+                assert.equal(launchWhitelistRecord, undefined);
+
+                const whitelistSaleStartTimestamp    = launchRecord.whitelistSaleStart;
+                const currentTimestamp               = makeTimestamp(0);
+
+                const amount            = 1000000;
+                const saleOption        = "default";
+                
+                // purchase operation
+                const purchaseOperation = await launchpadInstance.methods.purchase(
+                    launchId,
+                    amount,
+                    saleOption
+                );
+                await chai.expect(purchaseOperation.send()).to.be.rejected;
+
+                launchpadStorage        = await launchpadInstance.storage()
+                launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+
+                assert.equal(whitelistSaleStartTimestamp > currentTimestamp, true);
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+        it('%purchase - whitelisted user (mallory) should be able to purchase tokens (whitelist sale option) from launch after whitelist sale start time', async () => {
+            try {
+
+                launchId                   = firstLaunchId;
+                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                assert.equal(launchRecord.status , "ACTIVE");
+
+                launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
+                assert.notEqual(launchWhitelistRecord, undefined);
+
+                const whitelistSaleStartTimestamp   = launchRecord.whitelistSaleStart;
+                let currentTimestamp                = makeTimestamp(0);
+                
+                // wait for whitelist start time
+                const differenceInMilliseconds = new Date(whitelistSaleStartTimestamp).getTime() - new Date(currentTimestamp).getTime();
+                await wait(differenceInMilliseconds + 10);
+
+                const amount            = 1000000;
+                const saleOption        = "whitelist";
+                currentTimestamp        = makeTimestamp(0);
+
+                const initialDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
+                const initialTotalBought        = initialDefaultSaleOption.totalBought;
+                
                 // purchase operation
                 const purchaseOperation = await launchpadInstance.methods.purchase(
                     launchId,
@@ -807,15 +1336,155 @@ describe('Test: Launchpad Contract', async () => {
                 ).send();
                 await purchaseOperation.confirmation();
 
-                // launchpadStorage        = await launchpadInstance.storage()
-                // launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+                launchpadStorage        = await launchpadInstance.storage()
+                launchRecord            = await launchpadStorage.launchLedger.get(launchId);
 
-                // assert.equal(launchRecord.status , "PAUSED");
+                const updatedDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
+                const updatedTotalBought        = updatedDefaultSaleOption.totalBought;
+
+                assert.equal(currentTimestamp > whitelistSaleStartTimestamp, true);
+                assert.equal(+updatedTotalBought, +initialTotalBought + +amount);
 
             } catch (e) {
                 console.log(e)
             }
         })
+
+
+        it('%purchase - whitelisted user (mallory) should not be able to purchase tokens (whitelist sale option) beyond her allowed limit', async () => {
+            try {
+
+                const saleOption        = "whitelist";
+
+                launchId                   = firstLaunchId;
+                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                assert.equal(launchRecord.status , "ACTIVE");
+
+                launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
+                assert.notEqual(launchWhitelistRecord, undefined);
+                const allowedAmount         = launchWhitelistRecord.get(saleOption);
+
+                const amount                = allowedAmount + 100;
+                
+                // purchase operation
+                const purchaseOperation = await launchpadInstance.methods.purchase(
+                    launchId,
+                    amount,
+                    saleOption
+                );
+                await chai.expect(purchaseOperation.send()).to.be.rejected;
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+
+        it('%purchase - whitelisted user (mallory) should not be able to purchase tokens (default sale option) she is not whitelisted for', async () => {
+            try {
+
+                const saleOption           = "default";
+
+                launchId                   = firstLaunchId;
+                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                assert.equal(launchRecord.status , "ACTIVE");
+
+                // user is in the whitelist record
+                launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
+                assert.notEqual(launchWhitelistRecord, undefined);
+                
+                // user is not whitelisted for the specified sale option
+                const allowedAmount         = launchWhitelistRecord.get(saleOption);
+                assert.equal(allowedAmount, undefined);
+
+                const amount                = 1000000;
+                
+                // purchase operation
+                const purchaseOperation = await launchpadInstance.methods.purchase(
+                    launchId,
+                    amount,
+                    saleOption
+                );
+                await chai.expect(purchaseOperation.send()).to.be.rejected;
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+
+        it('%purchase - non-whitelisted user (david) should not be able to purchase tokens (whitelist sale option) from launch after whitelist sale start time', async () => {
+            try {
+
+                user    = david.pkh;
+                userSk  = david.sk;
+                await signerFactory(tezos, userSk);
+
+                launchId                   = firstLaunchId;
+                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                assert.equal(launchRecord.status , "ACTIVE");
+
+                // user is not whitelisted
+                launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
+                assert.equal(launchWhitelistRecord, undefined);
+
+                const amount            = 1000000;
+                const saleOption        = "whitelist";
+                
+                // purchase operation
+                const purchaseOperation = await launchpadInstance.methods.purchase(
+                    launchId,
+                    amount,
+                    saleOption
+                );
+                await chai.expect(purchaseOperation.send()).to.be.rejected;
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+        // it('%purchase - user (mallory) should be able to purchase tokens from launch', async () => {
+        //     try {
+
+        //         launchId                   = firstLaunchId;
+        //         launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+        //         assert.equal(launchRecord.status , "ACTIVE");
+
+        //         const initialDefaultSaleOption  = launchRecord.saleOptions.get('default');
+        //         const initialTotalBought        = initialDefaultSaleOption.totalBought;
+
+        //         const amount            = 1000000;
+        //         const saleOption        = "default";
+        //         const currentTimestamp  = makeTimestamp(0);
+
+        //         // purchase operation
+        //         const purchaseOperation = await launchpadInstance.methods.purchase(
+        //             launchId,
+        //             amount,
+        //             saleOption
+        //         ).send();
+        //         await purchaseOperation.confirmation();
+
+        //         launchpadStorage        = await launchpadInstance.storage()
+        //         launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+
+        //         const updatedDefaultSaleOption  = launchRecord.saleOptions.get('default');
+        //         const updatedTotalBought        = updatedDefaultSaleOption.totalBought;
+        //         const saleStartTimestamp        = launchRecord.saleStart;
+
+        //         console.log(`currentTimestamp: ${currentTimestamp}`);
+        //         console.log(`saleStartTimestamp: ${saleStartTimestamp}`);
+        //         console.log(`currentTimestamp > saleStartTimestamp: ${currentTimestamp > saleStartTimestamp}`);
+
+        //         assert.equal(currentTimestamp > saleStartTimestamp, true);
+        //         assert.equal(updatedTotalBought, initialTotalBought + amount);
+
+
+        //     } catch (e) {
+        //         console.log(e)
+        //     }
+        // })
 
     })
 

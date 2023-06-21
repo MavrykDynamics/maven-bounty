@@ -99,8 +99,19 @@ error_MAX_AMOUNT_PER_WALLET_FOR_SALE_OPTION_TOTAL_EXCEEDED                      
 error_MAX_AMOUNT_CAP_FOR_SALE_OPTION_EXCEEDED                                                            = 53
 
 error_INVALID_TOKEN_ISSUANCE_TYPE                                                                        = 54
-error_LAUNCH_IS_NOT_ACTIVE                                                                               = 55
-error_LAUNCH_IS_NOT_PAUSED                                                                               = 56
+error_INVALID_TOKEN_DISTRIBUTION_TYPE                                                                    = 55
+error_LAUNCH_IS_NOT_ACTIVE                                                                               = 56
+error_LAUNCH_IS_NOT_PAUSED                                                                               = 57
+error_LAUNCH_HAS_ENDED                                                                                   = 58
+error_SALE_HAS_NOT_STARTED                                                                               = 59
+error_USER_WHITELIST_RECORD_NOT_FOUND                                                                    = 60
+error_USER_WHITELIST_ALLOWED_AMOUNT_EXCEEDED                                                             = 61
+error_WHITELIST_OPTION_DOES_NOT_EXIST                                                                    = 62
+
+
+error_SALE_END_SHOULD_BE_AFTER_SALE_START                                                                = 63
+error_WHITELIST_SALE_END_SHOULD_BE_AFTER_WHITELIST_SALE_START                                            = 64
+error_WHITELIST_SALE_START_NOT_SPECIFIED                                                                 = 65
 
 
 
@@ -109,44 +120,44 @@ error_LAUNCH_IS_NOT_PAUSED                                                      
 
 
 
-error_SENDER_IS_NOT_CREATOR                                                                              = 57
-error_LISTER_CANNOT_PURCHASE_HIS_LISTING                                                                 = 58
-error_LISTING_HAS_EXPIRED                                                                                = 59
-error_OFFER_HAS_EXPIRED                                                                                  = 60
+error_SENDER_IS_NOT_CREATOR                                                                              = 66
+error_LISTER_CANNOT_PURCHASE_HIS_LISTING                                                                 = 67
+error_LISTING_HAS_EXPIRED                                                                                = 68
+error_OFFER_HAS_EXPIRED                                                                                  = 69
 
-error_CURRENCY_RECORD_NOT_FOUND                                                                          = 61
-error_LISTING_RECORD_NOT_FOUND                                                                           = 62
-error_OFFER_RECORD_NOT_FOUND                                                                             = 63
-error_INVALID_CURRENCY                                                                                   = 64
+error_CURRENCY_RECORD_NOT_FOUND                                                                          = 70
+error_LISTING_RECORD_NOT_FOUND                                                                           = 71
+error_OFFER_RECORD_NOT_FOUND                                                                             = 72
+error_INVALID_CURRENCY                                                                                   = 73
 
-error_SET_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 65
-error_REMOVE_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                          = 66
-error_CREATE_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                           = 67
-error_EDIT_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 68
-error_REMOVE_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                           = 69
-error_PURCHASE_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                                 = 70
-error_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                                    = 71
-error_ACCEPT_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 72
-error_REMOVE_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 73
-
-
-error_PURCHASE_AMOUNT_CANNOT_BE_GREATER_THAN_LISTING_AMOUNT                                              = 74
-error_OFFER_AMOUNT_CANNOT_BE_GREATER_THAN_LISTING_AMOUNT                                                 = 75
-error_OFFER_STATUS_IS_NOT_OPEN                                                                           = 76
-error_LISTING_STATUS_IS_NOT_ACTIVE                                                                       = 77
-error_QUICK_BUY_OPTION_DOES_NOT_EXIST_ON_LISTING                                                         = 78
+error_SET_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 74
+error_REMOVE_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                          = 75
+error_CREATE_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                           = 76
+error_EDIT_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 77
+error_REMOVE_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                           = 78
+error_PURCHASE_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                                 = 79
+error_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                                    = 80
+error_ACCEPT_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 81
+error_REMOVE_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 82
 
 
+error_PURCHASE_AMOUNT_CANNOT_BE_GREATER_THAN_LISTING_AMOUNT                                              = 83
+error_OFFER_AMOUNT_CANNOT_BE_GREATER_THAN_LISTING_AMOUNT                                                 = 84
+error_OFFER_STATUS_IS_NOT_OPEN                                                                           = 85
+error_LISTING_STATUS_IS_NOT_ACTIVE                                                                       = 86
+error_QUICK_BUY_OPTION_DOES_NOT_EXIST_ON_LISTING                                                         = 87
 
 
 
 
 
 
-error_TREASURY_NOT_FOUND                                                                                 = 79
 
-error_DOORMAN_CONTRACT_NOT_FOUND                                                                         = 80
-error_MVK_TOKEN_CONTRACT_NOT_FOUND                                                                       = 81
-error_UPDATE_OPERATORS_ENTRYPOINT_IN_MVK_TOKEN_CONTRACT_NOT_FOUND                                        = 82
-error_STAKE_ENTRYPOINT_IN_DOORMAN_CONTRACT_NOT_FOUND                                                     = 83
-error_UNSTAKE_ENTRYPOINT_IN_DOORMAN_CONTRACT_NOT_FOUND                                                   = 84
+
+error_TREASURY_NOT_FOUND                                                                                 = 88
+
+error_DOORMAN_CONTRACT_NOT_FOUND                                                                         = 89
+error_MVK_TOKEN_CONTRACT_NOT_FOUND                                                                       = 90
+error_UPDATE_OPERATORS_ENTRYPOINT_IN_MVK_TOKEN_CONTRACT_NOT_FOUND                                        = 91
+error_STAKE_ENTRYPOINT_IN_DOORMAN_CONTRACT_NOT_FOUND                                                     = 92
+error_UNSTAKE_ENTRYPOINT_IN_DOORMAN_CONTRACT_NOT_FOUND                                                   = 93

@@ -100,15 +100,18 @@
 
 [@inline] const error_INVALID_TOKEN_ISSUANCE_TYPE                                                                        = 54n;
 [@inline] const error_INVALID_TOKEN_DISTRIBUTION_TYPE                                                                    = 55n;
-[@inline] const error_LAUNCH_IS_NOT_ACTIVE                                                                               = 55n;
-[@inline] const error_LAUNCH_IS_NOT_PAUSED                                                                               = 56n;
-[@inline] const error_LAUNCH_HAS_ENDED                                                                                   = 56n;
-[@inline] const error_USER_WHITELIST_RECORD_NOT_FOUND                                                                    = 56n;
-[@inline] const error_USER_WHITELIST_ALLOWED_AMOUNT_EXCEEDED                                                             = 56n;
+[@inline] const error_LAUNCH_IS_NOT_ACTIVE                                                                               = 56n;
+[@inline] const error_LAUNCH_IS_NOT_PAUSED                                                                               = 57n;
+[@inline] const error_LAUNCH_HAS_ENDED                                                                                   = 58n;
+[@inline] const error_SALE_HAS_NOT_STARTED                                                                               = 59n;
+[@inline] const error_USER_WHITELIST_RECORD_NOT_FOUND                                                                    = 60n;
+[@inline] const error_USER_WHITELIST_ALLOWED_AMOUNT_EXCEEDED                                                             = 61n;
+[@inline] const error_WHITELIST_OPTION_DOES_NOT_EXIST                                                                    = 62n;
 
-[@inline] const error_SALE_END_SHOULD_BE_AFTER_SALE_START                                                                = 56n;
-[@inline] const error_WHITELIST_SALE_END_SHOULD_BE_AFTER_WHITELIST_SALE_START                                            = 56n;
-[@inline] const error_WHITELIST_SALE_START_NOT_SPECIFIED                                                                 = 56n;
+
+[@inline] const error_SALE_END_SHOULD_BE_AFTER_SALE_START                                                                = 63n;
+[@inline] const error_WHITELIST_SALE_END_SHOULD_BE_AFTER_WHITELIST_SALE_START                                            = 64n;
+[@inline] const error_WHITELIST_SALE_START_NOT_SPECIFIED                                                                 = 65n;
 
 
 // ------------------------------------------------------------------------------
@@ -117,32 +120,32 @@
 //
 // ------------------------------------------------------------------------------
 
-[@inline] const error_SENDER_IS_NOT_CREATOR                                                                              = 57n;
-[@inline] const error_LISTER_CANNOT_PURCHASE_HIS_LISTING                                                                 = 58n;
-[@inline] const error_LISTING_HAS_EXPIRED                                                                                = 59n;
-[@inline] const error_OFFER_HAS_EXPIRED                                                                                  = 60n;
+[@inline] const error_SENDER_IS_NOT_CREATOR                                                                              = 66n;
+[@inline] const error_LISTER_CANNOT_PURCHASE_HIS_LISTING                                                                 = 67n;
+[@inline] const error_LISTING_HAS_EXPIRED                                                                                = 68n;
+[@inline] const error_OFFER_HAS_EXPIRED                                                                                  = 69n;
 
-[@inline] const error_CURRENCY_RECORD_NOT_FOUND                                                                          = 61n;
-[@inline] const error_LISTING_RECORD_NOT_FOUND                                                                           = 62n;
-[@inline] const error_OFFER_RECORD_NOT_FOUND                                                                             = 63n;
-[@inline] const error_INVALID_CURRENCY                                                                                   = 64n;
+[@inline] const error_CURRENCY_RECORD_NOT_FOUND                                                                          = 70n;
+[@inline] const error_LISTING_RECORD_NOT_FOUND                                                                           = 71n;
+[@inline] const error_OFFER_RECORD_NOT_FOUND                                                                             = 72n;
+[@inline] const error_INVALID_CURRENCY                                                                                   = 73n;
 
-[@inline] const error_SET_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 65n;
-[@inline] const error_REMOVE_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                          = 66n;
-[@inline] const error_CREATE_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                           = 67n;
-[@inline] const error_EDIT_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 68n;
-[@inline] const error_REMOVE_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                           = 69n;
-[@inline] const error_PURCHASE_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                                 = 70n;
-[@inline] const error_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                                    = 71n;
-[@inline] const error_ACCEPT_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 72n;
-[@inline] const error_REMOVE_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 73n;
+[@inline] const error_SET_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 74n;
+[@inline] const error_REMOVE_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                          = 75n;
+[@inline] const error_CREATE_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                           = 76n;
+[@inline] const error_EDIT_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 77n;
+[@inline] const error_REMOVE_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                           = 78n;
+[@inline] const error_PURCHASE_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                                 = 79n;
+[@inline] const error_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                                    = 80n;
+[@inline] const error_ACCEPT_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 81n;
+[@inline] const error_REMOVE_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 82n;
 
 
-[@inline] const error_PURCHASE_AMOUNT_CANNOT_BE_GREATER_THAN_LISTING_AMOUNT                                              = 74n;
-[@inline] const error_OFFER_AMOUNT_CANNOT_BE_GREATER_THAN_LISTING_AMOUNT                                                 = 75n;
-[@inline] const error_OFFER_STATUS_IS_NOT_OPEN                                                                           = 76n;
-[@inline] const error_LISTING_STATUS_IS_NOT_ACTIVE                                                                       = 77n;
-[@inline] const error_QUICK_BUY_OPTION_DOES_NOT_EXIST_ON_LISTING                                                         = 78n;
+[@inline] const error_PURCHASE_AMOUNT_CANNOT_BE_GREATER_THAN_LISTING_AMOUNT                                              = 83n;
+[@inline] const error_OFFER_AMOUNT_CANNOT_BE_GREATER_THAN_LISTING_AMOUNT                                                 = 84n;
+[@inline] const error_OFFER_STATUS_IS_NOT_OPEN                                                                           = 85n;
+[@inline] const error_LISTING_STATUS_IS_NOT_ACTIVE                                                                       = 86n;
+[@inline] const error_QUICK_BUY_OPTION_DOES_NOT_EXIST_ON_LISTING                                                         = 87n;
 
 
 // ------------------------------------------------------------------------------
@@ -151,10 +154,10 @@
 //
 // ------------------------------------------------------------------------------
 
-[@inline] const error_TREASURY_NOT_FOUND                                                                                 = 79n;
+[@inline] const error_TREASURY_NOT_FOUND                                                                                 = 88n;
 
-[@inline] const error_DOORMAN_CONTRACT_NOT_FOUND                                                                         = 80n;
-[@inline] const error_MVK_TOKEN_CONTRACT_NOT_FOUND                                                                       = 81n;
-[@inline] const error_UPDATE_OPERATORS_ENTRYPOINT_IN_MVK_TOKEN_CONTRACT_NOT_FOUND                                        = 82n;
-[@inline] const error_STAKE_ENTRYPOINT_IN_DOORMAN_CONTRACT_NOT_FOUND                                                     = 83n;
-[@inline] const error_UNSTAKE_ENTRYPOINT_IN_DOORMAN_CONTRACT_NOT_FOUND                                                   = 84n;
+[@inline] const error_DOORMAN_CONTRACT_NOT_FOUND                                                                         = 89n;
+[@inline] const error_MVK_TOKEN_CONTRACT_NOT_FOUND                                                                       = 90n;
+[@inline] const error_UPDATE_OPERATORS_ENTRYPOINT_IN_MVK_TOKEN_CONTRACT_NOT_FOUND                                        = 91n;
+[@inline] const error_STAKE_ENTRYPOINT_IN_DOORMAN_CONTRACT_NOT_FOUND                                                     = 92n;
+[@inline] const error_UNSTAKE_ENTRYPOINT_IN_DOORMAN_CONTRACT_NOT_FOUND                                                   = 93n;
