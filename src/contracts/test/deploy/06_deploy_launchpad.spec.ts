@@ -46,6 +46,7 @@ describe('Launchpad', async () => {
             // Originate and deploy contracts
             //----------------------------
         
+            launchpadStorage.generalContracts.set('treasury', bob.pkh);
             launchpad = await GeneralContract.originate(utils.tezos, "launchpad", launchpadStorage);
             await saveContractAddress('launchpadAddress', launchpad.contract.address)
         

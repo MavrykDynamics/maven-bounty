@@ -12,6 +12,7 @@ chai.should()
 // ------------------------------------------------------------------------------
 
 import contractDeployments from './contractDeployments.json'
+import { mockTokenSaleOptions } from 'test/helpers/mockSampleData'
 
 // ------------------------------------------------------------------------------
 // Contract Helpers
@@ -23,7 +24,8 @@ import {
     getStorageMapValue,
     makeTimestamp,
     showMillisecondsDateFormat,
-    updateOperators
+    updateOperators,
+    getTokenInfo,
 } from './helpers/helperFunctions'
 import { sign } from 'crypto'
 
@@ -172,6 +174,8 @@ describe('Test: Launchpad Contract', async () => {
                 const tokenId                   = 0;
                 const saleStart                 = makeTimestamp(30);
                 const saleEnd                   = makeTimestamp(300);
+                const whitelistSaleStart        = null;
+                const whitelistSaleEnd          = null;
 
                 const emptySaleOptions          = MichelsonMap.fromLiteral({});
                 const emptyWhitelistOptions     = MichelsonMap.fromLiteral({});
@@ -185,6 +189,8 @@ describe('Test: Launchpad Contract', async () => {
                     tokenId,
                     saleStart,
                     saleEnd,
+                    whitelistSaleStart,
+                    whitelistSaleEnd,
                     emptySaleOptions,
                     emptyWhitelistOptions
                 ).send()
@@ -224,6 +230,8 @@ describe('Test: Launchpad Contract', async () => {
                 const tokenId                   = 0;
                 const saleStart                 = makeTimestamp(30);
                 const saleEnd                   = makeTimestamp(300);
+                const whitelistSaleStart        = null;
+                const whitelistSaleEnd          = null;
 
                 const emptySaleOptions          = MichelsonMap.fromLiteral({});
 
@@ -242,6 +250,8 @@ describe('Test: Launchpad Contract', async () => {
                     tokenId,
                     saleStart,
                     saleEnd,
+                    whitelistSaleStart,
+                    whitelistSaleEnd,
                     emptySaleOptions,
                     defaultWhitelistOptions
                 ).send()
@@ -282,6 +292,8 @@ describe('Test: Launchpad Contract', async () => {
                 const tokenId                   = 0;
                 const saleStart                 = makeTimestamp(30);
                 const saleEnd                   = null;
+                const whitelistSaleStart        = null;
+                const whitelistSaleEnd          = null;
 
                 const emptySaleOptions          = MichelsonMap.fromLiteral({});
 
@@ -300,6 +312,8 @@ describe('Test: Launchpad Contract', async () => {
                     tokenId,
                     saleStart,
                     saleEnd,
+                    whitelistSaleStart,
+                    whitelistSaleEnd,
                     emptySaleOptions,
                     defaultWhitelistOptions
                 ).send()
@@ -347,35 +361,23 @@ describe('Test: Launchpad Contract', async () => {
                 const newTokenId                = 1;
                 const newSaleStart              = makeTimestamp(60);
                 const newSaleEnd                = makeTimestamp(600);
+                const newWhitelistSaleStart     = null;
+                const newWhitelistSaleEnd       = null;
 
                 const newSaleOptions            = MichelsonMap.fromLiteral({
-                    'default' : {
-                        maxAmountCap : 1000000000,
-                        totalBought : 0, 
-                        minPurchaseAmount : 1000000,
-                        maxAmountPerWalletTotal : 10000000,
-                        price : 1000000,
-                        currency : {
-                            "fa2": {
-                                tokenContractAddress : mockFa2TokenAddress,
-                                tokenId              : 0
-                            }
-                        }
-                    }
+                    'default'           : mockTokenSaleOptions.default,
+                    'defaultWithFa12'   : mockTokenSaleOptions.defaultWithFa12,
+                    'whitelist'         : mockTokenSaleOptions.whitelist
                 });
-                const newWhitelistOptions       = MichelsonMap.fromLiteral({});
 
-                // const emptySaleOptions          = MichelsonMap.fromLiteral({});
-
-                // const defaultWhitelistOptionKey     = 'default';
-                // const defaultWhitelistOptionValue   = 100000;
-                // const defaultWhitelistOptions       = MichelsonMap.fromLiteral({
-                //     'default' : defaultWhitelistOptionValue
-                // });
-
+                const defaultWhitelistOptionValue   = 100000;
+                const newDefaultWhitelistOptions    = MichelsonMap.fromLiteral({
+                    'whitelist' : defaultWhitelistOptionValue
+                });
 
                 // edit token sale operation
                 const editTokenLaunchOperation = await launchpadInstance.methods.editTokenLaunch(
+                    launchId,
                     newName,
                     newTokenIssuanceType,
                     newTokenDistributionType,
@@ -383,8 +385,10 @@ describe('Test: Launchpad Contract', async () => {
                     newTokenId,
                     newSaleStart,
                     newSaleEnd,
+                    newWhitelistSaleStart,
+                    newWhitelistSaleEnd,
                     newSaleOptions,
-                    newWhitelistOptions
+                    newDefaultWhitelistOptions
                 ).send()
                 await editTokenLaunchOperation.confirmation();
 
@@ -393,6 +397,7 @@ describe('Test: Launchpad Contract', async () => {
 
                 assert.notEqual(launchRecord                      , null);
 
+                // Check launch record
                 assert.equal(launchRecord.name                    , newName);
                 assert.equal(launchRecord.tokenIssuanceType       , newTokenIssuanceType);
                 assert.equal(launchRecord.tokenDistributionType   , newTokenDistributionType);
@@ -401,8 +406,87 @@ describe('Test: Launchpad Contract', async () => {
                 assert.equal(launchRecord.saleStart               , showMillisecondsDateFormat(newSaleStart));
                 assert.equal(launchRecord.saleEnd                 , showMillisecondsDateFormat(newSaleEnd));
                 
-                // assert.equal(launchRecord.saleOptions             , emptySaleOptions);
-                // assert.equal(launchRecord.defaultWhitelistOptions , emptyWhitelistOptions);
+                // Get sale options
+                const defaultSaleOption             = launchRecord.saleOptions.get('default');
+                const defaultWithFa12SaleOption     = launchRecord.saleOptions.get('defaultWithFa12');
+                const defaultWhitelistSaleOption    = launchRecord.saleOptions.get('whitelist');
+
+                // Check Default Sale Option
+                assert.equal(defaultSaleOption.maxAmountCap             , mockTokenSaleOptions.default.maxAmountCap);
+                assert.equal(defaultSaleOption.totalBought              , mockTokenSaleOptions.default.totalBought);
+                assert.equal(defaultSaleOption.minPurchaseAmount        , mockTokenSaleOptions.default.minPurchaseAmount);
+                assert.equal(defaultSaleOption.maxAmountPerWalletTotal  , mockTokenSaleOptions.default.maxAmountPerWalletTotal);
+                assert.equal(defaultSaleOption.price                    , mockTokenSaleOptions.default.price);
+
+                assert.equal(getTokenInfo(defaultSaleOption.currency, "tokenContractAddress"), mockTokenSaleOptions.default.currency.fa2.tokenContractAddress);
+                assert.equal(getTokenInfo(defaultSaleOption.currency, "tokenId")             , mockTokenSaleOptions.default.currency.fa2.tokenId);
+
+                // Check Default FA12 Sale Option
+                assert.equal(defaultWithFa12SaleOption.maxAmountCap             , mockTokenSaleOptions.defaultWithFa12.maxAmountCap);
+                assert.equal(defaultWithFa12SaleOption.totalBought              , mockTokenSaleOptions.defaultWithFa12.totalBought);
+                assert.equal(defaultWithFa12SaleOption.minPurchaseAmount        , mockTokenSaleOptions.defaultWithFa12.minPurchaseAmount);
+                assert.equal(defaultWithFa12SaleOption.maxAmountPerWalletTotal  , mockTokenSaleOptions.defaultWithFa12.maxAmountPerWalletTotal);
+                assert.equal(defaultWithFa12SaleOption.price                    , mockTokenSaleOptions.defaultWithFa12.price);
+
+                assert.equal(getTokenInfo(defaultWithFa12SaleOption.currency, "tokenContractAddress"), mockTokenSaleOptions.defaultWithFa12.currency.fa12);
+
+                // Check Default Whitelist Sale Option
+                assert.equal(defaultWhitelistSaleOption.maxAmountCap             , mockTokenSaleOptions.whitelist.maxAmountCap);
+                assert.equal(defaultWhitelistSaleOption.totalBought              , mockTokenSaleOptions.whitelist.totalBought);
+                assert.equal(defaultWhitelistSaleOption.minPurchaseAmount        , mockTokenSaleOptions.whitelist.minPurchaseAmount);
+                assert.equal(defaultWhitelistSaleOption.maxAmountPerWalletTotal  , mockTokenSaleOptions.whitelist.maxAmountPerWalletTotal);
+                assert.equal(defaultWhitelistSaleOption.price                    , mockTokenSaleOptions.whitelist.price);
+
+                assert.equal(getTokenInfo(defaultWhitelistSaleOption.currency, "tokenContractAddress"), mockTokenSaleOptions.whitelist.currency.fa2.tokenContractAddress);
+                assert.equal(getTokenInfo(defaultWhitelistSaleOption.currency, "tokenId")             , mockTokenSaleOptions.whitelist.currency.fa2.tokenId);
+
+                // Check default whitelist options
+                const defaultWhitelistOption = launchRecord.defaultWhitelistOptions.get('whitelist');
+                assert.equal(defaultWhitelistOption, defaultWhitelistOptionValue);
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+        it('non-admin (mallory) should not be able to edit a token launch', async () => {
+            try {
+
+                launchId                        = firstLaunchId;
+
+                const newName                   = "newTestTokenLaunch";
+                const newTokenIssuanceType      = "TRANSFER";
+                const newTokenDistributionType  = "MANUAL";
+                const newTokenContractAddress   = mockFa12TokenAddress;
+                const newTokenId                = 1;
+                const newSaleStart              = makeTimestamp(60);
+                const newSaleEnd                = makeTimestamp(600);
+
+                const newSaleOptions            = MichelsonMap.fromLiteral({
+                    'default'           : mockTokenSaleOptions.default,
+                    'defaultWithFa12'   : mockTokenSaleOptions.defaultWithFa12,
+                    'whitelist'         : mockTokenSaleOptions.whitelist
+                });
+
+                const defaultWhitelistOptionValue   = 100000;
+                const newDefaultWhitelistOptions    = MichelsonMap.fromLiteral({
+                    'whitelist' : defaultWhitelistOptionValue
+                });
+
+                // edit token sale operation
+                const editTokenLaunchOperation = await launchpadInstance.methods.editTokenLaunch(
+                    launchId,
+                    newName,
+                    newTokenIssuanceType,
+                    newTokenDistributionType,
+                    newTokenContractAddress,
+                    newTokenId,
+                    newSaleStart,
+                    newSaleEnd,
+                    newSaleOptions,
+                    newDefaultWhitelistOptions
+                );
+                await chai.expect(editTokenLaunchOperation.send()).to.be.rejected;
 
             } catch (e) {
                 console.log(e)
