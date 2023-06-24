@@ -12,7 +12,7 @@ chai.should()
 // ------------------------------------------------------------------------------
 
 import contractDeployments from './contractDeployments.json'
-import { mockTokenSaleOptions } from 'test/helpers/mockSampleData'
+import { mockTokenSaleOptions, mockTokenSalePayment } from 'test/helpers/mockSampleData'
 
 // ------------------------------------------------------------------------------
 // Contract Helpers
@@ -21,6 +21,7 @@ import { mockTokenSaleOptions } from 'test/helpers/mockSampleData'
 import { bob, alice, eve, mallory, oscar, david } from '../scripts/sandbox/accounts'
 import { 
     signerFactory,
+    almostEqual,
     wait, 
     getStorageMapValue,
     makeTimestamp,
@@ -53,6 +54,15 @@ describe('Test: Launchpad Contract', async () => {
     let operator
     let operatorKey
 
+    let initialUserTokenBalance
+    let updatedUserTokenBalance
+
+    let initialTreasuryTokenBalance
+    let updatedTreasuryTokenBalance
+
+    let initialUserPurchaseRecord
+    let updatedUserPurchaseRecord
+
     // contract instances 
     let tokenRegistryAddress
     let tokenRegistryInstance
@@ -73,6 +83,8 @@ describe('Test: Launchpad Contract', async () => {
     let mockFa2TokenAddress 
     let mockFa2TokenInstance
     let mockFa2TokenStorage
+
+    let treasuryAddress
     
     // user accounts
     let user
@@ -109,6 +121,7 @@ describe('Test: Launchpad Contract', async () => {
     let transferOperation
     let mistakenTransferOperation
     let updateOperatorsOperation
+    let approveOperation
     let removeOperatorsOperation
     let setAdminOperation
     let resetAdminOperation
@@ -126,6 +139,8 @@ describe('Test: Launchpad Contract', async () => {
 
         admin           = eve.pkh 
         adminSk         = eve.sk 
+
+        treasuryAddress = bob.pkh;
 
         tokenRegistryAddress            = contractDeployments.tokenRegistry.address
         tokenRegistryInstance           = await utils.tezos.contract.at(tokenRegistryAddress)
@@ -173,6 +188,7 @@ describe('Test: Launchpad Contract', async () => {
                 const tokenDistributionType     = "AUTO";
                 const tokenContractAddress      = mockFa2TokenAddress;
                 const tokenId                   = 0;
+                const maxAmountCap              = 1000000000;
                 const saleStart                 = makeTimestamp(30);
                 const saleEnd                   = makeTimestamp(300);
                 const whitelistSaleStart        = null;
@@ -188,6 +204,7 @@ describe('Test: Launchpad Contract', async () => {
                     tokenDistributionType,
                     tokenContractAddress,
                     tokenId,
+                    maxAmountCap,
                     saleStart,
                     saleEnd,
                     whitelistSaleStart,
@@ -207,6 +224,7 @@ describe('Test: Launchpad Contract', async () => {
                 assert.equal(launchRecord.tokenDistributionType   , tokenDistributionType);
                 assert.equal(launchRecord.tokenContractAddress    , tokenContractAddress);
                 assert.equal(launchRecord.tokenId                 , tokenId);
+                assert.equal(launchRecord.maxAmountCap            , maxAmountCap);
                 assert.equal(launchRecord.saleStart               , showMillisecondsDateFormat(saleStart));
                 assert.equal(launchRecord.saleEnd                 , showMillisecondsDateFormat(saleEnd));
                 
@@ -229,6 +247,7 @@ describe('Test: Launchpad Contract', async () => {
                 const tokenDistributionType     = "AUTO";
                 const tokenContractAddress      = mockFa2TokenAddress;
                 const tokenId                   = 0;
+                const maxAmountCap              = 1000000000;
                 const saleStart                 = makeTimestamp(30);
                 const saleEnd                   = makeTimestamp(300);
                 const whitelistSaleStart        = null;
@@ -249,6 +268,7 @@ describe('Test: Launchpad Contract', async () => {
                     tokenDistributionType,
                     tokenContractAddress,
                     tokenId,
+                    maxAmountCap,
                     saleStart,
                     saleEnd,
                     whitelistSaleStart,
@@ -271,6 +291,7 @@ describe('Test: Launchpad Contract', async () => {
                 assert.equal(launchRecord.tokenDistributionType   , tokenDistributionType);
                 assert.equal(launchRecord.tokenContractAddress    , tokenContractAddress);
                 assert.equal(launchRecord.tokenId                 , tokenId);
+                assert.equal(launchRecord.maxAmountCap            , maxAmountCap);
                 assert.equal(launchRecord.saleStart               , showMillisecondsDateFormat(saleStart));
                 assert.equal(launchRecord.saleEnd                 , showMillisecondsDateFormat(saleEnd));
                 assert.equal(whitelistOption                      , defaultWhitelistOptionValue);
@@ -291,6 +312,7 @@ describe('Test: Launchpad Contract', async () => {
                 const tokenDistributionType     = "AUTO";
                 const tokenContractAddress      = mockFa2TokenAddress;
                 const tokenId                   = 0;
+                const maxAmountCap              = 1000000000;
                 const saleStart                 = makeTimestamp(30);
                 const saleEnd                   = null;
                 const whitelistSaleStart        = null;
@@ -311,6 +333,7 @@ describe('Test: Launchpad Contract', async () => {
                     tokenDistributionType,
                     tokenContractAddress,
                     tokenId,
+                    maxAmountCap,
                     saleStart,
                     saleEnd,
                     whitelistSaleStart,
@@ -331,6 +354,7 @@ describe('Test: Launchpad Contract', async () => {
                 assert.equal(launchRecord.tokenDistributionType   , tokenDistributionType);
                 assert.equal(launchRecord.tokenContractAddress    , tokenContractAddress);
                 assert.equal(launchRecord.tokenId                 , tokenId);
+                assert.equal(launchRecord.maxAmountCap            , maxAmountCap);
                 assert.equal(launchRecord.saleStart               , showMillisecondsDateFormat(saleStart));
                 assert.equal(launchRecord.saleEnd                 , null)
                 assert.equal(whitelistOption                    , defaultWhitelistOptionValue);
@@ -349,6 +373,7 @@ describe('Test: Launchpad Contract', async () => {
                 const tokenDistributionType     = "AUTO";
                 const tokenContractAddress      = mockFa2TokenAddress;
                 const tokenId                   = 0;
+                const maxAmountCap              = 1000000000;
                 const saleStart                 = makeTimestamp(300);
                 const saleEnd                   = makeTimestamp(30);
                 const whitelistSaleStart        = null;
@@ -364,6 +389,7 @@ describe('Test: Launchpad Contract', async () => {
                     tokenDistributionType,
                     tokenContractAddress,
                     tokenId,
+                    maxAmountCap,
                     saleStart,
                     saleEnd,
                     whitelistSaleStart,
@@ -387,6 +413,7 @@ describe('Test: Launchpad Contract', async () => {
                 const tokenDistributionType     = "AUTO";
                 const tokenContractAddress      = mockFa2TokenAddress;
                 const tokenId                   = 0;
+                const maxAmountCap              = 1000000000;
                 const saleStart                 = makeTimestamp(30);
                 const saleEnd                   = makeTimestamp(300);
                 const whitelistSaleStart        = makeTimestamp(300);
@@ -402,6 +429,7 @@ describe('Test: Launchpad Contract', async () => {
                     tokenDistributionType,
                     tokenContractAddress,
                     tokenId,
+                    maxAmountCap,
                     saleStart,
                     saleEnd,
                     whitelistSaleStart,
@@ -424,6 +452,7 @@ describe('Test: Launchpad Contract', async () => {
                 const tokenDistributionType     = "AUTO";
                 const tokenContractAddress      = mockFa2TokenAddress;
                 const tokenId                   = 0;
+                const maxAmountCap              = 1000000000;
                 const saleStart                 = makeTimestamp(30);
                 const saleEnd                   = makeTimestamp(300);
                 const whitelistSaleStart        = null;
@@ -439,6 +468,7 @@ describe('Test: Launchpad Contract', async () => {
                     tokenDistributionType,
                     tokenContractAddress,
                     tokenId,
+                    maxAmountCap,
                     saleStart,
                     saleEnd,
                     whitelistSaleStart,
@@ -461,6 +491,7 @@ describe('Test: Launchpad Contract', async () => {
                 const tokenDistributionType     = "auto"; // should be all caps "AUTO"
                 const tokenContractAddress      = mockFa2TokenAddress;
                 const tokenId                   = 0;
+                const maxAmountCap              = 1000000000;
                 const saleStart                 = makeTimestamp(30);
                 const saleEnd                   = makeTimestamp(300);
                 const whitelistSaleStart        = null;
@@ -476,6 +507,7 @@ describe('Test: Launchpad Contract', async () => {
                     tokenDistributionType,
                     tokenContractAddress,
                     tokenId,
+                    maxAmountCap,
                     saleStart,
                     saleEnd,
                     whitelistSaleStart,
@@ -511,6 +543,8 @@ describe('Test: Launchpad Contract', async () => {
                 const newTokenDistributionType  = "MANUAL";
                 const newTokenContractAddress   = mockFa12TokenAddress;
                 const newTokenId                = 1;
+                const newMaxAmountCap           = 2000000000;
+                const newTotalBought            = 100;
                 const newSaleStart              = makeTimestamp(60);
                 const newSaleEnd                = makeTimestamp(600);
                 const newWhitelistSaleStart     = null;
@@ -518,7 +552,6 @@ describe('Test: Launchpad Contract', async () => {
 
                 const newSaleOptions            = MichelsonMap.fromLiteral({
                     'default'           : mockTokenSaleOptions.default,
-                    'defaultWithFa12'   : mockTokenSaleOptions.defaultWithFa12,
                     'whitelist'         : mockTokenSaleOptions.whitelist
                 });
 
@@ -535,6 +568,8 @@ describe('Test: Launchpad Contract', async () => {
                     newTokenDistributionType,
                     newTokenContractAddress,
                     newTokenId,
+                    newMaxAmountCap,
+                    newTotalBought,
                     newSaleStart,
                     newSaleEnd,
                     newWhitelistSaleStart,
@@ -555,43 +590,63 @@ describe('Test: Launchpad Contract', async () => {
                 assert.equal(launchRecord.tokenDistributionType   , newTokenDistributionType);
                 assert.equal(launchRecord.tokenContractAddress    , newTokenContractAddress);
                 assert.equal(launchRecord.tokenId                 , newTokenId);
+                assert.equal(launchRecord.maxAmountCap            , newMaxAmountCap);
+                assert.equal(launchRecord.totalBought             , newTotalBought);
                 assert.equal(launchRecord.saleStart               , showMillisecondsDateFormat(newSaleStart));
                 assert.equal(launchRecord.saleEnd                 , showMillisecondsDateFormat(newSaleEnd));
                 
                 // Get sale options
                 const defaultSaleOption             = launchRecord.saleOptions.get('default');
-                const defaultWithFa12SaleOption     = launchRecord.saleOptions.get('defaultWithFa12');
-                const defaultWhitelistSaleOption    = launchRecord.saleOptions.get('whitelist');
 
                 // Check Default Sale Option
                 assert.equal(defaultSaleOption.maxAmountCap             , mockTokenSaleOptions.default.maxAmountCap);
                 assert.equal(defaultSaleOption.totalBought              , mockTokenSaleOptions.default.totalBought);
                 assert.equal(defaultSaleOption.minPurchaseAmount        , mockTokenSaleOptions.default.minPurchaseAmount);
                 assert.equal(defaultSaleOption.maxAmountPerWalletTotal  , mockTokenSaleOptions.default.maxAmountPerWalletTotal);
-                assert.equal(defaultSaleOption.price                    , mockTokenSaleOptions.default.price);
 
-                assert.equal(getTokenInfo(defaultSaleOption.currency, "tokenContractAddress"), mockTokenSaleOptions.default.currency.fa2.tokenContractAddress);
-                assert.equal(getTokenInfo(defaultSaleOption.currency, "tokenId")             , mockTokenSaleOptions.default.currency.fa2.tokenId);
+                const defaultSaleOptionFa2TokenPayment  = defaultSaleOption.payments.get('fa2Token');
+                const defaultSaleOptionFa12TokenPayment = defaultSaleOption.payments.get('fa12Token');
+                const defaultSaleOptionTezTokenPayment  = defaultSaleOption.payments.get('tez');
 
-                // Check Default FA12 Sale Option
-                assert.equal(defaultWithFa12SaleOption.maxAmountCap             , mockTokenSaleOptions.defaultWithFa12.maxAmountCap);
-                assert.equal(defaultWithFa12SaleOption.totalBought              , mockTokenSaleOptions.defaultWithFa12.totalBought);
-                assert.equal(defaultWithFa12SaleOption.minPurchaseAmount        , mockTokenSaleOptions.defaultWithFa12.minPurchaseAmount);
-                assert.equal(defaultWithFa12SaleOption.maxAmountPerWalletTotal  , mockTokenSaleOptions.defaultWithFa12.maxAmountPerWalletTotal);
-                assert.equal(defaultWithFa12SaleOption.price                    , mockTokenSaleOptions.defaultWithFa12.price);
+                // fa2 payment price
+                assert.equal(defaultSaleOptionFa2TokenPayment.price                                         , mockTokenSalePayment.default.fa2Token.price);
+                assert.equal(getTokenInfo(defaultSaleOptionFa2TokenPayment.currency, "tokenContractAddress"), mockTokenSalePayment.default.fa2Token.currency.fa2.tokenContractAddress);
+                assert.equal(getTokenInfo(defaultSaleOptionFa2TokenPayment.currency, "tokenId")             , mockTokenSalePayment.default.fa2Token.currency.fa2.tokenId);
 
-                assert.equal(getTokenInfo(defaultWithFa12SaleOption.currency, "tokenContractAddress"), mockTokenSaleOptions.defaultWithFa12.currency.fa12);
+                // fa12 payment price
+                assert.equal(defaultSaleOptionFa12TokenPayment.price                                         , mockTokenSalePayment.default.fa12Token.price);
+                assert.equal(getTokenInfo(defaultSaleOptionFa12TokenPayment.currency, "tokenContractAddress"), mockTokenSalePayment.default.fa12Token.currency.fa12);
+
+                // tez payment price
+                assert.equal(defaultSaleOptionTezTokenPayment.price                                          , mockTokenSalePayment.default.tez.price);
+                assert.equal(getTokenInfo(defaultSaleOptionTezTokenPayment.currency, "tokenContractAddress") , mockTokenSalePayment.default.tez.currency.tez);
+                
+
+                const defaultWhitelistSaleOption                 = launchRecord.saleOptions.get('whitelist');
+                const defaultWhitelistSaleOptionFa2TokenPayment  = defaultWhitelistSaleOption.payments.get('fa2Token');
+                const defaultWhitelistSaleOptionFa12TokenPayment = defaultWhitelistSaleOption.payments.get('fa12Token');
+                const defaultWhitelistSaleOptionTezTokenPayment  = defaultWhitelistSaleOption.payments.get('tez');
 
                 // Check Default Whitelist Sale Option
                 assert.equal(defaultWhitelistSaleOption.maxAmountCap             , mockTokenSaleOptions.whitelist.maxAmountCap);
                 assert.equal(defaultWhitelistSaleOption.totalBought              , mockTokenSaleOptions.whitelist.totalBought);
                 assert.equal(defaultWhitelistSaleOption.minPurchaseAmount        , mockTokenSaleOptions.whitelist.minPurchaseAmount);
                 assert.equal(defaultWhitelistSaleOption.maxAmountPerWalletTotal  , mockTokenSaleOptions.whitelist.maxAmountPerWalletTotal);
-                assert.equal(defaultWhitelistSaleOption.price                    , mockTokenSaleOptions.whitelist.price);
 
-                assert.equal(getTokenInfo(defaultWhitelistSaleOption.currency, "tokenContractAddress"), mockTokenSaleOptions.whitelist.currency.fa2.tokenContractAddress);
-                assert.equal(getTokenInfo(defaultWhitelistSaleOption.currency, "tokenId")             , mockTokenSaleOptions.whitelist.currency.fa2.tokenId);
+                // fa2 payment price
+                assert.equal(defaultWhitelistSaleOptionFa2TokenPayment.price                                         , mockTokenSalePayment.whitelist.fa2Token.price);
+                assert.equal(getTokenInfo(defaultWhitelistSaleOptionFa2TokenPayment.currency, "tokenContractAddress"), mockTokenSalePayment.whitelist.fa2Token.currency.fa2.tokenContractAddress);
+                assert.equal(getTokenInfo(defaultWhitelistSaleOptionFa2TokenPayment.currency, "tokenId")             , mockTokenSalePayment.whitelist.fa2Token.currency.fa2.tokenId);
 
+                // fa12 payment price
+                assert.equal(defaultWhitelistSaleOptionFa12TokenPayment.price                                         , mockTokenSalePayment.whitelist.fa12Token.price);
+                assert.equal(getTokenInfo(defaultWhitelistSaleOptionFa12TokenPayment.currency, "tokenContractAddress"), mockTokenSalePayment.whitelist.fa12Token.currency.fa12);
+
+                // tez payment price
+                assert.equal(defaultWhitelistSaleOptionTezTokenPayment.price                                          , mockTokenSalePayment.whitelist.tez.price);
+                assert.equal(getTokenInfo(defaultWhitelistSaleOptionTezTokenPayment.currency, "tokenContractAddress") , mockTokenSalePayment.whitelist.tez.currency.tez);
+                
+                
                 // Check default whitelist options
                 const defaultWhitelistOption = launchRecord.defaultWhitelistOptions.get('whitelist');
                 assert.equal(defaultWhitelistOption, defaultWhitelistOptionValue);
@@ -611,6 +666,8 @@ describe('Test: Launchpad Contract', async () => {
                 const newTokenDistributionType  = "MANUAL";
                 const newTokenContractAddress   = mockFa12TokenAddress;
                 const newTokenId                = 1;
+                const newMaxAmountCap           = 2000000000;
+                const newTotalBought            = 100;
                 const newSaleStart              = makeTimestamp(300);
                 const newSaleEnd                = makeTimestamp(30);
                 const newWhitelistSaleStart     = null;
@@ -618,7 +675,6 @@ describe('Test: Launchpad Contract', async () => {
 
                 const newSaleOptions            = MichelsonMap.fromLiteral({
                     'default'           : mockTokenSaleOptions.default,
-                    'defaultWithFa12'   : mockTokenSaleOptions.defaultWithFa12,
                     'whitelist'         : mockTokenSaleOptions.whitelist
                 });
 
@@ -635,6 +691,8 @@ describe('Test: Launchpad Contract', async () => {
                     newTokenDistributionType,
                     newTokenContractAddress,
                     newTokenId,
+                    newMaxAmountCap,
+                    newTotalBought,
                     newSaleStart,
                     newSaleEnd,
                     newWhitelistSaleStart,
@@ -659,6 +717,8 @@ describe('Test: Launchpad Contract', async () => {
                 const newTokenDistributionType  = "MANUAL";
                 const newTokenContractAddress   = mockFa12TokenAddress;
                 const newTokenId                = 1;
+                const newMaxAmountCap           = 2000000000;
+                const newTotalBought            = 100;
                 const newSaleStart              = makeTimestamp(30);
                 const newSaleEnd                = makeTimestamp(300);
                 const newWhitelistSaleStart     = makeTimestamp(300);
@@ -666,7 +726,6 @@ describe('Test: Launchpad Contract', async () => {
 
                 const newSaleOptions            = MichelsonMap.fromLiteral({
                     'default'           : mockTokenSaleOptions.default,
-                    'defaultWithFa12'   : mockTokenSaleOptions.defaultWithFa12,
                     'whitelist'         : mockTokenSaleOptions.whitelist
                 });
 
@@ -683,6 +742,8 @@ describe('Test: Launchpad Contract', async () => {
                     newTokenDistributionType,
                     newTokenContractAddress,
                     newTokenId,
+                    newMaxAmountCap,
+                    newTotalBought,
                     newSaleStart,
                     newSaleEnd,
                     newWhitelistSaleStart,
@@ -707,6 +768,8 @@ describe('Test: Launchpad Contract', async () => {
                 const newTokenDistributionType  = "MANUAL";
                 const newTokenContractAddress   = mockFa12TokenAddress;
                 const newTokenId                = 1;
+                const newMaxAmountCap           = 2000000000;
+                const newTotalBought            = 100;
                 const newSaleStart              = makeTimestamp(30);
                 const newSaleEnd                = makeTimestamp(300);
                 const newWhitelistSaleStart     = null;
@@ -714,7 +777,6 @@ describe('Test: Launchpad Contract', async () => {
 
                 const newSaleOptions            = MichelsonMap.fromLiteral({
                     'default'           : mockTokenSaleOptions.default,
-                    'defaultWithFa12'   : mockTokenSaleOptions.defaultWithFa12,
                     'whitelist'         : mockTokenSaleOptions.whitelist
                 });
 
@@ -731,6 +793,8 @@ describe('Test: Launchpad Contract', async () => {
                     newTokenDistributionType,
                     newTokenContractAddress,
                     newTokenId,
+                    newMaxAmountCap,
+                    newTotalBought,
                     newSaleStart,
                     newSaleEnd,
                     newWhitelistSaleStart,
@@ -755,6 +819,8 @@ describe('Test: Launchpad Contract', async () => {
                 const newTokenDistributionType  = "manual"; // should be all caps "MANUAL"
                 const newTokenContractAddress   = mockFa12TokenAddress;
                 const newTokenId                = 1;
+                const newMaxAmountCap           = 2000000000;
+                const newTotalBought            = 100;
                 const newSaleStart              = makeTimestamp(30);
                 const newSaleEnd                = makeTimestamp(300);
                 const newWhitelistSaleStart     = null;
@@ -762,7 +828,6 @@ describe('Test: Launchpad Contract', async () => {
 
                 const newSaleOptions            = MichelsonMap.fromLiteral({
                     'default'           : mockTokenSaleOptions.default,
-                    'defaultWithFa12'   : mockTokenSaleOptions.defaultWithFa12,
                     'whitelist'         : mockTokenSaleOptions.whitelist
                 });
 
@@ -779,6 +844,8 @@ describe('Test: Launchpad Contract', async () => {
                     newTokenDistributionType,
                     newTokenContractAddress,
                     newTokenId,
+                    newMaxAmountCap,
+                    newTotalBought,
                     newSaleStart,
                     newSaleEnd,
                     newWhitelistSaleStart,
@@ -803,12 +870,13 @@ describe('Test: Launchpad Contract', async () => {
                 const newTokenDistributionType  = "MANUAL";
                 const newTokenContractAddress   = mockFa12TokenAddress;
                 const newTokenId                = 1;
+                const newMaxAmountCap           = 2000000000;
+                const newTotalBought            = 100;
                 const newSaleStart              = makeTimestamp(60);
                 const newSaleEnd                = makeTimestamp(600);
 
                 const newSaleOptions            = MichelsonMap.fromLiteral({
                     'default'           : mockTokenSaleOptions.default,
-                    'defaultWithFa12'   : mockTokenSaleOptions.defaultWithFa12,
                     'whitelist'         : mockTokenSaleOptions.whitelist
                 });
 
@@ -825,6 +893,8 @@ describe('Test: Launchpad Contract', async () => {
                     newTokenDistributionType,
                     newTokenContractAddress,
                     newTokenId,
+                    newMaxAmountCap,
+                    newTotalBought,
                     newSaleStart,
                     newSaleEnd,
                     newSaleOptions,
@@ -1134,6 +1204,8 @@ describe('Test: Launchpad Contract', async () => {
             const newTokenDistributionType  = "MANUAL";
             const newTokenContractAddress   = null;
             const newTokenId                = null;
+            const newMaxAmountCap           = null;
+            const newTotalBought            = 0;
             const newSaleStart              = makeTimestamp(100);
             const newSaleEnd                = makeTimestamp(1000);
             const newWhitelistSaleStart     = makeTimestamp(15);
@@ -1150,6 +1222,8 @@ describe('Test: Launchpad Contract', async () => {
                 newTokenDistributionType,
                 newTokenContractAddress,
                 newTokenId,
+                newMaxAmountCap,
+                newTotalBought,
                 newSaleStart,
                 newSaleEnd,
                 newWhitelistSaleStart,
@@ -1226,8 +1300,9 @@ describe('Test: Launchpad Contract', async () => {
 
 
         beforeEach("Set signer to user (mallory)", async () => {
-            user    = mallory.pkh;
-            userSk  = mallory.sk;
+            user        = mallory.pkh;
+            userSk      = mallory.sk;
+            tokenId     = 0;
             launchpadStorage = await launchpadInstance.storage()
             await signerFactory(tezos, userSk);
         });
@@ -1247,12 +1322,14 @@ describe('Test: Launchpad Contract', async () => {
 
                 const amount            = 1000000;
                 const saleOption        = "default";
+                const payment           = "fa2Token";
                 
                 // purchase operation
                 const purchaseOperation = await launchpadInstance.methods.purchase(
                     launchId,
                     amount,
-                    saleOption
+                    saleOption,
+                    payment
                 );
                 await chai.expect(purchaseOperation.send()).to.be.rejected;
 
@@ -1285,12 +1362,14 @@ describe('Test: Launchpad Contract', async () => {
 
                 const amount            = 1000000;
                 const saleOption        = "default";
+                const payment           = "fa2Token";
                 
                 // purchase operation
                 const purchaseOperation = await launchpadInstance.methods.purchase(
                     launchId,
                     amount,
-                    saleOption
+                    saleOption,
+                    payment
                 );
                 await chai.expect(purchaseOperation.send()).to.be.rejected;
 
@@ -1304,187 +1383,388 @@ describe('Test: Launchpad Contract', async () => {
             }
         })
 
-        it('%purchase - whitelisted user (mallory) should be able to purchase tokens (whitelist sale option) from launch after whitelist sale start time', async () => {
-            try {
+        describe('After whitelist sale start time', function () {
 
-                launchId                   = firstLaunchId;
-                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
-                assert.equal(launchRecord.status , "ACTIVE");
+            it('%purchase - whitelisted user (mallory) should be able to purchase tokens (whitelist sale option) from launch and pay in FA2 Tokens', async () => {
+                try {
+    
+                    user        = mallory.pkh;
+                    userSk      = mallory.sk;
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
+                    assert.notEqual(launchWhitelistRecord, undefined);
+    
+                    const whitelistSaleStartTimestamp   = launchRecord.whitelistSaleStart;
+                    let currentTimestamp                = makeTimestamp(0);
+                    
+                    // wait for whitelist start time
+                    const differenceInMilliseconds = new Date(whitelistSaleStartTimestamp).getTime() - new Date(currentTimestamp).getTime();
+                    await wait(differenceInMilliseconds + 10);
+    
+                    const amount            = 1000000;
+                    const saleOption        = "whitelist";
+                    const payment           = "fa2Token";
+                    currentTimestamp        = makeTimestamp(0);
+    
+                    const initialDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
+                    const initialTotalBought        = initialDefaultSaleOption.totalBought;
+                    
+                    initialUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const initialUserTotalPurchased   = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalPurchased;
+                    const initialUserTotalDistributed = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalDistributed;
+                    const initialUserPurchasedOption  = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.purchased.get(saleOption);
+    
+                    mockFa2TokenStorage             = await mockFa2TokenInstance.storage();
+                    initialUserTokenBalance         = await mockFa2TokenStorage.ledger.get(user);
+                    initialTreasuryTokenBalance     = await mockFa2TokenStorage.ledger.get(treasuryAddress);
+    
+                    // update operators operation
+                    updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, user, launchpadAddress, tokenId);
+                    await updateOperatorsOperation.confirmation();
+    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    ).send();
+                    await purchaseOperation.confirmation();
+    
+                    launchpadStorage        = await launchpadInstance.storage()
+                    mockFa2TokenStorage     = await mockFa2TokenInstance.storage()
+    
+                    launchRecord                    = await launchpadStorage.launchLedger.get(launchId);
+                    updatedUserTokenBalance         = await mockFa2TokenStorage.ledger.get(user);
+                    updatedTreasuryTokenBalance     = await mockFa2TokenStorage.ledger.get(treasuryAddress);
+    
+                    updatedUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const updatedUserTotalPurchased   = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalPurchased;
+                    const updatedUserTotalDistributed = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalDistributed;
+                    const updatedUserPurchasedOption  = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.purchased.get(saleOption);
+    
+                    const updatedDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
+                    const updatedTotalBought        = updatedDefaultSaleOption.totalBought;
+    
+                    assert.equal(currentTimestamp > whitelistSaleStartTimestamp, true);
+                    assert.equal(+updatedTotalBought, +initialTotalBought + +amount);
+    
+                    // check user purchases
+                    assert.equal(+updatedUserTotalPurchased, +initialUserTotalPurchased + +amount);
+                    assert.equal(+updatedUserTotalDistributed, +initialUserTotalDistributed);
+                    assert.equal(+updatedUserPurchasedOption, +initialUserPurchasedOption + +amount);
+    
+                    // check user balance for payment: mock FA2 token
+                    assert.equal(+updatedUserTokenBalance, +initialUserTokenBalance - +amount);
+    
+                    // check treasury balance
+                    assert.equal(+updatedTreasuryTokenBalance, +initialTreasuryTokenBalance + +amount);
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
+            it('%purchase - whitelisted user (mallory) should be able to purchase tokens (whitelist sale option) from launch and pay in FA12 Tokens', async () => {
+                try {
+    
+                    user        = mallory.pkh;
+                    userSk      = mallory.sk;
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
+                    assert.notEqual(launchWhitelistRecord, undefined);
 
-                launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
-                assert.notEqual(launchWhitelistRecord, undefined);
-
-                const whitelistSaleStartTimestamp   = launchRecord.whitelistSaleStart;
-                let currentTimestamp                = makeTimestamp(0);
-                
-                // wait for whitelist start time
-                const differenceInMilliseconds = new Date(whitelistSaleStartTimestamp).getTime() - new Date(currentTimestamp).getTime();
-                await wait(differenceInMilliseconds + 10);
-
-                const amount            = 1000000;
-                const saleOption        = "whitelist";
-                currentTimestamp        = makeTimestamp(0);
-
-                const initialDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
-                const initialTotalBought        = initialDefaultSaleOption.totalBought;
-                
-                // purchase operation
-                const purchaseOperation = await launchpadInstance.methods.purchase(
-                    launchId,
-                    amount,
-                    saleOption
-                ).send();
-                await purchaseOperation.confirmation();
-
-                launchpadStorage        = await launchpadInstance.storage()
-                launchRecord            = await launchpadStorage.launchLedger.get(launchId);
-
-                const updatedDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
-                const updatedTotalBought        = updatedDefaultSaleOption.totalBought;
-
-                assert.equal(currentTimestamp > whitelistSaleStartTimestamp, true);
-                assert.equal(+updatedTotalBought, +initialTotalBought + +amount);
-
-            } catch (e) {
-                console.log(e)
-            }
+                    const defaultWhitelistSaleOption                  = launchRecord.saleOptions.get('whitelist');
+                    const defaultWhitelistSaleOptionFa12TokenPayment  = defaultWhitelistSaleOption.payments.get('fa12Token');
+                    const price                                       = defaultWhitelistSaleOptionFa12TokenPayment.price;
+    
+                    const amount            = 1000000;
+                    const saleOption        = "whitelist";
+                    const payment           = "fa12Token";
+                    const totalCost         = price * (amount / 10**6);
+    
+                    const initialDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
+                    const initialTotalBought        = initialDefaultSaleOption.totalBought;
+                    
+                    initialUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const initialUserTotalPurchased   = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalPurchased;
+                    const initialUserTotalDistributed = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalDistributed;
+                    const initialUserPurchasedOption  = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.purchased.get(saleOption);
+    
+                    mockFa12TokenStorage             = await mockFa12TokenInstance.storage();
+                    initialUserTokenBalance          = (await mockFa12TokenStorage.ledger.get(user)).balance.toNumber();
+                    initialTreasuryTokenBalance      = (await mockFa12TokenStorage.ledger.get(treasuryAddress)).balance.toNumber();
+    
+                    // approve operation
+                    approveOperation = await mockFa12TokenInstance.methods.approve(launchpadAddress, totalCost).send();
+                    await approveOperation.confirmation();
+    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    ).send();
+                    await purchaseOperation.confirmation();
+                    
+                    // approve operation
+                    approveOperation = await mockFa12TokenInstance.methods.approve(launchpadAddress, 0).send();
+                    await approveOperation.confirmation();
+    
+                    launchpadStorage        = await launchpadInstance.storage()
+                    mockFa12TokenStorage    = await mockFa12TokenInstance.storage()
+    
+                    launchRecord                    = await launchpadStorage.launchLedger.get(launchId);
+                    updatedUserTokenBalance         = (await mockFa12TokenStorage.ledger.get(user)).balance.toNumber();
+                    updatedTreasuryTokenBalance     = (await mockFa12TokenStorage.ledger.get(treasuryAddress)).balance.toNumber();
+    
+                    updatedUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const updatedUserTotalPurchased   = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalPurchased;
+                    const updatedUserTotalDistributed = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalDistributed;
+                    const updatedUserPurchasedOption  = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.purchased.get(saleOption);
+    
+                    const updatedDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
+                    const updatedTotalBought        = updatedDefaultSaleOption.totalBought;
+    
+                    assert.equal(+updatedTotalBought, +initialTotalBought + +amount);
+    
+                    // check user purchases
+                    assert.equal(+updatedUserTotalPurchased, +initialUserTotalPurchased + +amount);
+                    assert.equal(+updatedUserTotalDistributed, +initialUserTotalDistributed);
+                    assert.equal(+updatedUserPurchasedOption, +initialUserPurchasedOption + +amount);
+    
+                    // check user balance for payment: mock FA2 token
+                    assert.equal(+updatedUserTokenBalance, +initialUserTokenBalance - +totalCost);
+    
+                    // check treasury balance
+                    assert.equal(+updatedTreasuryTokenBalance, +initialTreasuryTokenBalance + +totalCost);
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
+    
+            it('%purchase - whitelisted user (mallory) should be able to purchase tokens (whitelist sale option) from launch and pay in Tez', async () => {
+                try {
+    
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
+                    assert.notEqual(launchWhitelistRecord, undefined);
+    
+                    const defaultWhitelistSaleOption                 = launchRecord.saleOptions.get('whitelist');
+                    const defaultWhitelistSaleOptionTezTokenPayment  = defaultWhitelistSaleOption.payments.get('tez');
+                    const priceInMutez                               = defaultWhitelistSaleOptionTezTokenPayment.price;
+    
+                    const amount            = 1000000;
+                    const saleOption        = "whitelist";
+                    const payment           = "tez";
+                    const totalCostInMutez  = priceInMutez * (amount / 10**6);
+    
+                    const initialDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
+                    const initialTotalBought        = initialDefaultSaleOption.totalBought;
+    
+                    initialUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const initialUserTotalPurchased   = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalPurchased;
+                    const initialUserTotalDistributed = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalDistributed;
+                    const initialUserPurchasedOption  = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.purchased.get(saleOption);
+                    
+                    const initialUserTezBalance     = await utils.tezos.tz.getBalance(user);
+                    const initialTreasuryTezBalance = await utils.tezos.tz.getBalance(treasuryAddress);
+    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    ).send({ amount: totalCostInMutez, mutez: true});
+                    await purchaseOperation.confirmation();
+    
+                    launchpadStorage        = await launchpadInstance.storage()
+                    launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+    
+                    const updatedDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
+                    const updatedTotalBought        = updatedDefaultSaleOption.totalBought;
+    
+                    updatedUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const updatedUserTotalPurchased   = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalPurchased;
+                    const updatedUserTotalDistributed = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalDistributed;
+                    const updatedUserPurchasedOption  = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.purchased.get(saleOption);
+    
+                    const updatedUserTezBalance     = await utils.tezos.tz.getBalance(user);
+                    const updatedTreasuryTezBalance = await utils.tezos.tz.getBalance(treasuryAddress);
+    
+                    assert.equal(+updatedTotalBought, +initialTotalBought + +amount);
+    
+                    // check user purchases
+                    assert.equal(+updatedUserTotalPurchased, +initialUserTotalPurchased + +amount);
+                    assert.equal(+updatedUserTotalDistributed, +initialUserTotalDistributed);
+                    assert.equal(+updatedUserPurchasedOption, +initialUserPurchasedOption + +amount);
+    
+                    // check user balance for payment: tez
+                    assert.equal(almostEqual(+updatedUserTezBalance, +initialUserTezBalance - +totalCostInMutez, 0.01), true);
+    
+                    // check treasury balance
+                    assert.equal(+updatedTreasuryTezBalance, +initialTreasuryTezBalance + +totalCostInMutez);
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
+    
+            it('%purchase - whitelisted user (mallory) should not be able to purchase tokens (whitelist sale option) beyond her allowed limit', async () => {
+                try {
+    
+                    const saleOption        = "whitelist";
+    
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
+                    assert.notEqual(launchWhitelistRecord, undefined);
+                    const allowedAmount         = launchWhitelistRecord.get(saleOption);
+    
+                    const amount                = allowedAmount + 100;
+                    const payment               = "fa2Token";
+                    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    );
+                    await chai.expect(purchaseOperation.send()).to.be.rejected;
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
+    
+            it('%purchase - whitelisted user (mallory) should not be able to purchase tokens (default sale option) she is not whitelisted for', async () => {
+                try {
+    
+                    const saleOption           = "default";
+    
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    // user is in the whitelist record
+                    launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
+                    assert.notEqual(launchWhitelistRecord, undefined);
+                    
+                    // user is not whitelisted for the specified sale option
+                    const allowedAmount         = launchWhitelistRecord.get(saleOption);
+                    assert.equal(allowedAmount, undefined);
+    
+                    const amount                = 1000000;
+                    const payment               = "fa2Token";
+    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    );
+                    await chai.expect(purchaseOperation.send()).to.be.rejected;
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
+    
+            it('%purchase - non-whitelisted user (david) should not be able to purchase tokens (whitelist sale option) from launch after whitelist sale start time', async () => {
+                try {
+    
+                    user    = david.pkh;
+                    userSk  = david.sk;
+                    await signerFactory(tezos, userSk);
+    
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    // user is not whitelisted
+                    launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
+                    assert.equal(launchWhitelistRecord, undefined);
+    
+                    const amount            = 1000000;
+                    const saleOption        = "whitelist";
+                    const payment           = "fa2Token";
+                    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    );
+                    await chai.expect(purchaseOperation.send()).to.be.rejected;
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
+            // it('%purchase - user (mallory) should be able to purchase tokens from launch', async () => {
+            //     try {
+    
+            //         launchId                   = firstLaunchId;
+            //         launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+            //         assert.equal(launchRecord.status , "ACTIVE");
+    
+            //         const initialDefaultSaleOption  = launchRecord.saleOptions.get('default');
+            //         const initialTotalBought        = initialDefaultSaleOption.totalBought;
+    
+            //         const amount            = 1000000;
+            //         const saleOption        = "default";
+            //         const currentTimestamp  = makeTimestamp(0);
+    
+            //         // purchase operation
+            //         const purchaseOperation = await launchpadInstance.methods.purchase(
+            //             launchId,
+            //             amount,
+            //             saleOption
+            //         ).send();
+            //         await purchaseOperation.confirmation();
+    
+            //         launchpadStorage        = await launchpadInstance.storage()
+            //         launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+    
+            //         const updatedDefaultSaleOption  = launchRecord.saleOptions.get('default');
+            //         const updatedTotalBought        = updatedDefaultSaleOption.totalBought;
+            //         const saleStartTimestamp        = launchRecord.saleStart;
+    
+            //         console.log(`currentTimestamp: ${currentTimestamp}`);
+            //         console.log(`saleStartTimestamp: ${saleStartTimestamp}`);
+            //         console.log(`currentTimestamp > saleStartTimestamp: ${currentTimestamp > saleStartTimestamp}`);
+    
+            //         assert.equal(currentTimestamp > saleStartTimestamp, true);
+            //         assert.equal(updatedTotalBought, initialTotalBought + amount);
+    
+    
+            //     } catch (e) {
+            //         console.log(e)
+            //     }
+            // })
         })
-
-
-        it('%purchase - whitelisted user (mallory) should not be able to purchase tokens (whitelist sale option) beyond her allowed limit', async () => {
-            try {
-
-                const saleOption        = "whitelist";
-
-                launchId                   = firstLaunchId;
-                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
-                assert.equal(launchRecord.status , "ACTIVE");
-
-                launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
-                assert.notEqual(launchWhitelistRecord, undefined);
-                const allowedAmount         = launchWhitelistRecord.get(saleOption);
-
-                const amount                = allowedAmount + 100;
-                
-                // purchase operation
-                const purchaseOperation = await launchpadInstance.methods.purchase(
-                    launchId,
-                    amount,
-                    saleOption
-                );
-                await chai.expect(purchaseOperation.send()).to.be.rejected;
-
-            } catch (e) {
-                console.log(e)
-            }
-        })
-
-
-        it('%purchase - whitelisted user (mallory) should not be able to purchase tokens (default sale option) she is not whitelisted for', async () => {
-            try {
-
-                const saleOption           = "default";
-
-                launchId                   = firstLaunchId;
-                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
-                assert.equal(launchRecord.status , "ACTIVE");
-
-                // user is in the whitelist record
-                launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
-                assert.notEqual(launchWhitelistRecord, undefined);
-                
-                // user is not whitelisted for the specified sale option
-                const allowedAmount         = launchWhitelistRecord.get(saleOption);
-                assert.equal(allowedAmount, undefined);
-
-                const amount                = 1000000;
-                
-                // purchase operation
-                const purchaseOperation = await launchpadInstance.methods.purchase(
-                    launchId,
-                    amount,
-                    saleOption
-                );
-                await chai.expect(purchaseOperation.send()).to.be.rejected;
-
-            } catch (e) {
-                console.log(e)
-            }
-        })
-
-
-        it('%purchase - non-whitelisted user (david) should not be able to purchase tokens (whitelist sale option) from launch after whitelist sale start time', async () => {
-            try {
-
-                user    = david.pkh;
-                userSk  = david.sk;
-                await signerFactory(tezos, userSk);
-
-                launchId                   = firstLaunchId;
-                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
-                assert.equal(launchRecord.status , "ACTIVE");
-
-                // user is not whitelisted
-                launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
-                assert.equal(launchWhitelistRecord, undefined);
-
-                const amount            = 1000000;
-                const saleOption        = "whitelist";
-                
-                // purchase operation
-                const purchaseOperation = await launchpadInstance.methods.purchase(
-                    launchId,
-                    amount,
-                    saleOption
-                );
-                await chai.expect(purchaseOperation.send()).to.be.rejected;
-
-            } catch (e) {
-                console.log(e)
-            }
-        })
-
-        // it('%purchase - user (mallory) should be able to purchase tokens from launch', async () => {
-        //     try {
-
-        //         launchId                   = firstLaunchId;
-        //         launchRecord               = await launchpadStorage.launchLedger.get(launchId);
-        //         assert.equal(launchRecord.status , "ACTIVE");
-
-        //         const initialDefaultSaleOption  = launchRecord.saleOptions.get('default');
-        //         const initialTotalBought        = initialDefaultSaleOption.totalBought;
-
-        //         const amount            = 1000000;
-        //         const saleOption        = "default";
-        //         const currentTimestamp  = makeTimestamp(0);
-
-        //         // purchase operation
-        //         const purchaseOperation = await launchpadInstance.methods.purchase(
-        //             launchId,
-        //             amount,
-        //             saleOption
-        //         ).send();
-        //         await purchaseOperation.confirmation();
-
-        //         launchpadStorage        = await launchpadInstance.storage()
-        //         launchRecord            = await launchpadStorage.launchLedger.get(launchId);
-
-        //         const updatedDefaultSaleOption  = launchRecord.saleOptions.get('default');
-        //         const updatedTotalBought        = updatedDefaultSaleOption.totalBought;
-        //         const saleStartTimestamp        = launchRecord.saleStart;
-
-        //         console.log(`currentTimestamp: ${currentTimestamp}`);
-        //         console.log(`saleStartTimestamp: ${saleStartTimestamp}`);
-        //         console.log(`currentTimestamp > saleStartTimestamp: ${currentTimestamp > saleStartTimestamp}`);
-
-        //         assert.equal(currentTimestamp > saleStartTimestamp, true);
-        //         assert.equal(updatedTotalBought, initialTotalBought + amount);
-
-
-        //     } catch (e) {
-        //         console.log(e)
-        //     }
-        // })
 
     })
 

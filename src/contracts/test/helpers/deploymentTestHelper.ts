@@ -50,6 +50,7 @@ type generalContractStorageType =
     launchpadStorageType |    
     marketplaceStorageType |    
     tokenRegistryStorageType |
+    treasuryStorageType |
     
     // tokens
     cmtaTokenStorageType | 

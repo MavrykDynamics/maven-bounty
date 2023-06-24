@@ -306,6 +306,23 @@ block {
 
 
 
+(*  editSaleOption entrypoint *)
+function editSaleOption(const editSaleOptionParams : editSaleOptionActionType; var s : launchpadStorageType) : return is
+block {
+
+    // get lambda bytes
+    const lambdaBytes : bytes = getLambdaBytes("lambdaEditSaleOption", s.lambdaLedger);
+
+    // init launchpad lambda action
+const launchpadLambdaAction : launchpadLambdaActionType = LambdaEditSaleOption(editSaleOptionParams);
+
+    // init response
+    const response : return = unpackLambda(lambdaBytes, launchpadLambdaAction, s);  
+
+} with response
+
+
+
 (*  pauseLaunch entrypoint *)
 function pauseLaunch(const pauseLaunchParams : nat; var s : launchpadStorageType) : return is
 block{

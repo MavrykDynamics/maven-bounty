@@ -54,6 +54,7 @@ type action is
     |   CreateTokenLaunch           of createTokenLaunchActionType
     |   SetLaunchWhitelist          of setLaunchWhitelistActionType
     |   EditTokenLaunch             of editTokenLaunchActionType
+    |   EditSaleOption              of editSaleOptionActionType
     |   StartLaunch                 of (nat)
     |   CloseLaunch                 of (nat)
     |   PauseLaunch                 of (nat)
@@ -131,9 +132,10 @@ function main (const action : action; const s : launchpadStorageType) : return i
             // Launchpad Entrypoints
         |   CreateTokenLaunch(parameters)         -> createTokenLaunch(parameters, s)  
         |   SetLaunchWhitelist(parameters)        -> setLaunchWhitelist(parameters, s)  
+        |   EditTokenLaunch(parameters)           -> editTokenLaunch(parameters, s)
+        |   EditSaleOption(parameters)            -> editSaleOption(parameters, s)
         |   StartLaunch(parameters)               -> startLaunch(parameters, s)  
         |   CloseLaunch(parameters)               -> closeLaunch(parameters, s)  
-        |   EditTokenLaunch(parameters)           -> editTokenLaunch(parameters, s)
         |   PauseLaunch(parameters)               -> pauseLaunch(parameters, s)
         |   UnpauseLaunch(parameters)             -> unpauseLaunch(parameters, s)
         |   DistributeTokens(parameters)          -> distributeTokens(parameters, s)

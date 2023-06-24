@@ -223,6 +223,7 @@ block {
                 const tokenDistributionType     : string                            = createTokenLaunchParams.tokenDistributionType;
                 const tokenContractAddress      : address                           = createTokenLaunchParams.tokenContractAddress;
                 const tokenId                   : nat                               = createTokenLaunchParams.tokenId;
+                const maxAmountCap              : nat                               = createTokenLaunchParams.maxAmountCap;
                 const saleStart                 : timestamp                         = createTokenLaunchParams.saleStart;
                 const saleEnd                   : option(timestamp)                 = createTokenLaunchParams.saleEnd;
                 const whitelistSaleStart        : option(timestamp)                 = createTokenLaunchParams.whitelistSaleStart;
@@ -250,8 +251,11 @@ block {
                     tokenDistributionType       = tokenDistributionType;
                     tokenContractAddress        = tokenContractAddress;
                     tokenId                     = tokenId;
+                    maxAmountCap                = maxAmountCap;
+                    totalBought                 = 0n;
                     saleStart                   = saleStart;
                     saleEnd                     = saleEnd;
+                    saleClosed                  = (None : option(timestamp));
                     whitelistSaleStart          = whitelistSaleStart;
                     whitelistSaleEnd            = whitelistSaleEnd;
                     saleOptions                 = saleOptions;
@@ -300,7 +304,7 @@ block {
                     if defaultWhitelistOption = True then block {
 
                         allowed := launchRecord.defaultWhitelistOptions;
-                        
+
                     } else {
 
                         // verify that whitelist options exist
@@ -369,6 +373,16 @@ block {
                     |   None -> skip
                 ];
 
+                case editTokenLaunchParams.maxAmountCap of [
+                        Some(_newMaxAmountCap) -> launchRecord.maxAmountCap := _newMaxAmountCap
+                    |   None -> skip
+                ];
+
+                case editTokenLaunchParams.totalBought of [
+                        Some(_newTotalBought) -> launchRecord.totalBought := _newTotalBought
+                    |   None -> skip
+                ];
+
                 case editTokenLaunchParams.saleStart of [
                         Some(_newSaleStart) -> launchRecord.saleStart := _newSaleStart
                     |   None -> skip
@@ -434,6 +448,91 @@ block {
 
 
 
+(* editSaleOption lambda *)
+function lambdaEditSaleOption(const launchpadLambdaAction : launchpadLambdaActionType; var s : launchpadStorageType) : return is
+block {
+
+    verifySenderIsAdmin(s.admins); // check that sender is admin 
+    
+    case launchpadLambdaAction of [
+        |   LambdaEditSaleOption(editSaleOption) -> {
+
+                case editSaleOption of [
+                    |   SetNewSaleOption(_setSaleOptionParams) -> {
+
+                            const launchId        : nat               = _setSaleOptionParams.launchId;
+                            const saleOptionName  : string            = _setSaleOptionParams.saleOption;
+                            var launchRecord      : launchRecordType := getLaunchRecord(launchId, s);
+
+                            // add new sale option
+                            launchRecord.saleOptions[saleOptionName] := case launchRecord.saleOptions[saleOptionName] of [
+                                    Some(_v) -> failwith(error_SALE_OPTION_ALREADY_EXISTS)
+                                |   None -> record [
+                                        totalBought             = 0n;
+                                        maxAmountCap            = _setSaleOptionParams.maxAmountCap;
+                                        minPurchaseAmount       = _setSaleOptionParams.minPurchaseAmount;
+                                        maxAmountPerWalletTotal = _setSaleOptionParams.maxAmountPerWalletTotal;
+                                        payments                = _setSaleOptionParams.payments;
+                                ]
+                            ];
+
+                            // update storage
+                            s.launchLedger[launchId] := launchRecord;
+
+                        }
+                    |   UpdateSaleOption(_updateSaleOptionParams) -> {
+                         
+                            const launchId        : nat               = _updateSaleOptionParams.launchId;
+                            const saleOptionName  : string            = _updateSaleOptionParams.saleOption;
+                            var launchRecord      : launchRecordType := getLaunchRecord(launchId, s);
+
+                            // update existing sale option
+                            var saleOption : tokenSaleOptionType := case launchRecord.saleOptions[saleOptionName] of [
+                                    Some(_record) -> _record
+                                |   None -> failwith(error_SALE_OPTION_NOT_FOUND)
+                            ];
+
+                            case _updateSaleOptionParams.totalBought of [
+                                    Some(_newTotalBought) -> saleOption.totalBought := _newTotalBought
+                                |   None -> skip
+                            ];
+
+                            case _updateSaleOptionParams.maxAmountCap of [
+                                    Some(_newMaxAmountCap) -> saleOption.maxAmountCap := Some(_newMaxAmountCap)
+                                |   None -> skip
+                            ];
+
+                            case _updateSaleOptionParams.minPurchaseAmount of [
+                                    Some(_newMinPurchaseAmount) -> saleOption.minPurchaseAmount := Some(_newMinPurchaseAmount)
+                                |   None -> skip
+                            ];
+
+                            case _updateSaleOptionParams.maxAmountPerWalletTotal of [
+                                    Some(_newMaxAmountPerWalletTotal) -> saleOption.maxAmountPerWalletTotal := Some(_newMaxAmountPerWalletTotal)
+                                |   None -> skip
+                            ];
+
+                            case _updateSaleOptionParams.payments of [
+                                    Some(_newPayments) -> saleOption.payments := _newPayments
+                                |   None -> skip
+                            ];
+                            
+                            // update storage
+                            launchRecord.saleOptions[saleOptionName] := saleOption;
+                            s.launchLedger[launchId] := launchRecord;
+
+                        }
+                ];
+
+
+            }
+        |   _ -> skip
+    ];
+
+} with (noOperations, s)
+
+
+
 (* startLaunch lambda *)
 function lambdaStartLaunch(const launchpadLambdaAction : launchpadLambdaActionType; var s : launchpadStorageType) : return is
 block {
@@ -446,16 +545,9 @@ block {
                 // get launch record
                 var launchRecord : launchRecordType := getLaunchRecord(launchId, s);
 
-                launchRecord.status := "ACTIVE";
-                
-                // reset sale end if it has been closed
-                // const currentSaleEnd : timestamp = case launchRecord.saleEnd of [
-                //         Some(_timestamp) -> _timestamp
-                //     |   None             -> zeroTimestamp
-                // ];
-                // if Tezos.get_now() > currentSaleEnd then launchRecord.saleEnd := (None : option(timestamp)) else skip;
-
-                s.launchLedger[launchId] := launchRecord;
+                launchRecord.status       := "ACTIVE";
+                launchRecord.saleClosed   := (None : option(timestamp));
+                s.launchLedger[launchId]  := launchRecord;
 
             }
         |   _ -> skip
@@ -531,7 +623,7 @@ block {
                 ];
 
                 launchRecord.status       := "CLOSED";
-                launchRecord.saleEnd      := Some(Tezos.get_now());
+                launchRecord.saleClosed   := Some(Tezos.get_now());
                 s.launchLedger[launchId]  := launchRecord;      
 
             }
@@ -604,7 +696,7 @@ block {
         |   _ -> skip
     ];
 
-} with (noOperations, s)
+} with (operations, s)
 
 // ------------------------------------------------------------------------------
 // Launchpad Lambdas End
@@ -709,6 +801,7 @@ block {
                 const launchId          : nat       = purchaseParams.launchId;
                 const amount            : nat       = purchaseParams.amount;
                 const saleOptionName    : string    = purchaseParams.saleOption;
+                const paymentName       : string    = purchaseParams.payment;
                 
                 // create launch user key
                 const launchUserKey     : (nat * address) = (launchId, sender);
@@ -720,6 +813,7 @@ block {
                 const tokenContractAddress   : address  = launchRecord.tokenContractAddress;
                 const tokenIssuanceType      : string   = launchRecord.tokenIssuanceType;
                 const tokenDistributionType  : string   = launchRecord.tokenDistributionType;
+                const launchMaxAmountCap     : nat      = launchRecord.maxAmountCap;
 
                 // verify launch is active
                 verifyLaunchIsActive(launchRecord.status);
@@ -750,14 +844,31 @@ block {
                 // get sale option
                 var saleOption : tokenSaleOptionType := getSaleOption(launchRecord, saleOptionName);
 
-                // get sale option params
-                const maxAmountCap  : nat       = saleOption.maxAmountCap;
+                // get total bought amount
                 const totalBought   : nat       = saleOption.totalBought;
-                const price         : nat       = saleOption.price;
-                const currency      : tokenType = saleOption.currency;
+                
+                // verify token sale option max amount cap not exceeded if it exists
+                case saleOption.maxAmountCap of [
+                        Some(_saleOptionMaxAmountCap) -> if (totalBought + amount) > _saleOptionMaxAmountCap then failwith(error_MAX_AMOUNT_CAP_FOR_SALE_OPTION_EXCEEDED) else skip
+                    |   None -> skip
+                ];
 
-                // check that final total bought amount does not exceed max amount cap
-                if (totalBought + amount) > maxAmountCap then failwith(error_MAX_AMOUNT_CAP_FOR_SALE_OPTION_EXCEEDED) else skip;
+                // verify launch max amount cap not exceeded
+                if (totalBought + amount) > launchMaxAmountCap then failwith(error_MAX_AMOUNT_CAP_FOR_LAUNCH_EXCEEDED) else skip;
+
+                // verify amount bought is greater than minPurchaseAmount if it exists
+                case saleOption.minPurchaseAmount of [
+                        Some(_minPurchaseAmount) -> if amount < _minPurchaseAmount then failwith(error_AMOUNT_BOUGHT_MUST_EXCEED_MIN_PURCHASE_AMOUNT) else skip
+                    |   None -> skip
+                ];
+
+                // get payment variables - price and currency
+                const payment : paymentType = case saleOption.payments[paymentName] of [
+                        Some(_record) -> _record
+                    |   None          -> failwith(error_PAYMENT_OPTION_NOT_FOUND)
+                ];
+                const price         : nat       = payment.price;
+                const currency      : tokenType = payment.currency;
 
                 // get total purchased of user
                 var userPurchaseRecord : purchaseRecordType := getOrCreatePurchaseRecord(launchUserKey, s);
@@ -804,12 +915,11 @@ block {
 
                 };
                 
-
                 // get treasury address
                 const treasuryAddress : address = getAddressFromGeneralContracts("treasury", s, error_TREASURY_NOT_FOUND);
 
-                // calc total price (amount to be purchased * price)
-                const totalPrice : nat = amount * price; 
+                // calc total price (price * (amount to be purchased / 10e6))
+                const totalPrice : nat = (price * (amount * fixedPointAccuracy / 1000000n)) / fixedPointAccuracy; 
 
                 // proceed with payment
                 case currency of [
@@ -832,6 +942,9 @@ block {
                 // update sale option
                 saleOption.totalBought                          := saleOption.totalBought + amount;
                 launchRecord.saleOptions[saleOptionName]        := saleOption;
+
+                // update launch record
+                launchRecord.totalBought                        := launchRecord.totalBought + amount;
 
                 // update sale record
                 s.launchLedger[launchId]                        := launchRecord;
@@ -861,7 +974,7 @@ block {
         |   _ -> skip
     ];
 
-} with (noOperations, s)
+} with (operations, s)
 
 // ------------------------------------------------------------------------------
 // User Lambdas End

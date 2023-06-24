@@ -26,17 +26,17 @@ type launchWhitelistRecordType is [@layout:comb] record [
 type launchWhitelistLedgerType is big_map((nat * address), launchWhitelistRecordType)
 
 
-type tokenSaleOptionType is [@layout:comb] record [    
-    maxAmountCap                : nat;
-    totalBought                 : nat;
-    minPurchaseAmount           : nat;
-    maxAmountPerWalletTotal     : option(nat);
-    
+type paymentType is [@layout:comb] record [
     price                       : nat; 
     currency                    : tokenType;
-    
-    // todo: accept multi currency and price
-    // currencyMap                 : map()
+]
+
+type tokenSaleOptionType is [@layout:comb] record [    
+    totalBought                 : nat;
+    maxAmountCap                : option(nat);
+    minPurchaseAmount           : option(nat);
+    maxAmountPerWalletTotal     : option(nat);
+    payments                    : map(string, paymentType);
 ]
 type launchRecordType is [@layout:comb] record [
     name                        : string;
@@ -46,12 +46,15 @@ type launchRecordType is [@layout:comb] record [
     tokenDistributionType       : string;       // auto / manual
     tokenContractAddress        : address;
     tokenId                     : nat;
+    maxAmountCap                : nat;
+    totalBought                 : nat;
     saleStart                   : timestamp;
     saleEnd                     : option(timestamp);
+    saleClosed                  : option(timestamp);
     whitelistSaleStart          : option(timestamp);
     whitelistSaleEnd            : option(timestamp);
     saleOptions                 : map(string, tokenSaleOptionType);
-    defaultWhitelistOptions     : map(string, nat);
+    defaultWhitelistOptions     : map(string, nat);                     // key should correspond to sale option key
 ]
 type launchLedgerType is big_map(nat, launchRecordType)
 
@@ -101,6 +104,7 @@ type createTokenLaunchActionType is [@layout:comb] record [
     tokenDistributionType       : string;       // auto / manual
     tokenContractAddress        : address;
     tokenId                     : nat;
+    maxAmountCap                : nat;
     saleStart                   : timestamp;
     saleEnd                     : option(timestamp);
     whitelistSaleStart          : option(timestamp);
@@ -116,6 +120,8 @@ type editTokenLaunchActionType is [@layout:comb] record [
     tokenDistributionType       : option(string);       // auto / manual
     tokenContractAddress        : option(address);
     tokenId                     : option(nat);
+    maxAmountCap                : option(nat);
+    totalBought                 : option(nat);
     saleStart                   : option(timestamp);
     saleEnd                     : option(timestamp);
     whitelistSaleStart          : option(timestamp);
@@ -137,7 +143,8 @@ type setLaunchWhitelistActionType is list(setLaunchWhitelistSingleType)
 type purchaseActionType is [@layout:comb] record [
     launchId                    : nat;
     amount                      : nat;
-    saleOption                  : string;  // default / whitelist / ABCDEF
+    saleOption                  : string;  // default / whitelist / ABCDEF / custom
+    payment                     : string;  // correspond to payments in saleOption
 ]
 
 type distributeTokensSingleActionType is [@layout:comb] record [
@@ -145,6 +152,30 @@ type distributeTokensSingleActionType is [@layout:comb] record [
     launchId                    : nat;
 ]
 type distributeTokensActionType is list(distributeTokensSingleActionType)
+
+
+type setSaleOptionActionType is [@layout:comb] record [
+    launchId                    : nat;
+    saleOption                  : string;
+    maxAmountCap                : option(nat);
+    minPurchaseAmount           : option(nat);
+    maxAmountPerWalletTotal     : option(nat);
+    payments                    : map(string, paymentType);
+]
+
+type updateSaleOptionActionType is [@layout:comb] record [
+    launchId                    : nat;
+    saleOption                  : string;
+    totalBought                 : option(nat);
+    maxAmountCap                : option(nat);
+    minPurchaseAmount           : option(nat);
+    maxAmountPerWalletTotal     : option(nat);
+    payments                    : option(map(string, paymentType));
+]
+
+type editSaleOptionActionType is 
+    |   SetNewSaleOption    of  setSaleOptionActionType
+    |   UpdateSaleOption    of  updateSaleOptionActionType
 
 // ------------------------------------------------------------------------------
 // Lambda Action Types
@@ -175,6 +206,7 @@ type launchpadLambdaActionType is
     |   LambdaCreateTokenLaunch           of createTokenLaunchActionType
     |   LambdaSetLaunchWhitelist          of setLaunchWhitelistActionType
     |   LambdaEditTokenLaunch             of editTokenLaunchActionType
+    |   LambdaEditSaleOption              of editSaleOptionActionType
     |   LambdaStartLaunch                 of (nat)
     |   LambdaCloseLaunch                 of (nat)
     |   LambdaPauseLaunch                 of (nat)
