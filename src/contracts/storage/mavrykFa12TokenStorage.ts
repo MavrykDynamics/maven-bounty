@@ -1,13 +1,13 @@
 import { MichelsonMap } from "@taquito/michelson-encoder"
 import { BigNumber } from "bignumber.js"
 import { Buffer } from "buffer"
-import { bob, alice, eve, mallory } from '../scripts/sandbox/accounts'
+import { bob, alice, eve, mallory, david, oscar } from '../scripts/sandbox/accounts'
 import { zeroAddress } from "../test/helpers/Utils"
 import { mavrykFa12TokenStorageType } from "./storageTypes/mavrykFa12TokenStorageType"
 
-const totalSupply      = 20000000000;
+const totalSupply      = 18000000000;
 const initialSupply    = new BigNumber(totalSupply); // 20,000 MOCK FA12 Tokens in mu (10^6)
-const singleUserSupply = new BigNumber(totalSupply / 4);
+const singleUserSupply = new BigNumber(totalSupply / 6);
 
 const metadata = MichelsonMap.fromLiteral({
     '': Buffer.from('tezos-storage:data', 'ascii').toString('hex'),
@@ -52,6 +52,14 @@ const ledger = MichelsonMap.fromLiteral({
         allowances: MichelsonMap.fromLiteral({})
     },
     [mallory.pkh]: {
+        balance: singleUserSupply,
+        allowances: MichelsonMap.fromLiteral({})
+    },
+    [david.pkh]: {
+        balance: singleUserSupply,
+        allowances: MichelsonMap.fromLiteral({})
+    },
+    [oscar.pkh]: {
         balance: singleUserSupply,
         allowances: MichelsonMap.fromLiteral({})
     }

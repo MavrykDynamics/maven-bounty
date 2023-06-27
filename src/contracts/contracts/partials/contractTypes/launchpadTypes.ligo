@@ -36,6 +36,7 @@ type tokenSaleOptionType is [@layout:comb] record [
     maxAmountCap                : option(nat);
     minPurchaseAmount           : option(nat);
     maxAmountPerWalletTotal     : option(nat);
+    whitelistOnly               : bool;
     payments                    : map(string, paymentType);
 ]
 type launchRecordType is [@layout:comb] record [
@@ -160,7 +161,9 @@ type setSaleOptionActionType is [@layout:comb] record [
     maxAmountCap                : option(nat);
     minPurchaseAmount           : option(nat);
     maxAmountPerWalletTotal     : option(nat);
+    whitelistOnly               : option(bool);
     payments                    : map(string, paymentType);
+    
 ]
 
 type updateSaleOptionActionType is [@layout:comb] record [
@@ -170,6 +173,7 @@ type updateSaleOptionActionType is [@layout:comb] record [
     maxAmountCap                : option(nat);
     minPurchaseAmount           : option(nat);
     maxAmountPerWalletTotal     : option(nat);
+    whitelistOnly               : option(bool);
     payments                    : option(map(string, paymentType));
 ]
 

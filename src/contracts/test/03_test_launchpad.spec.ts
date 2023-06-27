@@ -84,6 +84,10 @@ describe('Test: Launchpad Contract', async () => {
     let mockFa2TokenInstance
     let mockFa2TokenStorage
 
+    let securityTokenAddress 
+    let securityTokenInstance
+    let securityTokenStorage
+
     let treasuryAddress
     
     // user accounts
@@ -162,7 +166,51 @@ describe('Test: Launchpad Contract', async () => {
         mockFa2TokenInstance            = await utils.tezos.contract.at(mockFa2TokenAddress);
         mockFa2TokenStorage             = await mockFa2TokenInstance.storage()
 
+        securityTokenAddress            = contractDeployments.securityToken.address;
+        securityTokenInstance           = await utils.tezos.contract.at(securityTokenAddress);
+        securityTokenStorage            = await securityTokenInstance.storage()
+
         console.log('-- -- -- -- -- -- -- -- -- -- -- -- --')
+
+        // Set Token Metadata and Initialise Security Token
+
+        const checkTokenMetadataExists = await securityTokenInstance.contractViews.token_metadata(0).executeView({ viewCaller : eve.pkh});
+        
+        if(checkTokenMetadataExists == undefined){
+
+            await signerFactory(tezos, eve.sk);
+            const setTokenMetadataOperation = await securityTokenInstance.methods.setTokenMetadata([
+                {
+                    token_id : 0,
+                    token_info : new MichelsonMap()
+                }
+            ]).send();
+            await setTokenMetadataOperation.confirmation();
+
+            const initialiseTokenOperation = await securityTokenInstance.methods.initialiseToken([0]).send();
+            await initialiseTokenOperation.confirmation();
+
+            // Mint Security Tokens to Alice, Eve, Mallory
+            await signerFactory(tezos, eve.sk);
+            let mintOperation = await securityTokenInstance.methods.mint([
+                {
+                    token_id : 0,
+                    amount : 500,
+                    address : mallory.pkh 
+                },
+                {
+                    token_id : 0,
+                    amount : 500,
+                    address : eve.pkh 
+                },
+                {
+                    token_id : 0,
+                    amount : 500,
+                    address : alice.pkh 
+                }
+            ]).send();
+            await mintOperation.confirmation();
+        }
 
     })
 
@@ -186,7 +234,7 @@ describe('Test: Launchpad Contract', async () => {
                 const name                      = "testTokenLaunch";
                 const tokenIssuanceType         = "MINT";
                 const tokenDistributionType     = "AUTO";
-                const tokenContractAddress      = mockFa2TokenAddress;
+                const tokenContractAddress      = securityTokenAddress;
                 const tokenId                   = 0;
                 const maxAmountCap              = 1000000000;
                 const saleStart                 = makeTimestamp(30);
@@ -245,7 +293,7 @@ describe('Test: Launchpad Contract', async () => {
                 const name                      = "testTokenLaunch";
                 const tokenIssuanceType         = "MINT";
                 const tokenDistributionType     = "AUTO";
-                const tokenContractAddress      = mockFa2TokenAddress;
+                const tokenContractAddress      = securityTokenAddress;
                 const tokenId                   = 0;
                 const maxAmountCap              = 1000000000;
                 const saleStart                 = makeTimestamp(30);
@@ -310,7 +358,7 @@ describe('Test: Launchpad Contract', async () => {
                 const name                      = "testTokenLaunch";
                 const tokenIssuanceType         = "MINT";
                 const tokenDistributionType     = "AUTO";
-                const tokenContractAddress      = mockFa2TokenAddress;
+                const tokenContractAddress      = securityTokenAddress;
                 const tokenId                   = 0;
                 const maxAmountCap              = 1000000000;
                 const saleStart                 = makeTimestamp(30);
@@ -371,7 +419,7 @@ describe('Test: Launchpad Contract', async () => {
                 const name                      = "failTokenLaunch";
                 const tokenIssuanceType         = "MINT";
                 const tokenDistributionType     = "AUTO";
-                const tokenContractAddress      = mockFa2TokenAddress;
+                const tokenContractAddress      = securityTokenAddress;
                 const tokenId                   = 0;
                 const maxAmountCap              = 1000000000;
                 const saleStart                 = makeTimestamp(300);
@@ -411,7 +459,7 @@ describe('Test: Launchpad Contract', async () => {
                 const name                      = "failTokenLaunch";
                 const tokenIssuanceType         = "MINT";
                 const tokenDistributionType     = "AUTO";
-                const tokenContractAddress      = mockFa2TokenAddress;
+                const tokenContractAddress      = securityTokenAddress;
                 const tokenId                   = 0;
                 const maxAmountCap              = 1000000000;
                 const saleStart                 = makeTimestamp(30);
@@ -450,7 +498,7 @@ describe('Test: Launchpad Contract', async () => {
                 const name                      = "failTokenLaunch";
                 const tokenIssuanceType         = "mint"; // should be all caps "MINT"
                 const tokenDistributionType     = "AUTO";
-                const tokenContractAddress      = mockFa2TokenAddress;
+                const tokenContractAddress      = securityTokenAddress;
                 const tokenId                   = 0;
                 const maxAmountCap              = 1000000000;
                 const saleStart                 = makeTimestamp(30);
@@ -489,7 +537,7 @@ describe('Test: Launchpad Contract', async () => {
                 const name                      = "failTokenLaunch";
                 const tokenIssuanceType         = "MINT"; 
                 const tokenDistributionType     = "auto"; // should be all caps "AUTO"
-                const tokenContractAddress      = mockFa2TokenAddress;
+                const tokenContractAddress      = securityTokenAddress;
                 const tokenId                   = 0;
                 const maxAmountCap              = 1000000000;
                 const saleStart                 = makeTimestamp(30);
@@ -1193,7 +1241,7 @@ describe('Test: Launchpad Contract', async () => {
     
     })
 
-    describe('Whitelist Period tests', function () {
+    describe('%purchase tests', function () {
         
         before("setup launch", async() => {
 
@@ -1202,14 +1250,14 @@ describe('Test: Launchpad Contract', async () => {
             const newName                   = "editTokenLaunch";
             const newTokenIssuanceType      = "TRANSFER";
             const newTokenDistributionType  = "MANUAL";
-            const newTokenContractAddress   = null;
+            const newTokenContractAddress   = securityTokenAddress;
             const newTokenId                = null;
             const newMaxAmountCap           = null;
             const newTotalBought            = 0;
-            const newSaleStart              = makeTimestamp(100);
-            const newSaleEnd                = makeTimestamp(1000);
+            const newSaleStart              = makeTimestamp(50);
+            const newSaleEnd                = makeTimestamp(300);
             const newWhitelistSaleStart     = makeTimestamp(15);
-            const newWhitelistSaleEnd       = makeTimestamp(120);
+            const newWhitelistSaleEnd       = makeTimestamp(150);
 
             const newSaleOptions                = null
             const newDefaultWhitelistOptions    = null
@@ -1299,91 +1347,105 @@ describe('Test: Launchpad Contract', async () => {
         })
 
 
-        beforeEach("Set signer to user (mallory)", async () => {
-            user        = mallory.pkh;
-            userSk      = mallory.sk;
-            tokenId     = 0;
-            launchpadStorage = await launchpadInstance.storage()
-            await signerFactory(tezos, userSk);
-        });
+        describe('Before whitelist sale start time', function () {
 
-        it('%purchase - whitelisted user (mallory) should not be able to purchase tokens from launch before whitelist sale start time', async () => {
-            try {
-
-                launchId                   = firstLaunchId;
-                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
-                assert.equal(launchRecord.status , "ACTIVE");
-
-                launchWhitelistRecord      = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
-                assert.notEqual(launchWhitelistRecord, undefined);
-
-                const whitelistSaleStartTimestamp    = launchRecord.whitelistSaleStart;
-                const currentTimestamp               = makeTimestamp(0);
-
-                const amount            = 1000000;
-                const saleOption        = "default";
-                const payment           = "fa2Token";
-                
-                // purchase operation
-                const purchaseOperation = await launchpadInstance.methods.purchase(
-                    launchId,
-                    amount,
-                    saleOption,
-                    payment
-                );
-                await chai.expect(purchaseOperation.send()).to.be.rejected;
-
-                launchpadStorage        = await launchpadInstance.storage()
-                launchRecord            = await launchpadStorage.launchLedger.get(launchId);
-
-                assert.equal(whitelistSaleStartTimestamp > currentTimestamp, true);
-
-            } catch (e) {
-                console.log(e)
-            }
-        })
-
-        it('%purchase - non-whitelisted user (david) should not be able to purchase tokens from launch before whitelist sale start time', async () => {
-            try {
-
-                user   = david.pkh;
-                userSk = david.sk;
+            beforeEach("Set signer to user (mallory)", async () => {
+                user        = mallory.pkh;
+                userSk      = mallory.sk;
+                tokenId     = 0;
+                launchpadStorage = await launchpadInstance.storage()
                 await signerFactory(tezos, userSk);
+            });
 
-                launchId                   = firstLaunchId;
-                launchRecord               = await launchpadStorage.launchLedger.get(launchId);
-                assert.equal(launchRecord.status , "ACTIVE");
-
-                launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
-                assert.equal(launchWhitelistRecord, undefined);
-
-                const whitelistSaleStartTimestamp    = launchRecord.whitelistSaleStart;
-                const currentTimestamp               = makeTimestamp(0);
-
-                const amount            = 1000000;
-                const saleOption        = "default";
-                const payment           = "fa2Token";
-                
-                // purchase operation
-                const purchaseOperation = await launchpadInstance.methods.purchase(
-                    launchId,
-                    amount,
-                    saleOption,
-                    payment
-                );
-                await chai.expect(purchaseOperation.send()).to.be.rejected;
-
-                launchpadStorage        = await launchpadInstance.storage()
-                launchRecord            = await launchpadStorage.launchLedger.get(launchId);
-
-                assert.equal(whitelistSaleStartTimestamp > currentTimestamp, true);
-
-            } catch (e) {
-                console.log(e)
-            }
+            it('%purchase - whitelisted user (mallory) should not be able to purchase tokens from launch before whitelist sale start time', async () => {
+                try {
+    
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    launchWhitelistRecord      = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
+                    assert.notEqual(launchWhitelistRecord, undefined);
+    
+                    const whitelistSaleStartTimestamp    = launchRecord.whitelistSaleStart;
+                    const currentTimestamp               = makeTimestamp(0);
+    
+                    const amount            = 1000000;
+                    const saleOption        = "default";
+                    const payment           = "fa2Token";
+                    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    );
+                    await chai.expect(purchaseOperation.send()).to.be.rejected;
+    
+                    launchpadStorage        = await launchpadInstance.storage()
+                    launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+    
+                    assert.equal(whitelistSaleStartTimestamp > currentTimestamp, true);
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
+            it('%purchase - non-whitelisted user (david) should not be able to purchase tokens from launch before whitelist sale start time', async () => {
+                try {
+    
+                    user   = david.pkh;
+                    userSk = david.sk;
+                    await signerFactory(tezos, userSk);
+    
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
+                    assert.equal(launchWhitelistRecord, undefined);
+    
+                    const whitelistSaleStartTimestamp    = launchRecord.whitelistSaleStart;
+                    const currentTimestamp               = makeTimestamp(0);
+    
+                    const amount            = 1000000;
+                    const saleOption        = "default";
+                    const payment           = "fa2Token";
+                    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    );
+                    await chai.expect(purchaseOperation.send()).to.be.rejected;
+    
+                    launchpadStorage        = await launchpadInstance.storage()
+                    launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+    
+                    assert.equal(whitelistSaleStartTimestamp > currentTimestamp, true);
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
         })
 
+        
         describe('After whitelist sale start time', function () {
+
+            beforeEach("Set signer to user (mallory)", async () => {
+                user        = mallory.pkh;
+                userSk      = mallory.sk;
+                tokenId     = 0;
+                launchpadStorage = await launchpadInstance.storage()
+                await signerFactory(tezos, userSk);
+            });
+
 
             it('%purchase - whitelisted user (mallory) should be able to purchase tokens (whitelist sale option) from launch and pay in FA2 Tokens', async () => {
                 try {
@@ -1411,6 +1473,10 @@ describe('Test: Launchpad Contract', async () => {
     
                     const initialDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
                     const initialTotalBought        = initialDefaultSaleOption.totalBought;
+                    const saleOptionPayments        = initialDefaultSaleOption.payments.get(payment);
+                    const price                     = saleOptionPayments.price;
+
+                    const totalCost                 = price * (amount / 10**6);
                     
                     initialUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
                     const initialUserTotalPurchased   = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalPurchased;
@@ -1458,10 +1524,10 @@ describe('Test: Launchpad Contract', async () => {
                     assert.equal(+updatedUserPurchasedOption, +initialUserPurchasedOption + +amount);
     
                     // check user balance for payment: mock FA2 token
-                    assert.equal(+updatedUserTokenBalance, +initialUserTokenBalance - +amount);
+                    assert.equal(+updatedUserTokenBalance, +initialUserTokenBalance - +totalCost);
     
                     // check treasury balance
-                    assert.equal(+updatedTreasuryTokenBalance, +initialTreasuryTokenBalance + +amount);
+                    assert.equal(+updatedTreasuryTokenBalance, +initialTreasuryTokenBalance + +totalCost);
     
                 } catch (e) {
                     console.log(e)
@@ -1479,15 +1545,16 @@ describe('Test: Launchpad Contract', async () => {
     
                     launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
                     assert.notEqual(launchWhitelistRecord, undefined);
-
-                    const defaultWhitelistSaleOption                  = launchRecord.saleOptions.get('whitelist');
-                    const defaultWhitelistSaleOptionFa12TokenPayment  = defaultWhitelistSaleOption.payments.get('fa12Token');
-                    const price                                       = defaultWhitelistSaleOptionFa12TokenPayment.price;
     
                     const amount            = 1000000;
                     const saleOption        = "whitelist";
                     const payment           = "fa12Token";
-                    const totalCost         = price * (amount / 10**6);
+
+                    const defaultWhitelistSaleOption     = launchRecord.saleOptions.get(saleOption);
+                    const saleOptionPayments             = defaultWhitelistSaleOption.payments.get(payment);
+                    const price                          = saleOptionPayments.price;
+
+                    const totalCost                 = price * (amount / 10**6);
     
                     const initialDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
                     const initialTotalBought        = initialDefaultSaleOption.totalBought;
@@ -1562,17 +1629,16 @@ describe('Test: Launchpad Contract', async () => {
                     launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
                     assert.notEqual(launchWhitelistRecord, undefined);
     
-                    const defaultWhitelistSaleOption                 = launchRecord.saleOptions.get('whitelist');
-                    const defaultWhitelistSaleOptionTezTokenPayment  = defaultWhitelistSaleOption.payments.get('tez');
-                    const priceInMutez                               = defaultWhitelistSaleOptionTezTokenPayment.price;
-    
                     const amount            = 1000000;
                     const saleOption        = "whitelist";
                     const payment           = "tez";
+
+                    const defaultWhitelistSaleOption     = launchRecord.saleOptions.get(saleOption);
+                    const saleOptionPayments             = defaultWhitelistSaleOption.payments.get(payment);
+                    const initialTotalBought             = defaultWhitelistSaleOption.totalBought;
+                    const priceInMutez                   = saleOptionPayments.price;
+
                     const totalCostInMutez  = priceInMutez * (amount / 10**6);
-    
-                    const initialDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
-                    const initialTotalBought        = initialDefaultSaleOption.totalBought;
     
                     initialUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
                     const initialUserTotalPurchased   = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalPurchased;
@@ -1653,9 +1719,41 @@ describe('Test: Launchpad Contract', async () => {
                     console.log(e)
                 }
             })
+
+            it('%purchase - whitelisted user (mallory) should not be able to purchase tokens (whitelist sale option) below the minPurchaseAmount', async () => {
+                try {
+
+    
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
+                    assert.notEqual(launchWhitelistRecord, undefined);
+
+                    const saleOption                     = "whitelist";
+                    const defaultWhitelistSaleOption     = launchRecord.saleOptions.get(saleOption);
+                    const minPurchaseAmount              = defaultWhitelistSaleOption.minPurchaseAmount;
+    
+                    const amount                = minPurchaseAmount - 1;
+                    const payment               = "fa2Token";
+                    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    );
+                    await chai.expect(purchaseOperation.send()).to.be.rejected;
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
     
     
-            it('%purchase - whitelisted user (mallory) should not be able to purchase tokens (default sale option) she is not whitelisted for', async () => {
+            it('%purchase - whitelisted user (mallory) should not be able to purchase tokens (default sale option) that is not whitelisted', async () => {
                 try {
     
                     const saleOption           = "default";
@@ -1723,47 +1821,908 @@ describe('Test: Launchpad Contract', async () => {
                 }
             })
     
-            // it('%purchase - user (mallory) should be able to purchase tokens from launch', async () => {
-            //     try {
+        })
+
+        describe('Before sale start time', function () {
+
+            beforeEach("Set signer to user (mallory)", async () => {
+                user        = mallory.pkh;
+                userSk      = mallory.sk;
+                tokenId     = 0;
+                launchpadStorage = await launchpadInstance.storage()
+                await signerFactory(tezos, userSk);
+            });
+
+            it('%purchase - whitelisted user (mallory) should not be able to purchase tokens from launch before sale start time', async () => {
+                try {
     
-            //         launchId                   = firstLaunchId;
-            //         launchRecord               = await launchpadStorage.launchLedger.get(launchId);
-            //         assert.equal(launchRecord.status , "ACTIVE");
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
     
-            //         const initialDefaultSaleOption  = launchRecord.saleOptions.get('default');
-            //         const initialTotalBought        = initialDefaultSaleOption.totalBought;
+                    const saleStartTimestamp    = launchRecord.saleStart;
+                    const currentTimestamp      = makeTimestamp(0);
     
-            //         const amount            = 1000000;
-            //         const saleOption        = "default";
-            //         const currentTimestamp  = makeTimestamp(0);
+                    const amount            = 1000000;
+                    const saleOption        = "default";
+                    const payment           = "fa2Token";
+                    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    );
+                    await chai.expect(purchaseOperation.send()).to.be.rejected;
     
-            //         // purchase operation
-            //         const purchaseOperation = await launchpadInstance.methods.purchase(
-            //             launchId,
-            //             amount,
-            //             saleOption
-            //         ).send();
-            //         await purchaseOperation.confirmation();
+                    launchpadStorage        = await launchpadInstance.storage()
+                    launchRecord            = await launchpadStorage.launchLedger.get(launchId);
     
-            //         launchpadStorage        = await launchpadInstance.storage()
-            //         launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(saleStartTimestamp > currentTimestamp, true);
     
-            //         const updatedDefaultSaleOption  = launchRecord.saleOptions.get('default');
-            //         const updatedTotalBought        = updatedDefaultSaleOption.totalBought;
-            //         const saleStartTimestamp        = launchRecord.saleStart;
+                } catch (e) {
+                    console.log(e)
+                }
+            })
     
-            //         console.log(`currentTimestamp: ${currentTimestamp}`);
-            //         console.log(`saleStartTimestamp: ${saleStartTimestamp}`);
-            //         console.log(`currentTimestamp > saleStartTimestamp: ${currentTimestamp > saleStartTimestamp}`);
+            it('%purchase - non-whitelisted user (david) should not be able to purchase tokens from launch before sale start time', async () => {
+                try {
     
-            //         assert.equal(currentTimestamp > saleStartTimestamp, true);
-            //         assert.equal(updatedTotalBought, initialTotalBought + amount);
+                    user   = david.pkh;
+                    userSk = david.sk;
+                    await signerFactory(tezos, userSk);
+    
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    const saleStartTimestamp    = launchRecord.saleStart;
+                    const currentTimestamp      = makeTimestamp(0);
+    
+                    const amount            = 1000000;
+                    const saleOption        = "default";
+                    const payment           = "fa2Token";
+                    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    );
+                    await chai.expect(purchaseOperation.send()).to.be.rejected;
+    
+                    launchpadStorage        = await launchpadInstance.storage()
+                    launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+    
+                    assert.equal(saleStartTimestamp > currentTimestamp, true);
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
+        })
+
+        describe('After sale start time', function () {
+
+            beforeEach("Set signer to user (david)", async () => {
+                user        = david.pkh;
+                userSk      = david.sk;
+                tokenId     = 0;
+                launchpadStorage = await launchpadInstance.storage()
+                await signerFactory(tezos, userSk);
+            });
+    
+
+            it('%purchase - non-whitelisted user (david) should be able to purchase tokens (default sale option) from launch and pay in FA2 Tokens', async () => {
+                try {
+    
+                    user        = david.pkh;
+                    userSk      = david.sk;
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    const saleStartTimestamp   = launchRecord.saleStart;
+                    let currentTimestamp       = makeTimestamp(0);
+                    
+                    // wait for whitelist start time
+                    const differenceInMilliseconds = new Date(saleStartTimestamp).getTime() - new Date(currentTimestamp).getTime();
+                    await wait(differenceInMilliseconds + 10);
+    
+                    const amount            = 1000000;
+                    const saleOption        = "default";
+                    const payment           = "fa2Token";
+
+                    const defaultSaleOption         = launchRecord.saleOptions.get(saleOption);
+                    const initialTotalBought        = defaultSaleOption.totalBought;
+                    const saleOptionPayments        = defaultSaleOption.payments.get(payment);
+                    const price                     = saleOptionPayments.price;
+                    
+                    const totalCost                 = price * (amount / 10**6);
+                    currentTimestamp                = makeTimestamp(0);
+                    
+                    initialUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const initialUserTotalPurchased   = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalPurchased;
+                    const initialUserTotalDistributed = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalDistributed;
+                    const initialUserPurchasedOption  = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.purchased.get(saleOption);
+    
+                    mockFa2TokenStorage             = await mockFa2TokenInstance.storage();
+                    initialUserTokenBalance         = await mockFa2TokenStorage.ledger.get(user);
+                    initialTreasuryTokenBalance     = await mockFa2TokenStorage.ledger.get(treasuryAddress);
+    
+                    // update operators operation
+                    updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, user, launchpadAddress, tokenId);
+                    await updateOperatorsOperation.confirmation();
+    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    ).send();
+                    await purchaseOperation.confirmation();
+    
+                    launchpadStorage        = await launchpadInstance.storage()
+                    mockFa2TokenStorage     = await mockFa2TokenInstance.storage()
+    
+                    launchRecord                    = await launchpadStorage.launchLedger.get(launchId);
+                    updatedUserTokenBalance         = await mockFa2TokenStorage.ledger.get(user);
+                    updatedTreasuryTokenBalance     = await mockFa2TokenStorage.ledger.get(treasuryAddress);
+    
+                    updatedUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const updatedUserTotalPurchased   = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalPurchased;
+                    const updatedUserTotalDistributed = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalDistributed;
+                    const updatedUserPurchasedOption  = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.purchased.get(saleOption);
+    
+                    const updatedDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
+                    const updatedTotalBought        = updatedDefaultSaleOption.totalBought;
+    
+                    assert.equal(currentTimestamp > saleStartTimestamp, true);
+                    assert.equal(+updatedTotalBought, +initialTotalBought + +amount);
+    
+                    // check user purchases
+                    assert.equal(+updatedUserTotalPurchased, +initialUserTotalPurchased + +amount);
+                    assert.equal(+updatedUserTotalDistributed, +initialUserTotalDistributed);
+                    assert.equal(+updatedUserPurchasedOption, +initialUserPurchasedOption + +amount);
+
+                    // check user balance for payment: mock FA2 token
+                    assert.equal(+updatedUserTokenBalance, +initialUserTokenBalance - +totalCost);
+    
+                    // check treasury balance
+                    assert.equal(+updatedTreasuryTokenBalance, +initialTreasuryTokenBalance + +totalCost);
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('%purchase - non-whitelisted user (david) should be able to purchase tokens (default sale option) from launch and pay in FA12 Tokens', async () => {
+                try {
+    
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    const amount            = 1000000;
+                    const saleOption        = "default";
+                    const payment           = "fa12Token";
+
+                    const defaultSaleOption           = launchRecord.saleOptions.get(saleOption);
+                    const saleOptionPayments          = defaultSaleOption.payments.get(payment);
+                    const initialTotalBought          = defaultSaleOption.totalBought;
+                    const price                       = saleOptionPayments.price;
+
+                    const totalCost                   = price * (amount / 10**6);
+    
+                    initialUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const initialUserTotalPurchased   = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalPurchased;
+                    const initialUserTotalDistributed = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalDistributed;
+                    const initialUserPurchasedOption  = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.purchased.get(saleOption);
+    
+                    mockFa12TokenStorage             = await mockFa12TokenInstance.storage();
+                    initialUserTokenBalance          = (await mockFa12TokenStorage.ledger.get(user)).balance.toNumber();
+                    initialTreasuryTokenBalance      = (await mockFa12TokenStorage.ledger.get(treasuryAddress)).balance.toNumber();
+    
+                    // approve operation
+                    approveOperation = await mockFa12TokenInstance.methods.approve(launchpadAddress, totalCost).send();
+                    await approveOperation.confirmation();
+    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    ).send();
+                    await purchaseOperation.confirmation();
+                    
+                    // approve operation
+                    approveOperation = await mockFa12TokenInstance.methods.approve(launchpadAddress, 0).send();
+                    await approveOperation.confirmation();
+    
+                    launchpadStorage        = await launchpadInstance.storage()
+                    mockFa12TokenStorage    = await mockFa12TokenInstance.storage()
+    
+                    launchRecord                    = await launchpadStorage.launchLedger.get(launchId);
+                    updatedUserTokenBalance         = (await mockFa12TokenStorage.ledger.get(user)).balance.toNumber();
+                    updatedTreasuryTokenBalance     = (await mockFa12TokenStorage.ledger.get(treasuryAddress)).balance.toNumber();
+    
+                    updatedUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const updatedUserTotalPurchased   = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalPurchased;
+                    const updatedUserTotalDistributed = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalDistributed;
+                    const updatedUserPurchasedOption  = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.purchased.get(saleOption);
+    
+                    const updatedDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
+                    const updatedTotalBought        = updatedDefaultSaleOption.totalBought;
+    
+                    assert.equal(+updatedTotalBought, +initialTotalBought + +amount);
+    
+                    // check user purchases
+                    assert.equal(+updatedUserTotalPurchased, +initialUserTotalPurchased + +amount);
+                    assert.equal(+updatedUserTotalDistributed, +initialUserTotalDistributed);
+                    assert.equal(+updatedUserPurchasedOption, +initialUserPurchasedOption + +amount);
+    
+                    // check user balance for payment: mock FA2 token
+                    assert.equal(+updatedUserTokenBalance, +initialUserTokenBalance - +totalCost);
+    
+                    // check treasury balance
+                    assert.equal(+updatedTreasuryTokenBalance, +initialTreasuryTokenBalance + +totalCost);
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
     
     
-            //     } catch (e) {
-            //         console.log(e)
-            //     }
-            // })
+            it('%purchase - non-whitelisted user (david) should be able to purchase tokens (default sale option) from launch and pay in Tez', async () => {
+                try {
+    
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    const amount            = 1000000;
+                    const saleOption        = "default";
+                    const payment           = "tez";
+
+                    const defaultSaleOption              = launchRecord.saleOptions.get(saleOption);
+                    const saleOptionPayments             = defaultSaleOption.payments.get(payment);
+                    const priceInMutez                   = saleOptionPayments.price;
+
+                    const totalCostInMutez  = priceInMutez * (amount / 10**6);
+    
+                    const initialDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
+                    const initialTotalBought        = initialDefaultSaleOption.totalBought;
+    
+                    initialUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const initialUserTotalPurchased   = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalPurchased;
+                    const initialUserTotalDistributed = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalDistributed;
+                    const initialUserPurchasedOption  = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.purchased.get(saleOption);
+                    
+                    const initialUserTezBalance     = await utils.tezos.tz.getBalance(user);
+                    const initialTreasuryTezBalance = await utils.tezos.tz.getBalance(treasuryAddress);
+    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    ).send({ amount: totalCostInMutez, mutez: true});
+                    await purchaseOperation.confirmation();
+    
+                    launchpadStorage        = await launchpadInstance.storage()
+                    launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+    
+                    const updatedDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
+                    const updatedTotalBought        = updatedDefaultSaleOption.totalBought;
+    
+                    updatedUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const updatedUserTotalPurchased   = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalPurchased;
+                    const updatedUserTotalDistributed = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalDistributed;
+                    const updatedUserPurchasedOption  = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.purchased.get(saleOption);
+    
+                    const updatedUserTezBalance     = await utils.tezos.tz.getBalance(user);
+                    const updatedTreasuryTezBalance = await utils.tezos.tz.getBalance(treasuryAddress);
+    
+                    assert.equal(+updatedTotalBought, +initialTotalBought + +amount);
+    
+                    // check user purchases
+                    assert.equal(+updatedUserTotalPurchased, +initialUserTotalPurchased + +amount);
+                    assert.equal(+updatedUserTotalDistributed, +initialUserTotalDistributed);
+                    assert.equal(+updatedUserPurchasedOption, +initialUserPurchasedOption + +amount);
+    
+                    // check user balance for payment: tez
+                    assert.equal(almostEqual(+updatedUserTezBalance, +initialUserTezBalance - +totalCostInMutez, 0.01), true);
+    
+                    // check treasury balance
+                    assert.equal(+updatedTreasuryTezBalance, +initialTreasuryTezBalance + +totalCostInMutez);
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('%purchase - non-whitelisted user (david) should not be able to purchase tokens with the whitelist sale option', async () => {
+                try {
+    
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    const amount            = 1000000;
+                    const saleOption        = "whitelist";
+                    var payment             = "fa12Token";
+
+                    const saleOptionRecord       = launchRecord.saleOptions.get(saleOption);
+                    const saleOptionFa12Payment  = saleOptionRecord.payments.get(payment);
+                    const saleOptionFa12Price    = saleOptionFa12Payment.price;
+
+                    // ------------------------------------------
+                    // Payment: FA12 Token
+                    // ------------------------------------------
+
+                    let totalCost = saleOptionFa12Price * (amount / 10**6);
+
+                    // approve operation
+                    approveOperation = await mockFa12TokenInstance.methods.approve(launchpadAddress, totalCost).send();
+                    await approveOperation.confirmation();
+    
+                    // purchase operation
+                    let purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    );
+                    await chai.expect(purchaseOperation.send()).to.be.rejected;
+
+                    // approve operation
+                    approveOperation = await mockFa12TokenInstance.methods.approve(launchpadAddress, 0).send();
+                    await approveOperation.confirmation();
+                    
+                    // ------------------------------------------
+                    // Payment: FA2 Token
+                    // ------------------------------------------
+
+                    // update operators operation
+                    payment = "fa2Token";
+                    updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, user, launchpadAddress, tokenId);
+                    await updateOperatorsOperation.confirmation();
+
+                    purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    );
+                    await chai.expect(purchaseOperation.send()).to.be.rejected;
+
+                    // ------------------------------------------
+                    // Payment: Tez
+                    // ------------------------------------------
+
+                    payment = "tez";
+                    const saleOptionTezPayment  = saleOptionRecord.payments.get(payment);
+                    const saleOptionTezPrice    = saleOptionTezPayment.price;
+                    totalCost = saleOptionTezPrice * (amount / 10**6);
+
+                    purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    );
+                    await chai.expect(purchaseOperation.send({ amount: totalCost, mutez: true})).to.be.rejected;
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('%purchase - non-whitelisted user (david) should not be able to purchase tokens (default sale option) beyond the max amount per wallet', async () => {
+                try {
+
+    
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    const saleOption              = "default";
+                    const saleOptionRecord        = launchRecord.saleOptions.get(saleOption);
+                    const maxAmountPerWalletTotal = saleOptionRecord.maxAmountPerWalletTotal;
+    
+                    const amount                = maxAmountPerWalletTotal + 100;
+                    const payment               = "fa2Token";
+                    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    );
+                    await chai.expect(purchaseOperation.send()).to.be.rejected;
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('%purchase - non-whitelisted user (david) should not be able to purchase tokens (default sale option) below the minPurchaseAmount', async () => {
+                try {
+
+    
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+
+                    const saleOption                     = "default";
+                    const saleOptionRecord               = launchRecord.saleOptions.get(saleOption);
+                    const minPurchaseAmount              = saleOptionRecord.minPurchaseAmount;
+    
+                    const amount                = minPurchaseAmount - 1;
+                    const payment               = "fa2Token";
+                    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    );
+                    await chai.expect(purchaseOperation.send()).to.be.rejected;
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('%purchase - whitelisted user (mallory) should be able to purchase tokens (default sale option) from launch and pay in FA2 Tokens', async () => {
+                try {
+    
+                    user        = mallory.pkh;
+                    userSk      = mallory.sk;
+                    await signerFactory(tezos, userSk);
+
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    const amount            = 1000000;
+                    const saleOption        = "default";
+                    const payment           = "fa2Token";
+    
+                    const initialDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
+                    const initialTotalBought        = initialDefaultSaleOption.totalBought;
+                    const saleOptionPayments        = initialDefaultSaleOption.payments.get(payment);
+                    const price                     = saleOptionPayments.price;
+
+                    const totalCost                 = price * (amount / 10**6);
+                    
+                    initialUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const initialUserTotalPurchased   = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalPurchased;
+                    const initialUserTotalDistributed = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalDistributed;
+                    const initialUserPurchasedOption  = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.purchased.get(saleOption) == undefined ? 0 : initialUserPurchaseRecord.purchased.get(saleOption);
+    
+                    mockFa2TokenStorage             = await mockFa2TokenInstance.storage();
+                    initialUserTokenBalance         = await mockFa2TokenStorage.ledger.get(user);
+                    initialTreasuryTokenBalance     = await mockFa2TokenStorage.ledger.get(treasuryAddress);
+    
+                    // update operators operation
+                    updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, user, launchpadAddress, tokenId);
+                    await updateOperatorsOperation.confirmation();
+    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    ).send();
+                    await purchaseOperation.confirmation();
+    
+                    launchpadStorage        = await launchpadInstance.storage()
+                    mockFa2TokenStorage     = await mockFa2TokenInstance.storage()
+    
+                    launchRecord                    = await launchpadStorage.launchLedger.get(launchId);
+                    updatedUserTokenBalance         = await mockFa2TokenStorage.ledger.get(user);
+                    updatedTreasuryTokenBalance     = await mockFa2TokenStorage.ledger.get(treasuryAddress);
+    
+                    updatedUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const updatedUserTotalPurchased   = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalPurchased;
+                    const updatedUserTotalDistributed = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalDistributed;
+                    const updatedUserPurchasedOption  = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.purchased.get(saleOption);
+    
+                    const updatedDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
+                    const updatedTotalBought        = updatedDefaultSaleOption.totalBought;
+    
+                    assert.equal(+updatedTotalBought, +initialTotalBought + +amount);
+    
+                    // check user purchases
+                    assert.equal(+updatedUserTotalPurchased, +initialUserTotalPurchased + +amount);
+                    assert.equal(+updatedUserTotalDistributed, +initialUserTotalDistributed);
+                    assert.equal(+updatedUserPurchasedOption, +initialUserPurchasedOption + +amount);
+    
+                    // check user balance for payment: mock FA2 token
+                    assert.equal(+updatedUserTokenBalance, +initialUserTokenBalance - +totalCost);
+    
+                    // check treasury balance
+                    assert.equal(+updatedTreasuryTokenBalance, +initialTreasuryTokenBalance + +totalCost);
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
+            it('%purchase - whitelisted user (mallory) should be able to purchase tokens (default sale option) from launch and pay in FA12 Tokens', async () => {
+                try {
+    
+                    user        = mallory.pkh;
+                    userSk      = mallory.sk;
+                    await signerFactory(tezos, userSk);
+
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    const amount            = 1000000;
+                    const saleOption        = "default";
+                    const payment           = "fa12Token";
+
+                    const defaultSaleOption           = launchRecord.saleOptions.get(saleOption);
+                    const saleOptionPayments          = defaultSaleOption.payments.get(payment);
+                    const initialTotalBought          = defaultSaleOption.totalBought;
+                    const price                       = saleOptionPayments.price;
+
+                    const totalCost                   = price * (amount / 10**6);
+                    
+                    initialUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const initialUserTotalPurchased   = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalPurchased;
+                    const initialUserTotalDistributed = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalDistributed;
+                    const initialUserPurchasedOption  = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.purchased.get(saleOption);
+    
+                    mockFa12TokenStorage             = await mockFa12TokenInstance.storage();
+                    initialUserTokenBalance          = (await mockFa12TokenStorage.ledger.get(user)).balance.toNumber();
+                    initialTreasuryTokenBalance      = (await mockFa12TokenStorage.ledger.get(treasuryAddress)).balance.toNumber();
+    
+                    // approve operation
+                    approveOperation = await mockFa12TokenInstance.methods.approve(launchpadAddress, totalCost).send();
+                    await approveOperation.confirmation();
+    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    ).send();
+                    await purchaseOperation.confirmation();
+                    
+                    // approve operation
+                    approveOperation = await mockFa12TokenInstance.methods.approve(launchpadAddress, 0).send();
+                    await approveOperation.confirmation();
+    
+                    launchpadStorage        = await launchpadInstance.storage()
+                    mockFa12TokenStorage    = await mockFa12TokenInstance.storage()
+    
+                    launchRecord                    = await launchpadStorage.launchLedger.get(launchId);
+                    updatedUserTokenBalance         = (await mockFa12TokenStorage.ledger.get(user)).balance.toNumber();
+                    updatedTreasuryTokenBalance     = (await mockFa12TokenStorage.ledger.get(treasuryAddress)).balance.toNumber();
+    
+                    updatedUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const updatedUserTotalPurchased   = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalPurchased;
+                    const updatedUserTotalDistributed = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalDistributed;
+                    const updatedUserPurchasedOption  = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.purchased.get(saleOption);
+    
+                    const updatedDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
+                    const updatedTotalBought        = updatedDefaultSaleOption.totalBought;
+    
+                    assert.equal(+updatedTotalBought, +initialTotalBought + +amount);
+    
+                    // check user purchases
+                    assert.equal(+updatedUserTotalPurchased, +initialUserTotalPurchased + +amount);
+                    assert.equal(+updatedUserTotalDistributed, +initialUserTotalDistributed);
+                    assert.equal(+updatedUserPurchasedOption, +initialUserPurchasedOption + +amount);
+    
+                    // check user balance for payment: mock FA2 token
+                    assert.equal(+updatedUserTokenBalance, +initialUserTokenBalance - +totalCost);
+    
+                    // check treasury balance
+                    assert.equal(+updatedTreasuryTokenBalance, +initialTreasuryTokenBalance + +totalCost);
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
+    
+            it('%purchase - whitelisted user (mallory) should be able to purchase tokens (default sale option) from launch and pay in Tez', async () => {
+                try {
+    
+                    user        = mallory.pkh;
+                    userSk      = mallory.sk;
+                    await signerFactory(tezos, userSk);
+
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    const amount            = 1000000;
+                    const saleOption        = "default";
+                    const payment           = "tez";
+
+                    const defaultSaleOption              = launchRecord.saleOptions.get(saleOption);
+                    const saleOptionPayments             = defaultSaleOption.payments.get(payment);
+                    const priceInMutez                   = saleOptionPayments.price;
+
+                    const totalCostInMutez  = priceInMutez * (amount / 10**6);
+    
+                    const initialDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
+                    const initialTotalBought        = initialDefaultSaleOption.totalBought;
+    
+                    initialUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const initialUserTotalPurchased   = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalPurchased;
+                    const initialUserTotalDistributed = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalDistributed;
+                    const initialUserPurchasedOption  = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.purchased.get(saleOption);
+                    
+                    const initialUserTezBalance     = await utils.tezos.tz.getBalance(user);
+                    const initialTreasuryTezBalance = await utils.tezos.tz.getBalance(treasuryAddress);
+    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    ).send({ amount: totalCostInMutez, mutez: true});
+                    await purchaseOperation.confirmation();
+    
+                    launchpadStorage        = await launchpadInstance.storage()
+                    launchRecord            = await launchpadStorage.launchLedger.get(launchId);
+    
+                    const updatedDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
+                    const updatedTotalBought        = updatedDefaultSaleOption.totalBought;
+    
+                    updatedUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const updatedUserTotalPurchased   = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalPurchased;
+                    const updatedUserTotalDistributed = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalDistributed;
+                    const updatedUserPurchasedOption  = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.purchased.get(saleOption);
+    
+                    const updatedUserTezBalance     = await utils.tezos.tz.getBalance(user);
+                    const updatedTreasuryTezBalance = await utils.tezos.tz.getBalance(treasuryAddress);
+    
+                    assert.equal(+updatedTotalBought, +initialTotalBought + +amount);
+    
+                    // check user purchases
+                    assert.equal(+updatedUserTotalPurchased, +initialUserTotalPurchased + +amount);
+                    assert.equal(+updatedUserTotalDistributed, +initialUserTotalDistributed);
+                    assert.equal(+updatedUserPurchasedOption, +initialUserPurchasedOption + +amount);
+    
+                    // check user balance for payment: tez
+                    assert.equal(almostEqual(+updatedUserTezBalance, +initialUserTezBalance - +totalCostInMutez, 0.01), true);
+    
+                    // check treasury balance
+                    assert.equal(+updatedTreasuryTezBalance, +initialTreasuryTezBalance + +totalCostInMutez);
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
+    
+            it('%purchase - whitelisted user (mallory) should not be able to purchase tokens (default sale option) beyond her allowed limit', async () => {
+                try {
+
+                    user        = mallory.pkh;
+                    userSk      = mallory.sk;
+                    await signerFactory(tezos, userSk);
+    
+                    const saleOption           = "default";
+    
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+                    
+                    const saleOptionRecord        = launchRecord.saleOptions.get(saleOption);
+                    const maxAmountPerWalletTotal = saleOptionRecord.maxAmountPerWalletTotal;
+    
+                    const amount                = maxAmountPerWalletTotal + 100;
+                    const payment               = "fa2Token";
+                    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    );
+                    await chai.expect(purchaseOperation.send()).to.be.rejected;
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('%purchase - whitelisted user (mallory) should be able to purchase tokens (whitelist sale option) from launch and pay in FA2 Tokens', async () => {
+                try {
+    
+                    user        = mallory.pkh;
+                    userSk      = mallory.sk;
+                    await signerFactory(tezos, userSk);
+
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
+                    assert.notEqual(launchWhitelistRecord, undefined);
+
+                    const amount            = 1000000;
+                    const saleOption        = "whitelist";
+                    const payment           = "fa2Token";
+    
+                    const initialDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
+                    const initialTotalBought        = initialDefaultSaleOption.totalBought;
+                    const saleOptionPayments        = initialDefaultSaleOption.payments.get(payment);
+                    const price                     = saleOptionPayments.price;
+
+                    const totalCost                 = price * (amount / 10**6);
+                    
+                    initialUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const initialUserTotalPurchased   = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalPurchased;
+                    const initialUserTotalDistributed = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.totalDistributed;
+                    const initialUserPurchasedOption  = initialUserPurchaseRecord == undefined ? 0 : initialUserPurchaseRecord.purchased.get(saleOption);
+    
+                    mockFa2TokenStorage             = await mockFa2TokenInstance.storage();
+                    initialUserTokenBalance         = await mockFa2TokenStorage.ledger.get(user);
+                    initialTreasuryTokenBalance     = await mockFa2TokenStorage.ledger.get(treasuryAddress);
+    
+                    // update operators operation
+                    updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, user, launchpadAddress, tokenId);
+                    await updateOperatorsOperation.confirmation();
+    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    ).send();
+                    await purchaseOperation.confirmation();
+    
+                    launchpadStorage        = await launchpadInstance.storage()
+                    mockFa2TokenStorage     = await mockFa2TokenInstance.storage()
+    
+                    launchRecord                    = await launchpadStorage.launchLedger.get(launchId);
+                    updatedUserTokenBalance         = await mockFa2TokenStorage.ledger.get(user);
+                    updatedTreasuryTokenBalance     = await mockFa2TokenStorage.ledger.get(treasuryAddress);
+    
+                    updatedUserPurchaseRecord         = await launchpadStorage.purchaseLedger.get([launchId, user]);
+                    const updatedUserTotalPurchased   = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalPurchased;
+                    const updatedUserTotalDistributed = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.totalDistributed;
+                    const updatedUserPurchasedOption  = updatedUserPurchaseRecord == undefined ? 0 : updatedUserPurchaseRecord.purchased.get(saleOption);
+    
+                    const updatedDefaultSaleOption  = launchRecord.saleOptions.get(saleOption);
+                    const updatedTotalBought        = updatedDefaultSaleOption.totalBought;
+    
+                    assert.equal(+updatedTotalBought, +initialTotalBought + +amount);
+    
+                    // check user purchases
+                    assert.equal(+updatedUserTotalPurchased, +initialUserTotalPurchased + +amount);
+                    assert.equal(+updatedUserTotalDistributed, +initialUserTotalDistributed);
+                    assert.equal(+updatedUserPurchasedOption, +initialUserPurchasedOption + +amount);
+    
+                    // check user balance for payment: mock FA2 token
+                    assert.equal(+updatedUserTokenBalance, +initialUserTokenBalance - +totalCost);
+    
+                    // check treasury balance
+                    assert.equal(+updatedTreasuryTokenBalance, +initialTreasuryTokenBalance + +totalCost);
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('%purchase - user (mallory) should not be able to purchase tokens beyond the max amount cap (launch record)', async () => {
+                try {
+    
+                    await signerFactory(tezos, adminSk);
+
+                    launchId                        = firstLaunchId;
+                    launchRecord                    = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+
+                    const initialMaxAmountCap = launchRecord.maxAmountCap;
+                    const initialTotalBought  = launchRecord.totalBought;
+
+                    const newName                   = null;
+                    const newTokenIssuanceType      = null;
+                    const newTokenDistributionType  = null;
+                    const newTokenContractAddress   = null;
+                    const newTokenId                = null;
+                    const newMaxAmountCap           = 50000000;
+                    const newTotalBought            = 48500000;
+                    const newSaleStart              = null;
+                    const newSaleEnd                = null;
+                    const newWhitelistSaleStart     = null;
+                    const newWhitelistSaleEnd       = null;
+
+                    const newSaleOptions                = null
+                    const newDefaultWhitelistOptions    = null
+
+                    // edit token launch operation
+                    let editTokenLaunchOperation = await launchpadInstance.methods.editTokenLaunch(
+                        launchId,
+                        newName,
+                        newTokenIssuanceType,
+                        newTokenDistributionType,
+                        newTokenContractAddress,
+                        newTokenId,
+                        newMaxAmountCap,
+                        newTotalBought,
+                        newSaleStart,
+                        newSaleEnd,
+                        newWhitelistSaleStart,
+                        newWhitelistSaleEnd,
+                        newSaleOptions,
+                        newDefaultWhitelistOptions
+                    ).send()
+                    await editTokenLaunchOperation.confirmation();
+
+                    user    = mallory.pkh
+                    userSk  = mallory.sk;
+                    await signerFactory(tezos, userSk);
+    
+                    const amount                    = newMaxAmountCap - newTotalBought + 1;
+                    const saleOption                = "default";
+                    const payment                   = "fa2Token";
+    
+                    // update operators operation
+                    updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, user, launchpadAddress, tokenId);
+                    await updateOperatorsOperation.confirmation();
+    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    );
+                    await chai.expect(purchaseOperation.send()).to.be.rejected;
+
+                    
+                    // reset max amount cap and total bought
+                    await signerFactory(tezos, adminSk);
+
+                    // edit token launch operation
+                    editTokenLaunchOperation = await launchpadInstance.methods.editTokenLaunch(
+                        launchId,
+                        newName,
+                        newTokenIssuanceType,
+                        newTokenDistributionType,
+                        newTokenContractAddress,
+                        newTokenId,
+                        initialMaxAmountCap,
+                        initialTotalBought,
+                        newSaleStart,
+                        newSaleEnd,
+                        newWhitelistSaleStart,
+                        newWhitelistSaleEnd,
+                        newSaleOptions,
+                        newDefaultWhitelistOptions
+                    ).send()
+                    await editTokenLaunchOperation.confirmation();
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
         })
 
     })

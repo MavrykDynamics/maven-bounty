@@ -464,6 +464,11 @@ block {
                             const saleOptionName  : string            = _setSaleOptionParams.saleOption;
                             var launchRecord      : launchRecordType := getLaunchRecord(launchId, s);
 
+                            const whitelistOnly   : bool    = case _setSaleOptionParams.whitelistOnly of [
+                                    Some(_v) -> _v
+                                |   None -> False
+                            ];
+
                             // add new sale option
                             launchRecord.saleOptions[saleOptionName] := case launchRecord.saleOptions[saleOptionName] of [
                                     Some(_v) -> failwith(error_SALE_OPTION_ALREADY_EXISTS)
@@ -472,6 +477,7 @@ block {
                                         maxAmountCap            = _setSaleOptionParams.maxAmountCap;
                                         minPurchaseAmount       = _setSaleOptionParams.minPurchaseAmount;
                                         maxAmountPerWalletTotal = _setSaleOptionParams.maxAmountPerWalletTotal;
+                                        whitelistOnly           = whitelistOnly;
                                         payments                = _setSaleOptionParams.payments;
                                 ]
                             ];
@@ -509,6 +515,11 @@ block {
 
                             case _updateSaleOptionParams.maxAmountPerWalletTotal of [
                                     Some(_newMaxAmountPerWalletTotal) -> saleOption.maxAmountPerWalletTotal := Some(_newMaxAmountPerWalletTotal)
+                                |   None -> skip
+                            ];
+
+                            case _updateSaleOptionParams.whitelistOnly of [
+                                    Some(_newWhitelistOnly) -> saleOption.whitelistOnly := _newWhitelistOnly
                                 |   None -> skip
                             ];
 
@@ -841,20 +852,26 @@ block {
                     |   None     -> zeroTimestamp
                 ];
 
+                // check if current period is after sale start
+                const saleStarted : bool = if Tezos.get_now() > launchRecord.saleStart then True else False;
+
                 // get sale option
                 var saleOption : tokenSaleOptionType := getSaleOption(launchRecord, saleOptionName);
+                const saleOptionWhitelistOnly : bool = saleOption.whitelistOnly;
 
-                // get total bought amount
-                const totalBought   : nat       = saleOption.totalBought;
+                // get sale option total bought amount
+                const saleOptionTotalBought   : nat       = saleOption.totalBought;
+                const launchTotalBought       : nat       = launchRecord.totalBought;
                 
                 // verify token sale option max amount cap not exceeded if it exists
                 case saleOption.maxAmountCap of [
-                        Some(_saleOptionMaxAmountCap) -> if (totalBought + amount) > _saleOptionMaxAmountCap then failwith(error_MAX_AMOUNT_CAP_FOR_SALE_OPTION_EXCEEDED) else skip
+                        Some(_saleOptionMaxAmountCap) -> if (saleOptionTotalBought + amount) > _saleOptionMaxAmountCap then failwith(error_MAX_AMOUNT_CAP_FOR_SALE_OPTION_EXCEEDED) else skip
                     |   None -> skip
                 ];
 
                 // verify launch max amount cap not exceeded
-                if (totalBought + amount) > launchMaxAmountCap then failwith(error_MAX_AMOUNT_CAP_FOR_LAUNCH_EXCEEDED) else skip;
+                if (saleOptionTotalBought + amount) > launchMaxAmountCap then failwith(error_MAX_AMOUNT_CAP_FOR_LAUNCH_EXCEEDED) else skip;
+                if (launchTotalBought + amount) > launchMaxAmountCap then failwith(error_MAX_AMOUNT_CAP_FOR_LAUNCH_EXCEEDED) else skip;
 
                 // verify amount bought is greater than minPurchaseAmount if it exists
                 case saleOption.minPurchaseAmount of [
@@ -889,8 +906,32 @@ block {
                     |   None -> skip
                 ];
 
-                // check if in whitelist period
-                if inWhitelistPeriod = True then block {
+
+                // check if sale has started
+                if saleStarted = True then block {
+
+                    // check if sale option is only for whitelist 
+                    if saleOptionWhitelistOnly = True then block {
+
+                        // check if user is whitelisted
+                        const userLaunchWhitelistRecord : launchWhitelistRecordType = case s.launchWhitelistLedger[launchUserKey] of [
+                                Some(_record) -> _record
+                            |   None -> failwith(error_USER_WHITELIST_RECORD_NOT_FOUND)
+                        ];
+
+                        const userWhitelistAllowedAmount : nat = case userLaunchWhitelistRecord.allowed[saleOptionName] of [
+                                Some(_amount) -> _amount
+                            |   None -> 0n
+                        ];
+
+                        // check that userWhitelistAllowedAmount is not exceeded
+                        if (userSaleOptionPurchased + amount) > userWhitelistAllowedAmount then failwith(error_USER_WHITELIST_ALLOWED_AMOUNT_EXCEEDED) else skip;
+
+                    } else skip;
+
+                } else if inWhitelistPeriod = True then block {
+
+                    // check if in whitelist period
 
                     // inWhitelistPeriod: True
                     // check if user is whitelisted

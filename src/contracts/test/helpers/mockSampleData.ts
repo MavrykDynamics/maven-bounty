@@ -13,8 +13,8 @@ let mockFa12TokenAddress
 let mockFa2TokenAddress 
 
 
-mockFa12TokenAddress            = contractDeployments.mockFa12Token.address;
-mockFa2TokenAddress             = contractDeployments.mockFa2Token.address;
+mockFa12TokenAddress  = contractDeployments.mockFa12Token.address;
+mockFa2TokenAddress   = contractDeployments.mockFa2Token.address;
 
 // ------------------------------------------------------------------------------
 // Mock Data
@@ -82,10 +82,11 @@ export const mockTokenSaleOptions = {
         totalBought             : 0, 
         minPurchaseAmount       : 1000000,
         maxAmountPerWalletTotal : 10000000,
+        whitelistOnly           : false,
         payments                : MichelsonMap.fromLiteral({
-            'fa2Token' : mockTokenSalePayment.default.fa2Token,
+            'fa2Token'  : mockTokenSalePayment.default.fa2Token,
             'fa12Token' : mockTokenSalePayment.default.fa12Token,
-            'tez' : mockTokenSalePayment.default.tez
+            'tez'       : mockTokenSalePayment.default.tez
         })
         
     },
@@ -95,10 +96,11 @@ export const mockTokenSaleOptions = {
         totalBought             : 0, 
         minPurchaseAmount       : 1000000,
         maxAmountPerWalletTotal : 5000000,
+        whitelistOnly           : true,
         payments                : MichelsonMap.fromLiteral({
-            'fa2Token' : mockTokenSalePayment.whitelist.fa2Token,
+            'fa2Token'  : mockTokenSalePayment.whitelist.fa2Token,
             'fa12Token' : mockTokenSalePayment.whitelist.fa12Token,
-            'tez' : mockTokenSalePayment.whitelist.tez
+            'tez'       : mockTokenSalePayment.whitelist.tez
         })
         
     }
