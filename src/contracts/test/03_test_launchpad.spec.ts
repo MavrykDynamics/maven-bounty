@@ -2725,6 +2725,193 @@ describe('Test: Launchpad Contract', async () => {
     
         })
 
+        describe('After whitelist sale end time', function () {
+
+            beforeEach("Set signer to user (mallory)", async () => {
+                user        = mallory.pkh;
+                userSk      = mallory.sk;
+                tokenId     = 0;
+                launchpadStorage = await launchpadInstance.storage()
+                await signerFactory(tezos, userSk);
+            });
+
+            it('%purchase - whitelisted user (mallory) should not be able to purchase tokens (whitelist sale option) after whitelist sale end time', async () => {
+                try {
+    
+                    user        = mallory.pkh;
+                    userSk      = mallory.sk;
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    launchWhitelistRecord       = await launchpadStorage.launchWhitelistLedger.get([launchId, user]);
+                    assert.notEqual(launchWhitelistRecord, undefined);
+    
+                    const whitelistSaleEndTimestamp     = launchRecord.whitelistSaleEnd;
+                    let currentTimestamp                = makeTimestamp(0);
+                    
+                    // wait for whitelist end time
+                    const differenceInMilliseconds = new Date(whitelistSaleEndTimestamp).getTime() - new Date(currentTimestamp).getTime();
+                    await wait(differenceInMilliseconds + 10);
+    
+                    const amount            = 1000000;
+                    const saleOption        = "whitelist";
+                    const payment           = "fa2Token";
+                    currentTimestamp        = makeTimestamp(0);
+    
+                    // update operators operation
+                    updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, user, launchpadAddress, tokenId);
+                    await updateOperatorsOperation.confirmation();
+    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    );
+                    await chai.expect(purchaseOperation.send()).to.be.rejected;
+    
+                    assert.equal(currentTimestamp > whitelistSaleEndTimestamp, true);
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+
+            it('%purchase - non-whitelisted user (david) should not be able to purchase tokens (whitelist sale option) after whitelist sale end time', async () => {
+                try {
+    
+                    user        = david.pkh;
+                    userSk      = david.sk;
+                    await signerFactory(tezos, userSk);
+
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+            
+                    const amount            = 1000000;
+                    const saleOption        = "whitelist";
+                    const payment           = "fa2Token";
+                    
+                    const whitelistSaleEndTimestamp     = launchRecord.whitelistSaleEnd;
+                    let currentTimestamp                = makeTimestamp(0);
+    
+                    // update operators operation
+                    updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, user, launchpadAddress, tokenId);
+                    await updateOperatorsOperation.confirmation();
+    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    );
+                    await chai.expect(purchaseOperation.send()).to.be.rejected;
+    
+                    assert.equal(currentTimestamp > whitelistSaleEndTimestamp, true);
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+    
+        })
+
+        describe('After sale end time', function () {
+
+            beforeEach("Set signer to user (mallory)", async () => {
+                user        = mallory.pkh;
+                userSk      = mallory.sk;
+                tokenId     = 0;
+                launchpadStorage = await launchpadInstance.storage()
+                await signerFactory(tezos, userSk);
+            });
+
+            it('%purchase - whitelisted user (mallory) should not be able to purchase tokens (default sale option) after sale end time', async () => {
+                try {
+    
+                    user        = mallory.pkh;
+                    userSk      = mallory.sk;
+
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    const saleEndTimestamp     = launchRecord.sSaleEnd;
+                    let currentTimestamp       = makeTimestamp(0);
+                    
+                    // wait for sale end time
+                    const differenceInMilliseconds = new Date(saleEndTimestamp).getTime() - new Date(currentTimestamp).getTime();
+                    await wait(differenceInMilliseconds + 10);
+    
+                    const amount            = 1000000;
+                    const saleOption        = "default";
+                    const payment           = "fa2Token";
+                    currentTimestamp        = makeTimestamp(0);
+    
+                    // update operators operation
+                    updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, user, launchpadAddress, tokenId);
+                    await updateOperatorsOperation.confirmation();
+    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    );
+                    await chai.expect(purchaseOperation.send()).to.be.rejected;
+    
+                    assert.equal(currentTimestamp > saleEndTimestamp, true);
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('%purchase - non-whitelisted user (david) should not be able to purchase tokens (default sale option) after sale end time', async () => {
+                try {
+    
+                    user        = david.pkh;
+                    userSk      = david.sk;
+
+                    launchId                   = firstLaunchId;
+                    launchRecord               = await launchpadStorage.launchLedger.get(launchId);
+                    assert.equal(launchRecord.status , "ACTIVE");
+    
+                    const saleEndTimestamp     = launchRecord.sSaleEnd;
+                    let currentTimestamp       = makeTimestamp(0);
+                    
+                    const amount            = 1000000;
+                    const saleOption        = "default";
+                    const payment           = "fa2Token";
+                    currentTimestamp        = makeTimestamp(0);
+    
+                    // update operators operation
+                    updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, user, launchpadAddress, tokenId);
+                    await updateOperatorsOperation.confirmation();
+    
+                    // purchase operation
+                    const purchaseOperation = await launchpadInstance.methods.purchase(
+                        launchId,
+                        amount,
+                        saleOption,
+                        payment
+                    );
+                    await chai.expect(purchaseOperation.send()).to.be.rejected;
+    
+                    assert.equal(currentTimestamp > saleEndTimestamp, true);
+    
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+        })
+
     })
 
 
