@@ -47,123 +47,27 @@
 
 // ------------------------------------------------------------------------------
 //
-// Security Token Errors
+// Bounty Errors
 //
 // ------------------------------------------------------------------------------
 
 [@inline] const error_ADMINISTRATOR_NOT_FOUND                                                                           = 31n;
 [@inline] const error_NOT_ADMIN                                                                                         = 32n;
 
-[@inline] const error_TOKEN_EXISTS                                                                                      = 33n;
-[@inline] const error_TOKEN_CONTEXT_NOT_FOUND                                                                           = 34n;
-[@inline] const error_TOKEN_UNDEFINED                                                                                   = 35n;
-[@inline] const error_TOKEN_PAUSED                                                                                      = 36n;
+[@inline] const error_ONLY_ADMINISTRATOR_OR_BOUNTY_CREATOR_ALLOWED                                                      = 32n;
+[@inline] const error_ONLY_BOUNTY_CREATOR_OR_WHITELISTED_ALLOWED                                                        = 32n;
 
-[@inline] const error_USER_NOT_FOUND                                                                                    = 37n;
-[@inline] const error_CANNOT_TRANSFER                                                                                   = 38n;
-[@inline] const error_INSUFFICIENT_BALANCE                                                                              = 39n;
+[@inline] const error_INVALID_STATUS                                                                                    = 32n;
+[@inline] const error_MILESTONE_REWARDS_AND_TOTAL_REWARDS_DO_NOT_TALLY                                                  = 32n;
+[@inline] const error_BOUNTY_RECORD_NOT_FOUND                                                                           = 32n;
+[@inline] const error_APPLICANT_RECORD_NOT_FOUND                                                                        = 32n;
+[@inline] const error_USER_RECORD_NOT_FOUND                                                                             = 32n;
 
-[@inline] const error_SNAPSHOT_ALREADY_SCHEDULED                                                                        = 40n;
-[@inline] const error_SNAPSHOT_IN_PAST                                                                                  = 41n;
-
-[@inline] const error_VIEW_IS_TRANSFER_VALID_NOT_FOUND                                                                  = 42n;
-[@inline] const error_MINT_ENTRYPOINT_IN_FA2_CONTRACT_NOT_FOUND                                                         = 43n;
-
-
-// ------------------------------------------------------------------------------
-//
-// Token Registry Errors
-//
-// ------------------------------------------------------------------------------
-
-
-[@inline] const error_ADD_TOKEN_ENTRYPOINT_IN_TOKEN_REGISTRY_CONTRACT_PAUSED                                             = 44n;
-[@inline] const error_REMOVE_TOKEN_ENTRYPOINT_IN_TOKEN_REGISTRY_CONTRACT_PAUSED                                          = 45n;
-[@inline] const error_FA2_TOKEN_RECORD_NOT_FOUND_TO_BE_REMOVED                                                           = 46n;
-[@inline] const error_TOKEN_RECORD_NOT_FOUND                                                                             = 47n;
-
-[@inline] const error_NO_NEW_SUPER_ADMIN_FOUND                                                                           = 48n;
-[@inline] const error_SENDER_IS_NOT_NEW_SUPER_ADMIN                                                                      = 49n;
-
-
-// ------------------------------------------------------------------------------
-//
-// Launchpad Errors
-//
-// ------------------------------------------------------------------------------
-
-
-[@inline] const error_LAUNCH_RECORD_NOT_FOUND                                                                            = 50n;
-[@inline] const error_SALE_OPTION_NOT_FOUND                                                                              = 51n;
-[@inline] const error_MAX_AMOUNT_PER_WALLET_FOR_SALE_OPTION_TOTAL_EXCEEDED                                               = 52n;
-[@inline] const error_MAX_AMOUNT_CAP_FOR_SALE_OPTION_EXCEEDED                                                            = 53n;
-[@inline] const error_MAX_AMOUNT_CAP_FOR_LAUNCH_EXCEEDED                                                                 = 54n;
-
-[@inline] const error_INVALID_TOKEN_ISSUANCE_TYPE                                                                        = 55n;
-[@inline] const error_INVALID_TOKEN_DISTRIBUTION_TYPE                                                                    = 56n;
-[@inline] const error_LAUNCH_IS_NOT_ACTIVE                                                                               = 57n;
-[@inline] const error_LAUNCH_IS_NOT_PAUSED                                                                               = 58n;
-[@inline] const error_LAUNCH_HAS_ENDED                                                                                   = 59n;
-[@inline] const error_SALE_HAS_NOT_STARTED                                                                               = 60n;
-[@inline] const error_USER_WHITELIST_RECORD_NOT_FOUND                                                                    = 61n;
-[@inline] const error_USER_WHITELIST_ALLOWED_AMOUNT_EXCEEDED                                                             = 62n;
-[@inline] const error_WHITELIST_OPTION_DOES_NOT_EXIST                                                                    = 63n;
-[@inline] const error_PAYMENT_OPTION_NOT_FOUND                                                                           = 64n;
-[@inline] const error_AMOUNT_BOUGHT_MUST_EXCEED_MIN_PURCHASE_AMOUNT                                                      = 65n;
-
-[@inline] const error_SALE_OPTION_ALREADY_EXISTS                                                                         = 65n;
-[@inline] const error_SALE_OPTION_NOT_FOUND                                                                              = 65n;
-
-
-[@inline] const error_SALE_END_SHOULD_BE_AFTER_SALE_START                                                                = 66n;
-[@inline] const error_WHITELIST_SALE_END_SHOULD_BE_AFTER_WHITELIST_SALE_START                                            = 67n;
-[@inline] const error_WHITELIST_SALE_START_NOT_SPECIFIED                                                                 = 68n;
-
-
-// ------------------------------------------------------------------------------
-//
-// Marketplace Errors
-//
-// ------------------------------------------------------------------------------
-
-[@inline] const error_SENDER_IS_NOT_CREATOR                                                                              = 69n;
-[@inline] const error_LISTER_CANNOT_PURCHASE_HIS_LISTING                                                                 = 70n;
-[@inline] const error_LISTING_HAS_EXPIRED                                                                                = 71n;
-[@inline] const error_OFFER_HAS_EXPIRED                                                                                  = 72n;
-
-[@inline] const error_CURRENCY_RECORD_NOT_FOUND                                                                          = 73n;
-[@inline] const error_LISTING_RECORD_NOT_FOUND                                                                           = 74n;
-[@inline] const error_OFFER_RECORD_NOT_FOUND                                                                             = 75n;
-[@inline] const error_INVALID_CURRENCY                                                                                   = 76n;
-
-[@inline] const error_SET_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 77n;
-[@inline] const error_REMOVE_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                          = 78n;
-[@inline] const error_CREATE_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                           = 79n;
-[@inline] const error_EDIT_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 80n;
-[@inline] const error_REMOVE_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                           = 81n;
-[@inline] const error_PURCHASE_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                                 = 82n;
-[@inline] const error_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                                    = 83n;
-[@inline] const error_ACCEPT_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 84n;
-[@inline] const error_REMOVE_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 85n;
-
-
-[@inline] const error_PURCHASE_AMOUNT_CANNOT_BE_GREATER_THAN_LISTING_AMOUNT                                              = 86n;
-[@inline] const error_OFFER_AMOUNT_CANNOT_BE_GREATER_THAN_LISTING_AMOUNT                                                 = 87n;
-[@inline] const error_OFFER_STATUS_IS_NOT_OPEN                                                                           = 88n;
-[@inline] const error_LISTING_STATUS_IS_NOT_ACTIVE                                                                       = 89n;
-[@inline] const error_QUICK_BUY_OPTION_DOES_NOT_EXIST_ON_LISTING                                                         = 90n;
-
-
-// ------------------------------------------------------------------------------
-//
-// Treasury Errors
-//
-// ------------------------------------------------------------------------------
-
-[@inline] const error_TREASURY_NOT_FOUND                                                                                 = 91n;
-
-[@inline] const error_DOORMAN_CONTRACT_NOT_FOUND                                                                         = 92n;
-[@inline] const error_MVK_TOKEN_CONTRACT_NOT_FOUND                                                                       = 93n;
-[@inline] const error_UPDATE_OPERATORS_ENTRYPOINT_IN_MVK_TOKEN_CONTRACT_NOT_FOUND                                        = 94n;
-[@inline] const error_STAKE_ENTRYPOINT_IN_DOORMAN_CONTRACT_NOT_FOUND                                                     = 95n;
-[@inline] const error_UNSTAKE_ENTRYPOINT_IN_DOORMAN_CONTRACT_NOT_FOUND                                                   = 96n;
+[@inline] const error_BOUNTY_IS_NOT_ACTIVE                                                                              = 32n;
+[@inline] const error_BOUNTY_IS_PAUSED                                                                                  = 32n;
+[@inline] const error_BOUNTY_HAS_NO_SPACE_FOR_NEW_APPLICANTS                                                            = 32n;
+[@inline] const error_USER_HAS_NO_SPACE_FOR_NEW_BOUNTIES                                                                = 32n;
+[@inline] const error_USER_CANNOT_APPLY_FOR_NEW_BOUNTIES                                                                = 32n;
+[@inline] const error_APPLICATION_STATUS_IS_NOT_PENDING                                                                 = 32n;
+[@inline] const error_BOUNTY_CANNOT_BE_STOPPED_BY_USER                                                                  = 32n;
+[@inline] const error_BOUNTY_CANNOT_BE_COMPLETED_BY_USER                                                                = 32n;

@@ -1,3 +1,3 @@
-## About RWA MARKETPLACE
+## About MAVRYK Bounty
 
-Decentralised RWA Marketplace
+Decentralised Bounty Platform

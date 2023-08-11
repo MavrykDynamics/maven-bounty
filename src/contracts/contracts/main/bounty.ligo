@@ -22,11 +22,8 @@
 // Contract Types
 // ------------------------------------------------------------------------------
 
-// CMTA Token Types
-#include "../partials/contractTypes/securityTokenTypes.ligo"
-
-// Launchpad Types
-#include "../partials/contractTypes/launchpadTypes.ligo"
+// Bounty Types
+#include "../partials/contractTypes/bountyTypes.ligo"
 
 // ------------------------------------------------------------------------------
 
@@ -40,7 +37,7 @@ type action is
 
         // Housekeeping Entrypoints
     |   UpdateMetadata              of updateMetadataType
-    |   UpdateConfig                of launchpadUpdateConfigParamsType
+    |   UpdateConfig                of bountyUpdateConfigParamsType
     |   UpdateWhitelistContracts    of updateWhitelistContractsType
     |   UpdateGeneralContracts      of updateGeneralContractsType
     |   MistakenTransfer            of transferActionType
@@ -48,66 +45,66 @@ type action is
         // Pause / Break Glass Entrypoints
     |   PauseAll                    of (unit)
     |   UnpauseAll                  of (unit)
-    |   TogglePauseEntrypoint       of launchpadTogglePauseEntrypointType
+    |   TogglePauseEntrypoint       of bountyTogglePauseEntrypointType
 
-        // Launchpad Entrypoints
-    |   CreateTokenLaunch           of createTokenLaunchActionType
-    |   SetLaunchWhitelist          of setLaunchWhitelistActionType
-    |   EditTokenLaunch             of editTokenLaunchActionType
-    |   EditSaleOption              of editSaleOptionActionType
-    |   StartLaunch                 of (nat)
-    |   CloseLaunch                 of (nat)
-    |   PauseLaunch                 of (nat)
-    |   UnpauseLaunch               of (nat)
-    |   DistributeTokens            of distributeTokensActionType
+        // Bounty Admin Entrypoints
+    |   SetBountyCreator            of setBountyCreatorActionType
+    |   SetBounty                   of setBountyActionType
+    |   TogglePauseBounty           of togglePauseBountyActionType
+    |   ApproveOrReject             of approveOrRejectActionType
+    |   ReviewBounty                of reviewBountyActionType
+    |   SendBountyReward            of sendBountyRewardActionType
 
-        // User Entrypoints
-    |   Purchase                    of purchaseActionType
-    
+        // Bounty Entrypoints
+    |   ApplyForBounty              of applyForBountyActionType
+    |   CancelApplication           of cancelApplicationActionType
+    |   CompleteBounty              of completeBountyActionType
+    |   StopBounty                  of stopBountyActionType
+
         // Lambda Entrypoints
     |   SetLambda                   of setLambdaType
     
     
-type return is list (operation) * launchpadStorageType
+type return is list (operation) * bountyStorageType
 const noOperations : list (operation) = nil;
 
 
-// launchpad contract methods lambdas
-type launchpadUnpackLambdaFunctionType is (launchpadLambdaActionType * launchpadStorageType) -> return
+// Bounty contract methods lambdas
+type bountyUnpackLambdaFunctionType is (bountyLambdaActionType * bountyStorageType) -> return
 
 
 // ------------------------------------------------------------------------------
 // Helpers
 // ------------------------------------------------------------------------------
 
-// Launchpad Helpers:
-#include "../partials/contractHelpers/launchpadHelpers.ligo"
+// Bounty Helpers:
+#include "../partials/contractHelpers/bountyHelpers.ligo"
 
 // ------------------------------------------------------------------------------
 // Views
 // ------------------------------------------------------------------------------
 
-// Launchpad Views:
-#include "../partials/contractViews/launchpadViews.ligo"
+// Bounty Views:
+#include "../partials/contractViews/bountyViews.ligo"
 
 // ------------------------------------------------------------------------------
 // Lambdas
 // ------------------------------------------------------------------------------
 
-// Launchpad Lambdas:
-#include "../partials/contractLambdas/launchpadLambdas.ligo"
+// Bounty Lambdas:
+#include "../partials/contractLambdas/bountyLambdas.ligo"
 
 // ------------------------------------------------------------------------------
 // Entrypoints
 // ------------------------------------------------------------------------------
 
-// Launchpad Entrypoints:
-#include "../partials/contractEntrypoints/launchpadEntrypoints.ligo"
+// Bounty Entrypoints:
+#include "../partials/contractEntrypoints/bountyEntrypoints.ligo"
 
 // ------------------------------------------------------------------------------
 
 (* main entrypoint *)
-function main (const action : action; const s : launchpadStorageType) : return is
+function main (const action : action; const s : bountyStorageType) : return is
 
     case action of [
 
@@ -116,7 +113,7 @@ function main (const action : action; const s : launchpadStorageType) : return i
         |   ClaimSuperAdmin(_parameters)          -> claimSuperAdmin(s)
         |   SetAdmin(parameters)                  -> setAdmin(parameters, s)
         |   RemoveAdmin(parameters)               -> removeAdmin(parameters, s)
-
+        
             // Housekeeping Entrypoints
         |   UpdateMetadata(parameters)            -> updateMetadata(parameters, s)
         |   UpdateConfig(parameters)              -> updateConfig(parameters, s)
@@ -129,20 +126,20 @@ function main (const action : action; const s : launchpadStorageType) : return i
         |   UnpauseAll(_parameters)               -> unpauseAll(s)
         |   TogglePauseEntrypoint(parameters)     -> togglePauseEntrypoint(parameters, s)
 
-            // Launchpad Entrypoints
-        |   CreateTokenLaunch(parameters)         -> createTokenLaunch(parameters, s)  
-        |   SetLaunchWhitelist(parameters)        -> setLaunchWhitelist(parameters, s)  
-        |   EditTokenLaunch(parameters)           -> editTokenLaunch(parameters, s)
-        |   EditSaleOption(parameters)            -> editSaleOption(parameters, s)
-        |   StartLaunch(parameters)               -> startLaunch(parameters, s)  
-        |   CloseLaunch(parameters)               -> closeLaunch(parameters, s)  
-        |   PauseLaunch(parameters)               -> pauseLaunch(parameters, s)
-        |   UnpauseLaunch(parameters)             -> unpauseLaunch(parameters, s)
-        |   DistributeTokens(parameters)          -> distributeTokens(parameters, s)
+            // Bounty Admin Entrypoints
+        |   SetBountyCreator(parameters)          -> setBountyCreator(parameters, s)
+        |   SetBounty(parameters)                 -> setBounty(parameters, s)
+        |   TogglePauseBounty(parameters)         -> togglePauseBounty(parameters, s)
+        |   ApproveOrReject(parameters)           -> approveOrReject(parameters, s)
+        |   ReviewBounty(parameters)              -> reviewBounty(parameters, s)
+        |   SendBountyReward(parameters)          -> sendBountyReward(parameters, s)
 
-            // User Entrypoints
-        |   Purchase(parameters)                  -> purchase(parameters, s)
-        
+            // Bounty Entrypoints
+        |   ApplyForBounty(parameters)            -> applyForBounty(parameters, s)  
+        |   CancelApplication(parameters)         -> cancelApplication(parameters, s)  
+        |   CompleteBounty(parameters)            -> completeBounty(parameters, s)  
+        |   StopBounty(parameters)                -> stopBounty(parameters, s)  
+
             // Lambda Entrypoints
         |   SetLambda(parameters)                 -> setLambda(parameters, s)
     ]
