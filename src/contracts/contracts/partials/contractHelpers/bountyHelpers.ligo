@@ -32,12 +32,13 @@ block {
 
 
 // verify sender is bounty creator or whitelisted
-function verifySenderIsAdminOrBountyCreator(const creator : address; const whitelisted : set(address)) : unit is
+function verifySenderIsAdminOrCreatorOrWhitelisted(const creator : address; const whitelisted : set(address); const s : bountyStorageType) : unit is
 block {
 
+    const senderIsAdmin : bool = s.admins contains Tezos.get_sender();
     const senderIsBountyCreator : bool = creator = Tezos.get_sender();
     const senderIsWhitelisted : bool = whitelisted contains Tezos.get_sender();
-    if senderIsBountyCreator OR senderIsWhitelisted then skip else failwith(error_ONLY_BOUNTY_CREATOR_OR_WHITELISTED_ALLOWED);
+    if senderIsAdmin OR senderIsBountyCreator OR senderIsWhitelisted then skip else failwith(error_ONLY_ADMIN_OR_CREATOR_OR_WHITELISTED_ALLOWED);
 
 } with unit
 
@@ -178,12 +179,53 @@ block {
 
 
 
+function getBountyMilestoneRecord(const bountyRecord : bountyRecordType; const milestoneId : nat) : milestoneRecordType is
+block {
+
+    const milestoneRecord : milestoneRecordType = bountyRecord.milestones[milestoneId] of [
+            Some(_record) -> _record
+        |   None          -> failwith(error_MILESTONE_RECORD_FOR_BOUNTY_NOT_FOUND)
+    ];
+
+} with milestoneRecord
+
+
+
+function getApplicantMilestoneRecord(const applicantRecord : applicantRecordType; const milestoneId : nat) : milestoneRecordType is
+block {
+
+    const milestoneRecord : milestoneRecordType = applicantRecord.milestoneLog[milestoneId] of [
+            Some(_record) -> _record
+        |   None          -> failwith(error_MILESTONE_RECORD_FOR_APPLICANT_NOT_FOUND)
+    ];
+
+} with milestoneRecord
+
+
+
 function getUserRecord(const userAddress : address; const s : bountyStorageType) : userRecordType is
 block {
 
     const userRecord : userRecordType = case s.userLedger[userAddress] of [
             Some(_record) -> _record
         |   None          -> failwith(error_USER_RECORD_NOT_FOUND)
+    ];
+
+} with userRecord
+
+
+
+function getOrCreateUserRecord(const userAddress : address; const s : bountyStorageType) : userRecordType is
+block {
+
+    const userRecord : userRecordType = case s.userLedger[userAddress] of [
+            Some(_record) -> _record
+        |   None          -> [
+                activeBountyCount       = 0n;
+                activeBounties          = (set[] : set(nat));
+                currentApplicationCount = 0n;
+                appliedBounties         = (set[] : set(nat));
+            ]
     ];
 
 } with userRecord
@@ -209,6 +251,16 @@ block{
 
 
 
+function verifyValidBountyReviewStatus(const status : string) : unit is 
+block {
+
+    if status = "REVIEW_APPROVED" or status = "REVIEW_DISPUTED" or status = "REVIEW_REJECTED" 
+    then skip 
+    else failwith(error_INVALID_STATUS_FOR_BOUNTY_REVIEW);
+
+} with unit
+
+
 function verifyBountyIsActive(const status : string) : unit is 
 block {
 
@@ -229,6 +281,15 @@ block {
 
 } with unit
 
+
+function verifyBountyHasMilestones(const hasMilestones : bool) : unit is
+block {
+    
+    if hasMilestones = True
+    then skip
+    else failwith(error_BOUNTY_HAS_NO_MILESTONES);
+
+} with unit
 
 
 function verifyBountyHasSpaceForNewApplicants(const maxApprovedApplicants : nat; const currentApprovedApplicants : nat) : unit is
@@ -289,9 +350,20 @@ block {
 function verifyUserCanCompleteBounty(const status : string) : unit is 
 block {
 
-    if status = "APPROVED"
+    if status = "REVIEW_APPROVED" or status = "REWARDED"
     then skip
-    else failwith(error_BOUNTY_CANNOT_BE_COMPLETED_BY_USER);
+    else failwith(error_BOUNTY_HAS_ALREADY_BEEN_COMPLETED_AND_APPROVED);
+
+} with unit
+
+
+
+function verifyCorrectMilestoneReviewed(const milestoneToReview : nat; const currentMilestone : nat) : unit is 
+block {
+
+    if milestoneToReview = currentMilestone 
+    then skip 
+    else failwith(error_MILESTONE_TO_REVIEW_NEEDS_TO_BE_THE_SAME_AS_CURRENT_MILESTONE)
 
 } with unit
 
@@ -333,6 +405,71 @@ block {
 } with unit
 
 
+
+function getNewTotalRewards(const milestones : milestonesType) : rewardsType is 
+block {
+
+    var newTotalRewards : rewardsType := map [];
+    
+    for _key -> milestone in map milestones block {
+
+        for _tokenName -> reward in map milestone.rewards block {
+            
+            const currentRewardAmount : nat = case milestoneRewardTally[_tokenName] of [
+                    Some(_amount) -> _amount 
+                |   None          -> 0n
+            ];
+
+            newTotalRewards[_tokenName] := record [
+                rewardTokenType = reward.rewardTokenType;
+                amount          = currentRewardAmount + reward.rewardAmount;
+            ];
+        };
+
+    };
+
+} with newTotalRewards
+
+
+
+function differenceBetweenRewards(const initialRewards: rewardsType; const initialMaxApprovedApplicants : nat; const updatedRewards: rewardsType; const updatedMaxApprovedApplicants : nat): rewardsType is
+block {
+
+    var diffMap : rewardsDiffType := map [];
+
+    // Loop through the initial rewards
+    for tokenName -> initialReward in map initialRewards block {
+
+        const updatedRewardsAmount : nat = case updatedRewards[tokenName] of [
+                Some(_v) -> _v.amount
+            |   None     -> 0n
+        ];
+        
+        const diffAmount : int = (updatedRewardsAmount * updatedMaxApprovedApplicants) - (initialReward.amount * initialMaxApprovedApplicants);
+
+        diffMap[tokenName] := record [
+            rewardTokenType = initialReward.rewardTokenType;
+            amount          = diffAmount;
+        ];
+    };
+
+    // Now, handle tokens present only in the updated rewards
+    for tokenName -> updatedReward in map updatedRewards block {
+        
+        if not (Map.mem(tokenName, initialRewards)) then {
+            
+            diffMap[tokenName] := record [
+                rewardTokenType = updatedReward.rewardTokenType;
+                amount          = int(updatedReward.amount * updatedMaxApprovedApplicants);
+            ];
+
+        } else skip; 
+    };
+
+} with diffMap;
+
+
+
 function createNewBountyRecord(const createBountyParams : createBountyActionType; var s : bountyStorageType) : bountyRecordType is 
 block {
 
@@ -360,7 +497,8 @@ block {
         hasMilestones               = hasMilestones;
 
         maxApprovedApplicants       = createBountyParams.maxApprovedApplicants;
-        currentApprovedApplicants   = 0n;
+        currentApprovedApplicants   = (map[] : currentApprovedApplicantsType);
+        completedApplicants         = (set[] : set(nat));
 
         milestones                  = createBountyParams.milestones;
         totalRewards                = createBountyParams.totalRewards;
@@ -386,6 +524,22 @@ block {
     ];
 
 } with applicantRecord
+
+
+
+function createNewMilestoneLog(const _ : unit) : milestoneRecordType is 
+block {
+
+    const milestoneRecord : milestoneRecordType = record [
+        status          = "REVIEW_PENDING";
+        completed       = False;
+        reviewed        = False;
+        review          = (None : option(string));
+        rewarded        = False;
+        rewardTimestamp = (None : option(timestamp));
+    ];
+
+} with milestoneRecord
 
 // ------------------------------------------------------------------------------
 // Contract Helper Functions End

@@ -55,13 +55,17 @@
 [@inline] const error_NOT_ADMIN                                                                                         = 32n;
 
 [@inline] const error_ONLY_ADMINISTRATOR_OR_BOUNTY_CREATOR_ALLOWED                                                      = 32n;
-[@inline] const error_ONLY_BOUNTY_CREATOR_OR_WHITELISTED_ALLOWED                                                        = 32n;
+[@inline] const error_ONLY_ADMIN_OR_CREATOR_OR_WHITELISTED_ALLOWED                                                      = 32n;
 
 [@inline] const error_INVALID_STATUS                                                                                    = 32n;
+[@inline] const error_INVALID_STATUS_FOR_BOUNTY_REVIEW                                                                  = 32n;
+
 [@inline] const error_MILESTONE_REWARDS_AND_TOTAL_REWARDS_DO_NOT_TALLY                                                  = 32n;
 [@inline] const error_BOUNTY_RECORD_NOT_FOUND                                                                           = 32n;
 [@inline] const error_APPLICANT_RECORD_NOT_FOUND                                                                        = 32n;
 [@inline] const error_USER_RECORD_NOT_FOUND                                                                             = 32n;
+[@inline] const error_MILESTONE_RECORD_FOR_BOUNTY_NOT_FOUND                                                             = 32n;
+[@inline] const error_MILESTONE_RECORD_FOR_APPLICANT_NOT_FOUND                                                          = 32n;
 
 [@inline] const error_BOUNTY_IS_NOT_ACTIVE                                                                              = 32n;
 [@inline] const error_BOUNTY_IS_PAUSED                                                                                  = 32n;
@@ -70,4 +74,11 @@
 [@inline] const error_USER_CANNOT_APPLY_FOR_NEW_BOUNTIES                                                                = 32n;
 [@inline] const error_APPLICATION_STATUS_IS_NOT_PENDING                                                                 = 32n;
 [@inline] const error_BOUNTY_CANNOT_BE_STOPPED_BY_USER                                                                  = 32n;
-[@inline] const error_BOUNTY_CANNOT_BE_COMPLETED_BY_USER                                                                = 32n;
+[@inline] const error_BOUNTY_HAS_ALREADY_BEEN_COMPLETED_AND_APPROVED                                                    = 32n;
+[@inline] const error_MILESTONE_NEEDS_TO_BE_SPECIFIED_FOR_REVIEW                                                        = 32n;
+[@inline] const error_MILESTONE_LOG_NOT_FOUND_IN_APPLICANT_RECORD                                                       = 32n;
+[@inline] const error_CURRENT_MILESTONE_NOT_FOUND                                                                       = 32n;
+[@inline] const error_MILESTONE_TO_REVIEW_NEEDS_TO_BE_THE_SAME_AS_CURRENT_MILESTONE                                     = 32n;
+[@inline] const error_BOUNTY_HAS_REACHED_MAX_APPROVED_APPLICANTS                                                        = 32n;
+[@inline] const error_BOUNTY_HAS_NO_MILESTONES                                                                          = 32n;
+[@inline] const error_MILESTONE_NEEDS_TO_BE_SPECIFIED_TO_SEND_BOUNTY_REWARD                                             = 32n;

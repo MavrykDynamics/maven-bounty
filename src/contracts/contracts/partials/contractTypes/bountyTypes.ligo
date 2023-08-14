@@ -23,9 +23,16 @@ type bountyConfigType is [@layout:comb] record [
 ];
 
 
+type rewardsDiffRecordType is [@layout:comb] record [
+    rewardTokenType      : tokenType;
+    amount               : int;
+]
+type rewardsDiffType is map(string, rewardsDiffRecordType)
+
+
 type rewardsRecordType is [@layout:comb] record [
     rewardTokenType      : tokenType;
-    rewardAmount         : nat;
+    amount               : nat;
 ]
 type rewardsType is map(string, rewardsRecordType)
 
@@ -38,6 +45,12 @@ type milestoneRecordType is [@layout:comb] record [
 ]
 type milestonesType is map(nat, milestoneRecordType)
 
+type bountyProgressType is 
+    |   Milestone       of nat
+    |   NoMilestone 
+    |   Completed
+
+type currentApprovedApplicantsType is map(address, bountyProgressType)
 
 type bountyRecordType is [@layout:comb] record [
     creator                     : address;
@@ -52,7 +65,8 @@ type bountyRecordType is [@layout:comb] record [
     hasMilestones               : bool;
     
     maxApprovedApplicants       : nat;
-    currentApprovedApplicants   : nat; 
+    currentApprovedApplicants   : currentApprovedApplicantsType;
+    completedApplicants         : set(address);
 
     milestones                  : option(milestonesType); 
     totalRewards                : rewardsType;     // total rewards per applicant if everything is completed successfully - will be used as reference for total rewards if milestones are set (i.e. milestone rewards take precedence)
@@ -62,7 +76,7 @@ type bountyLedgerType is big_map(bountyIdType, bountyRecordType)
 
 
 type milestoneLogRecordType is [@layout:comb] record [
-    status               : string;               // PENDING / APPROVED / PENDING_REVIEW / REJECTED / DISPUTED / COMPLETED / REWARDED
+    status               : string;               // PENDING / APPROVED / REJECTED / COMPLETED / REVIEW_PENDING / REVIEW_APPROVED / REVIEW_DISPUTED / REVIEW_REJECTED / REWARDED
     completed            : bool;                 // to be set by applicant
     reviewed             : bool;                 // to be reviewed by bounty creator
     review               : option(string);       // to be set by bounty creator
@@ -73,7 +87,7 @@ type milestoneLogRecordType is [@layout:comb] record [
 type milestoneLogType is map(nat, milestoneLogRecordType)
 
 type applicantRecordType is [@layout:comb] record [
-    status               : string;               // PENDING / APPROVED / REJECTED / WITHDRAWN / STOPPED / DISPUTED / PENDING_REVIEW 
+    status               : string;               // PENDING / APPROVED / REJECTED / CANCELED / STOPPED / REVIEW_PENDING / REVIEW_APPROVED / REVIEW_DISPUTED / REVIEW_REJECTED / REWARDED
     completed            : bool;                 // set to True by applicant (e.g. when all milestones are completed)
     reviewed             : bool;                 // to be reviewed by bounty creator
     review               : option(string);       // to be set by bounty creator
@@ -89,9 +103,9 @@ type applicantLedgerType is big_map((bountyIdType * address), applicantRecordTyp
 
 type userRecordType is [@layout:comb] record [
     activeBountyCount           : nat; 
-    activeBounties              : set(address);
+    activeBounties              : set(nat);
     currentApplicationCount     : nat;
-    appliedBounties             : set(address);
+    appliedBounties             : set(nat);
 ]
 type userLedgerType is big_map(address, userRecordType)
 
@@ -112,12 +126,13 @@ type createBountyActionType is [@layout:comb] record [
 
 
 type updateBountyActionType is [@layout:comb] record [
-    bountyId        : nat;
-    name            : option(string);
-    description     : option(string);
-    image           : option(string);
-    milestones      : option(milestonesType);
-    rewards         : option(rewardsType);
+    bountyId                : nat;
+    name                    : option(string);
+    description             : option(string);
+    image                   : option(string);
+    maxApprovedApplicants   : option(nat);
+    milestones              : option(milestonesType);
+    rewards                 : option(rewardsType);
 ]
 
 
@@ -158,11 +173,11 @@ type approveOrRejectActionType is [@layout:comb] record [
 
 
 type reviewBountyActionType is [@layout:comb] record [
-    bountyId     : nat;
-    milestoneId  : option(nat);
-    applicant    : address;
-    status       : string;
-    review       : option(string);
+    bountyId            : nat;
+    applicant           : address;
+    status              : string;
+    milestoneReview     : option(string);
+    bountyReview        : option(string);
 ]
 
 
