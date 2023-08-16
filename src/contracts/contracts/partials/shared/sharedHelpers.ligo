@@ -237,17 +237,6 @@ block {
 
 
 
-// verify sender is admin or governance
-function verifySenderIsAdminOrGovernance(const adminAddress : address; const governanceAddress : address) : unit is
-block {
-
-    const senderIsAdminOrGovernance : bool = adminAddress = Tezos.get_sender() or governanceAddress = Tezos.get_sender();
-    if senderIsAdminOrGovernance then skip else failwith(error_ONLY_ADMINISTRATOR_OR_GOVERNANCE_ALLOWED);
-
-} with unit
-
-
-
 // verify sender is allowed (set of addresses)
 function verifySenderIsAllowed(const allowedSet : set(address); const errorCode : nat) : unit is
 block {

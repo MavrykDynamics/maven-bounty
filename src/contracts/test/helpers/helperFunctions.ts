@@ -279,3 +279,44 @@ export function calculateRoyaltyFee(price, royalty) {
     const royaltyFeeTotal = Math.floor((price * fixedPointAccuracy * royalty) / (fixedPointAccuracy * 10000))
     return royaltyFeeTotal
 }
+
+
+export function mapsAreEqual(map1, map2) {
+    
+    // console.log(map1.size !== map2.size);
+
+    if (map1.size !== map2.size) return false;
+  
+    for (let [key, value] of map1) {
+      if (!map2.has(key)) return false;
+  
+      let val1 = value;
+      let val2 = map2.get(key);
+
+    //   console.log(`val1 :${val1} | val2: ${val2}`);
+  
+      // Convert BigNumber to number if necessary
+      if (typeof val1.amount === "object" && val1.amount.toNumber) {
+        val1.amount = val1.amount.toNumber();
+
+        // console.log(`val1 :${val1.amount}`);
+      }
+      if (typeof val2.amount === "object" && val2.amount.toNumber) {
+        val2.amount = val2.amount.toNumber();
+        // console.log(`val2 :${val2.amount}`);
+      }
+
+    //   console.log(`val1 json :${JSON.stringify(val1)}`);
+    //   console.log(`val2 json :${JSON.stringify(val2)}`);
+  
+      // Deep comparison for rewardTokenType and other nested objects
+    //   if (JSON.stringify(val1.amount) !== JSON.stringify(val2)) return false;
+
+    }
+  
+    return true;
+  }
+  
+  // Usage
+//   assert(mapsAreEqual(bountyRecord.totalRewards.valueMap, totalRewards.valueMap));
+  

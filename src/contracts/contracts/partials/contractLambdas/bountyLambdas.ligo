@@ -99,8 +99,7 @@ block {
 function lambdaUpdateMetadata(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
 block {
     
-    // verify that sender is admin (i.e. Governance Proxy Contract address)
-    verifySenderIsAdmin(s.admins); 
+    verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
 
     case bountyLambdaAction of [
         |   LambdaUpdateMetadata(updateMetadataParams) -> {
@@ -121,19 +120,17 @@ block {
 function lambdaUpdateConfig(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is 
 block {
 
-    // verify that sender is admin (i.e. Governance Proxy Contract address)
-    verifySenderIsAdmin(s.admins); 
+    verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
 
     case bountyLambdaAction of [
         |   LambdaUpdateConfig(updateConfigParams) -> {
                 
-                const updateConfigAction    : marketplaceUpdateConfigActionType   = updateConfigParams.updateConfigAction;
-                const updateConfigNewValue  : marketplaceUpdateConfigNewValueType = updateConfigParams.updateConfigNewValue;
+                const updateConfigAction    : bountyUpdateConfigActionType   = updateConfigParams.updateConfigAction;
+                const updateConfigNewValue  : bountyUpdateConfigNewValueType = updateConfigParams.updateConfigNewValue;
 
                 case updateConfigAction of [
-                    |   ConfigMinOfferAmount (_v)  -> s.config.minOfferAmount         := updateConfigNewValue
-                    |   ConfigRoyalty (_v)         -> s.config.royalty                := updateConfigNewValue
-                    |   ConfigMarketplaceFee (_v)  -> s.config.marketplaceFee         := updateConfigNewValue
+                    |   ConfigMaxActiveBounties (_v)  -> s.config.maxActiveBounties         := updateConfigNewValue
+                    |   ConfigMaxApplications (_v)    -> s.config.maxApplications           := updateConfigNewValue
                 ];
             }
         |   _ -> skip
@@ -147,8 +144,7 @@ block {
 function lambdaUpdateWhitelistContracts(const bountyLambdaAction : bountyLambdaActionType; var s: bountyStorageType) : return is
 block {
 
-    // verify that sender is admin
-    verifySenderIsAdmin(s.admins); 
+    verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
 
     case bountyLambdaAction of [
         |   LambdaUpdateWhitelistContracts(updateWhitelistContractsParams) -> {
@@ -165,8 +161,7 @@ block {
 function lambdaUpdateGeneralContracts(const bountyLambdaAction : bountyLambdaActionType; var s: bountyStorageType) : return is
 block {
 
-    // verify that sender is admin (i.e. Governance Proxy Contract address)
-    verifySenderIsAdmin(s.admins); 
+    verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
 
     case bountyLambdaAction of [
         |   LambdaUpdateGeneralContracts(updateGeneralContractsParams) -> {
@@ -188,7 +183,7 @@ block {
     case bountyLambdaAction of [
         |   LambdaMistakenTransfer(destinationParams) -> {
 
-                verifySenderIsAdmin(s.admins); // check that sender is admin 
+                verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
 
                 // Create transfer operations (transferOperationFold in transferHelpers)
                 operations := List.fold_right(transferOperationFold, destinationParams, operations)
@@ -213,7 +208,8 @@ block {
 function lambdaPauseAll(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
 block {
 
-    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
+    verifyNoAmountSent(Unit);     
+    verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
 
     case bountyLambdaAction of [
         |   LambdaPauseAll(_parameters) -> {
@@ -233,7 +229,8 @@ block {
 function lambdaUnpauseAll(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
 block {
 
-    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
+    verifyNoAmountSent(Unit);     
+    verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
 
     case bountyLambdaAction of [
         |   LambdaUnpauseAll(_parameters) -> {
@@ -253,15 +250,15 @@ block {
 function lambdaTogglePauseEntrypoint(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
 block {
 
-    verifyNoAmountSent(Unit);     // entrypoint should not receive any tez amount  
-    verifySenderIsSuperAdmin(s.superAdmin); // check that sender is super admin 
+    verifyNoAmountSent(Unit);     
+    verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
 
     case bountyLambdaAction of [
         |   LambdaTogglePauseEntrypoint(params) -> {
 
                 case params.targetEntrypoint of [
                         SetBounty (_v)              -> s.breakGlassConfig.setBountyIsPaused             := _v
-                    |   TogglePause (_v)            -> s.breakGlassConfig.togglePauseIsPaused           := _v
+                    |   TogglePauseBounty (_v)      -> s.breakGlassConfig.togglePauseBountyIsPaused     := _v
                     |   ApproveOrReject (_v)        -> s.breakGlassConfig.approveOrRejectIsPaused       := _v
                     |   ReviewBounty (_v)           -> s.breakGlassConfig.reviewBountyIsPaused          := _v
                     |   SendBountyReward (_v)       -> s.breakGlassConfig.sendBountyRewardIsPaused      := _v
@@ -295,7 +292,7 @@ block {
     case bountyLambdaAction of [
         |   LambdaSetBountyCreator(setBountyCreatorParams) -> {
 
-                verifySenderIsAdmin(s.admins); // check that sender is admin 
+                verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); // check that sender is admin 
                 s.bountyCreators := updateWhitelistContractsMap(setBountyCreatorParams, s.bountyCreators);
 
             }
@@ -318,11 +315,12 @@ block {
         |   LambdaSetBounty(setBountyParams) -> {
 
                 verifySenderIsAdminOrBountyCreator(s);
-                const sender                 : address  = Tezos.get_sender();
-                const bountyContractAddress  : address  = Tezos.get_self_address();
-
+                
                 case setBountyParams of [
                     |   CreateBounty(createBountyParams) -> {
+
+                            const sender                 : address  = Tezos.get_sender();
+                            const bountyContractAddress  : address  = Tezos.get_self_address();
 
                             const bountyId               : nat              = s.nextBountyId;
                             const bountyRecord           : bountyRecordType = createNewBountyRecord(createBountyParams);
@@ -330,9 +328,11 @@ block {
                             // transfer rewards from creator of bounty to contract
                             const maxApprovedApplicants : nat = createBountyParams.maxApprovedApplicants;
                             for _tokenName -> reward in map createBountyParams.totalRewards block {
+
                                 const totalRewardAmount : nat = maxApprovedApplicants * reward.amount;
+
                                 operations := case reward.rewardTokenType of [
-                                        Tez                     -> transferTez((Tezos.get_contract_with_error(bountyContractAddress, "Error. Contract not found at given address") : contract(unit)), totalRewardAmount * 1mutez) # operations
+                                    |   Tez                     -> transferTez((Tezos.get_contract_with_error(bountyContractAddress, "Error. Tez could not be send to address.") : contract(unit)), totalRewardAmount * 1mutez) # operations
                                     |   Fa12(fa12TokenAddress)  -> transferFa12Token(sender, bountyContractAddress, totalRewardAmount, fa12TokenAddress) # operations
                                     |   Fa2(fa2Token)           -> transferFa2Token(sender, bountyContractAddress, totalRewardAmount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
                                 ];
@@ -344,6 +344,9 @@ block {
 
                         } 
                     |   UpdateBounty(updateBountyParams) -> {
+
+                            const sender                 : address  = Tezos.get_sender();
+                            const bountyContractAddress  : address  = Tezos.get_self_address();
 
                             const bountyId               : nat              = updateBountyParams.bountyId;
 
@@ -375,7 +378,7 @@ block {
                             bountyRecord.image := updateBountyParams.image;
                             
                             case updateBountyParams.milestones of [
-                                    Some(_v) -> bountyRecord.milestones := _v
+                                    Some(_v) -> bountyRecord.milestones := updateBountyParams.milestones
                                 |   None     -> skip
                             ];
 
@@ -389,6 +392,12 @@ block {
                                 |   None     -> skip
                             ];
 
+                            // check if bounty has milestones
+                            const hasMilestones : bool = case bountyRecord.milestones of [
+                                    Some(_v) -> True
+                                |   None     -> False
+                            ];
+
                             // verify rewards tally
                             if hasMilestones then {
                                 verifyMilestoneAndTotalRewardsTally(bountyRecord.totalRewards, bountyRecord.milestones);
@@ -396,21 +405,23 @@ block {
                             
                             // operation for adjustment of rewards 
                             const diffRewardsMap : rewardsDiffType = differenceBetweenRewards(initialRewards, initialMaxApprovedApplicants, bountyRecord.totalRewards, bountyRecord.maxApprovedApplicants);
-                            for tokenName -> rewardDiff in map diffRewardsMap block {
+                            for _tokenName -> rewardDiff in map diffRewardsMap block {
                                 
-                                if rewardDiff < 0 then {
+                                const rewardAmount : nat = abs(rewardDiff.amount);
+
+                                if rewardDiff.amount < 0 then {
                                     // send tokens from contract to sender
-                                    operations := case reward.rewardTokenType of [
-                                            Tez                     -> transferTez((Tezos.get_contract_with_error(sender, "Error. Contract not found at given address") : contract(unit)), reward.amount * 1mutez) # operations
-                                        |   Fa12(fa12TokenAddress)  -> transferFa12Token(bountyContractAddress, sender, reward.amount, fa12TokenAddress) # operations
-                                        |   Fa2(fa2Token)           -> transferFa2Token(bountyContractAddress, sender, reward.amount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
+                                    operations := case rewardDiff.rewardTokenType of [
+                                        |   Tez                     -> transferTez((Tezos.get_contract_with_error(sender, "Error. Tez could not be send to address.") : contract(unit)), rewardAmount * 1mutez) # operations
+                                        |   Fa12(fa12TokenAddress)  -> transferFa12Token(bountyContractAddress, sender, rewardAmount, fa12TokenAddress) # operations
+                                        |   Fa2(fa2Token)           -> transferFa2Token(bountyContractAddress, sender, rewardAmount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
                                     ];
                                 } else {
                                     // send tokens from sender to contract
-                                    operations := case reward.rewardTokenType of [
-                                            Tez                     -> transferTez((Tezos.get_contract_with_error(bountyContractAddress, "Error. Contract not found at given address") : contract(unit)), reward.amount * 1mutez) # operations
-                                        |   Fa12(fa12TokenAddress)  -> transferFa12Token(sender, bountyContractAddress, reward.amount, fa12TokenAddress) # operations
-                                        |   Fa2(fa2Token)           -> transferFa2Token(sender, bountyContractAddress, reward.amount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
+                                    operations := case rewardDiff.rewardTokenType of [
+                                        |   Tez                     -> transferTez((Tezos.get_contract_with_error(bountyContractAddress, "Error. Tez could not be send to address.") : contract(unit)), rewardAmount * 1mutez) # operations
+                                        |   Fa12(fa12TokenAddress)  -> transferFa12Token(sender, bountyContractAddress, rewardAmount, fa12TokenAddress) # operations
+                                        |   Fa2(fa2Token)           -> transferFa2Token(sender, bountyContractAddress, rewardAmount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
                                     ];
                                 };
                             };
@@ -456,24 +467,32 @@ block {
                         }   
                     |   UpdateMilestone(updateMilestoneParams) -> {
 
+                            const sender                 : address  = Tezos.get_sender();
+                            const bountyContractAddress  : address  = Tezos.get_self_address();
+
                             const bountyId      : nat  = updateMilestoneParams.bountyId;
                             const milestoneId   : nat  = updateMilestoneParams.milestoneId;
                             
                             // get bounty record
-                            var bountyRecord    : bountyRecordType  = getBountyRecord(bountyId, s);
+                            var bountyRecord    : bountyRecordType := getBountyRecord(bountyId, s);
 
                             // get initial states
                             const initialRewards : rewardsType = bountyRecord.totalRewards;
                             const initialMaxApprovedApplicants : nat = bountyRecord.maxApprovedApplicants;
 
-                            var milestoneRecord : milestoneRecordType = case bountyRecord.milestones[milestoneId] of [
+                            var milestones : milestonesType := case bountyRecord.milestones of [
+                                    Some(_milestones) -> _milestones
+                                |   None              -> (map[] : milestonesType)
+                            ];
+
+                            var milestoneRecord : milestoneRecordType := case milestones[milestoneId] of [
                                     Some(_record) -> _record
-                                |   None -> [
+                                |   None          -> record [
                                         name        = "EMPTY";
                                         description = "EMPTY";
                                         image       = (None : option(string));
                                         rewards     = (map[] : rewardsType);
-                                    ]
+                                ]
                             ];
 
                             // ---------------------------------------------
@@ -505,27 +524,30 @@ block {
                                         milestoneRecord.rewards := _v;
                                         
                                         // update bounty record milestones
-                                        bountyRecord.milestones[milestoneId] := milestoneRecord;
+                                        milestones[milestoneId] := milestoneRecord;
 
                                         // calculate new total rewards
-                                        const newTotalRewards : rewardsType = getNewTotalRewards(bountyRecord.milestones);
+                                        const newTotalRewards : rewardsType = getNewTotalRewards(milestones);
 
                                         // operation for adjustment of rewards 
                                         const diffRewardsMap : rewardsDiffType = differenceBetweenRewards(initialRewards, initialMaxApprovedApplicants, newTotalRewards, initialMaxApprovedApplicants);
-                                        for tokenName -> rewardDiff in map diffRewardsMap block {
-                                            if rewardDiff < 0 then {
+                                        for _tokenName -> rewardDiff in map diffRewardsMap block {
+                                            
+                                            const rewardAmount : nat = abs(rewardDiff.amount);
+
+                                            if rewardDiff.amount < 0 then {
                                                 // send tokens from contract to sender
-                                                operations := case reward.rewardTokenType of [
-                                                        Tez                     -> transferTez((Tezos.get_contract_with_error(sender, "Error. Contract not found at given address") : contract(unit)), reward.amount * 1mutez) # operations
-                                                    |   Fa12(fa12TokenAddress)  -> transferFa12Token(bountyContractAddress, sender, reward.amount, fa12TokenAddress) # operations
-                                                    |   Fa2(fa2Token)           -> transferFa2Token(bountyContractAddress, sender, reward.amount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
+                                                operations := case rewardDiff.rewardTokenType of [
+                                                    |   Tez                     -> transferTez((Tezos.get_contract_with_error(sender, "Error. Tez could not be send to address.") : contract(unit)), rewardAmount * 1mutez) # operations
+                                                    |   Fa12(fa12TokenAddress)  -> transferFa12Token(bountyContractAddress, sender, rewardAmount, fa12TokenAddress) # operations
+                                                    |   Fa2(fa2Token)           -> transferFa2Token(bountyContractAddress, sender, rewardAmount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
                                                 ];
                                             } else {
                                                 // send tokens from sender to contract
-                                                operations := case reward.rewardTokenType of [
-                                                        Tez                     -> transferTez((Tezos.get_contract_with_error(bountyContractAddress, "Error. Contract not found at given address") : contract(unit)), reward.amount * 1mutez) # operations
-                                                    |   Fa12(fa12TokenAddress)  -> transferFa12Token(sender, bountyContractAddress, reward.amount, fa12TokenAddress) # operations
-                                                    |   Fa2(fa2Token)           -> transferFa2Token(sender, bountyContractAddress, reward.amount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
+                                                operations := case rewardDiff.rewardTokenType of [
+                                                    |   Tez                     -> transferTez((Tezos.get_contract_with_error(bountyContractAddress, "Error. Tez could not be send to address.") : contract(unit)), rewardAmount * 1mutez) # operations
+                                                    |   Fa12(fa12TokenAddress)  -> transferFa12Token(sender, bountyContractAddress, rewardAmount, fa12TokenAddress) # operations
+                                                    |   Fa2(fa2Token)           -> transferFa2Token(sender, bountyContractAddress, rewardAmount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
                                                 ];
                                             };
                                         };
@@ -535,8 +557,8 @@ block {
                             ];
 
                             // update storage
-                            bountyRecord.milestones[milestoneId] := milestoneRecord;
-                            s.bountyLedger[bountyId]             := bountyRecord;
+                            bountyRecord.milestones     := Some(milestones);
+                            s.bountyLedger[bountyId]    := bountyRecord;
 
                         }
                 ];
@@ -702,25 +724,37 @@ block {
                     ];
 
                     // get milestone log
-                    var milestoneLog : milestoneLogRecordType := case applicantRecord.milestoneLog[milestoneId] of [
-                            Some(_log) -> _log
+                    var milestoneLog : milestoneLogType := case applicantRecord.milestoneLog of [
+                            Some(_log) -> _log 
                         |   None       -> failwith(error_MILESTONE_LOG_NOT_FOUND_IN_APPLICANT_RECORD)
                     ];
 
-                    milestoneLog.status := status;
-                    milestoneLog.reviewed := True;  
+                    var milestoneLogRecord : milestoneLogRecordType := case milestoneLog[currentMilestone] of [
+                            Some(_record) -> _record
+                        |   None          -> failwith(error_MILESTONE_LOG_RECORD_NOT_FOUND_IN_APPLICANT_RECORD)
+                    ];
+
+                    milestoneLogRecord.status := status;
+                    milestoneLogRecord.reviewed := True;  
             
                     case reviewBountyParams.milestoneReview of [
-                            Some(_review) -> milestoneLog.review := _review
+                            Some(_review) -> milestoneLogRecord.review := Some(_review)
                         |   None          -> skip
                     ];
 
                     // update milestone log in applicant record
-                    const numberOfMilestones : nat = Map.size(bountyRecord.milestones);
-                    applicantRecord.milestoneLog[milestoneId] := milestoneLog;
+                    const bountyMilestones : milestonesType = case bountyRecord.milestones of [
+                            Some(_milestones) -> _milestones
+                        |   None              -> failwith(error_BOUNTY_HAS_NO_MILESTONES)
+                    ];
+                    const numberOfMilestones : nat = Map.size(bountyMilestones);
+                    
+                    // update milestone log
+                    milestoneLog[currentMilestone] := milestoneLogRecord;
+                    applicantRecord.milestoneLog   := Some(milestoneLog);
 
                     // check if all milestones completed in bounty
-                    if milestoneId = numberOfMilestones then {
+                    if currentMilestone = numberOfMilestones then {
 
                         // if final status is approved, set applicant record status to approved as well
                         if status = "REVIEW_APPROVED" then {
@@ -776,7 +810,7 @@ block {
 
                 // set bounty review text if exists
                 case reviewBountyParams.bountyReview of [
-                        Some(_review) -> applicantRecord.review := _review
+                        Some(_review) -> applicantRecord.review := Some(_review)
                     |   None          -> skip
                 ];
 
@@ -803,8 +837,8 @@ block {
     case bountyLambdaAction of [
         |   LambdaSendBountyReward(sendBountyRewardParams) -> {
 
-                const bountyId   : nat      = sendBountyRewardParams.bountyId;
-                const applicants : set(nat) = sendBountyRewardParams.applicants;
+                const bountyId   : nat          = sendBountyRewardParams.bountyId;
+                const applicants : set(address) = sendBountyRewardParams.applicants;
                 const bountyContractAddress : address = Tezos.get_self_address();
 
                 // get bounty record
@@ -822,7 +856,11 @@ block {
                     ];
 
                     // get number of bounty milestones
-                    const numberOfMilestones : nat = Map.size(bountyRecord.milestones);
+                    const bountyMilestones : milestonesType = case bountyRecord.milestones of [
+                            Some(_milestones) -> _milestones
+                        |   None              -> failwith(error_BOUNTY_HAS_NO_MILESTONES)
+                    ];
+                    const numberOfMilestones : nat = Map.size(bountyMilestones);
 
                     // get bounty milestone and rewards
                     const bountyMilestone : milestoneRecordType = getBountyMilestoneRecord(bountyRecord, milestoneId);
@@ -832,34 +870,40 @@ block {
                     for applicant in set applicants block {
 
                         var applicantRecord : applicantRecordType := getApplicantRecord(bountyId, applicant, s);
-                        var applicantMilestoneRecord : milestoneLogRecordType := getApplicantMilestoneRecord(applicantRecord, milestoneId, s);
+                        var applicantMilestoneRecord : milestoneLogRecordType := getApplicantMilestoneRecord(applicantRecord, milestoneId);
 
-                        if applicantMilestoneRecord.status = REVIEW_APPROVED 
+                        if applicantMilestoneRecord.status = "REVIEW_APPROVED" 
                         and applicantMilestoneRecord.completed = True 
                         and applicantMilestoneRecord.reviewed = True
                         and applicantMilestoneRecord.rewarded = False then {
 
                             // update applicant milestone record
                             applicantMilestoneRecord.rewarded           := True;
-                            applicantMilestoneRecord.rewardTimestamp    := Tezos.get_now();
+                            applicantMilestoneRecord.rewardTimestamp    := Some(Tezos.get_now());
                             applicantMilestoneRecord.status             := "REWARDED";
 
                             // check if last milestone of bounty
                             if milestoneId = numberOfMilestones then {
                                 // update applicant milestone record
                                 applicantRecord.fullyRewarded := True;
-                            }
+                            } else skip;
 
-                            applicantRecord.lastRewardTimestamp         := Tezos.get_now();
+                            applicantRecord.lastRewardTimestamp         := Some(Tezos.get_now());
 
                             // update storage
-                            applicantRecord.milestoneLog[milestoneId]   := applicantMilestoneRecord;
+                            var milestoneLog : milestoneLogType := case applicantRecord.milestoneLog of [
+                                    Some(_log) -> _log
+                                |   None       -> failwith(error_MILESTONE_LOG_RECORD_NOT_FOUND_IN_APPLICANT_RECORD)
+                            ];
+
+                            milestoneLog[milestoneId]                   := applicantMilestoneRecord;
+                            applicantRecord.milestoneLog                := Some(milestoneLog);
                             s.applicantLedger[(bountyId, applicant)]    := applicantRecord;
                             
                             // loop through milestone rewards and create operations to send rewards
                             for _tokenName -> reward in map milestoneRewards block {
                                 operations := case reward.rewardTokenType of [
-                                        Tez                     -> transferTez((Tezos.get_contract_with_error(applicant, "Error. Contract not found at given address") : contract(unit)), reward.amount * 1mutez) # operations
+                                    |   Tez                     -> transferTez((Tezos.get_contract_with_error(applicant, "Error. Tez could not be send to address.") : contract(unit)), reward.amount * 1mutez) # operations
                                     |   Fa12(fa12TokenAddress)  -> transferFa12Token(bountyContractAddress, applicant, reward.amount, fa12TokenAddress) # operations
                                     |   Fa2(fa2Token)           -> transferFa2Token(bountyContractAddress, applicant, reward.amount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
                                 ];
@@ -873,8 +917,9 @@ block {
                     // bounty has no milestones; send rewards for applicants 
                     for applicant in set applicants block {
 
-                        const applicantRecord : applicantRecordType = getApplicantRecord(bountyId, applicant, s);
-                        if applicantRecord.status = REVIEW_APPROVED 
+                        var applicantRecord : applicantRecordType := getApplicantRecord(bountyId, applicant, s);
+
+                        if applicantRecord.status = "REVIEW_APPROVED" 
                         and applicantRecord.completed = True 
                         and applicantRecord.reviewed = True
                         and applicantRecord.fullyRewarded = False then {
@@ -882,15 +927,15 @@ block {
                             // update applicant milestone record
                             applicantRecord.status                 := "REWARDED";
                             applicantRecord.fullyRewarded          := True;
-                            applicantRecord.lastTewardTimestamp    := Tezos.get_now();
+                            applicantRecord.lastRewardTimestamp    := Some(Tezos.get_now());
 
                             // update storage
                             s.applicantLedger[(bountyId, applicant)]    := applicantRecord;
 
-                            // loop through milestone rewards
-                            for _tokenName -> reward in map milestoneRewards block {
+                            // loop through bounty rewards
+                            for _tokenName -> reward in map bountyRecord.totalRewards block {
                                 operations := case reward.rewardTokenType of [
-                                        Tez                     -> transferTez((Tezos.get_contract_with_error(applicant, "Error. Contract not found at given address") : contract(unit)), reward.amount * 1mutez) # operations
+                                    |   Tez                     -> transferTez((Tezos.get_contract_with_error(applicant, "Error. Tez could not be send to address.") : contract(unit)), reward.amount * 1mutez) # operations
                                     |   Fa12(fa12TokenAddress)  -> transferFa12Token(bountyContractAddress, applicant, reward.amount, fa12TokenAddress) # operations
                                     |   Fa2(fa2Token)           -> transferFa2Token(bountyContractAddress, applicant, reward.amount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
                                 ];
@@ -941,7 +986,7 @@ block {
 
                 verifyBountyIsNotPaused(bountyRecord.isPaused);
 
-                verifyBountyHasSpaceForNewApplicants(bountyRecord.maxApprovedApplicants, bountyRecord.currentApprovedApplicants);
+                verifyBountyHasSpaceForNewApplicants(bountyRecord.maxApprovedApplicants, Map.size(bountyRecord.currentApprovedApplicants));
                 
                 verifyUserCanApplyForNewBounties(userRecord.currentApplicationCount, s.config.maxApplications);
 
@@ -1043,9 +1088,14 @@ block {
                         |   None     -> 1n // first milestone
                     ];                     
 
-                    var milestoneLog : milestoneLogRecordType := case applicantRecord.milestoneLog[currentMilestone] of [
+                    var milestoneLog : milestoneLogType := case applicantRecord.milestoneLog of [
                             Some(_log) -> _log
-                        |   None -> [
+                        |   None       -> (map[] : milestoneLogType)
+                    ];
+
+                    var milestoneLogRecord : milestoneLogRecordType := case milestoneLog[currentMilestone] of [
+                            Some(_record) -> _record
+                        |   None -> record [
                                 status          = "REVIEW_PENDING";
                                 completed       = True;
                                 reviewed        = False;
@@ -1055,22 +1105,27 @@ block {
                             ]
                     ];
 
-                    // get number of milestones
-                    const numberOfMilestones : nat = Map.size(bountyRecord.milestones);
+                    // get number of bounty milestones
+                    const bountyMilestones : milestonesType = case bountyRecord.milestones of [
+                            Some(_milestones) -> _milestones
+                        |   None              -> failwith(error_BOUNTY_HAS_NO_MILESTONES)
+                    ];
+                    const numberOfMilestones : nat = Map.size(bountyMilestones);
 
                     // create new milestone log for next milestone
-                    if milestoneLog.status = "REVIEW_APPROVED" and currentMilestone < numberOfMilestones then block {
-                        milestoneLog := createNewMilestoneLog(unit);
+                    if milestoneLogRecord.status = "REVIEW_APPROVED" and currentMilestone < numberOfMilestones then block {
+                        milestoneLogRecord := createNewMilestoneLog(unit);
                         
                         // increment current milestone
                         currentMilestone := currentMilestone + 1n;
-                    }
+                    } else skip;
 
-                    milestoneLog.status     := "REVIEW_PENDING";
-                    milestoneLog.completed  := True;
-                    milestoneLog.reviewed   := False;
+                    milestoneLogRecord.status     := "REVIEW_PENDING";
+                    milestoneLogRecord.completed  := True;
+                    milestoneLogRecord.reviewed   := False;
 
-                    applicantRecord.milestoneLog[currentMilestone] := milestoneLog;
+                    milestoneLog[currentMilestone] := milestoneLogRecord;
+                    applicantRecord.milestoneLog   := Some(milestoneLog);
 
                 } else {
 
@@ -1079,7 +1134,7 @@ block {
                     applicantRecord.completed   := True;
                     applicantRecord.reviewed    := False;
 
-                }
+                };
 
                 // update storage
                 s.applicantLedger[(bountyId, sender)] := applicantRecord;
@@ -1128,11 +1183,8 @@ block {
                 userRecord.activeBounties     := Set.remove(bountyId, userRecord.activeBounties);
                 s.userLedger[sender]          := userRecord;
 
-                // check final active bounty count cannot be less than 0
-                const finalCurrentApprovedApplicants  : nat = if abs(bountyRecord.currentApprovedApplicants - 1n) < 0n then 0n else abs(bountyRecord.currentApprovedApplicants - 1n);
-
                 // update bounty storage
-                bountyRecord.currentApprovedApplicants  := finalCurrentApprovedApplicants;
+                bountyRecord.currentApprovedApplicants  := Map.remove(sender, bountyRecord.currentApprovedApplicants);
                 s.bountyLedger[bountyId]                := bountyRecord;
 
             }

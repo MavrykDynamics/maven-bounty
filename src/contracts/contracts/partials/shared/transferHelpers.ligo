@@ -80,7 +80,7 @@ function transferOperationFold(const transferParams : transferDestinationType; v
 block {
 
     const transferTokenOperation : operation = case transferParams.token of [
-        |   Tez         -> transferTez((Tezos.get_contract_with_error(transferParams.to_, "Error. Contract not found at given address") : contract(unit)), transferParams.amount * 1mutez)
+        |   Tez         -> transferTez((Tezos.get_contract_with_error(transferParams.to_, "Error. Tez could not be send to address.") : contract(unit)), transferParams.amount * 1mutez)
         |   Fa12(token) -> transferFa12Token(Tezos.get_self_address(), transferParams.to_, transferParams.amount, token)
         |   Fa2(token)  -> transferFa2Token(Tezos.get_self_address(), transferParams.to_, transferParams.amount, token.tokenId, token.tokenContractAddress)
     ];

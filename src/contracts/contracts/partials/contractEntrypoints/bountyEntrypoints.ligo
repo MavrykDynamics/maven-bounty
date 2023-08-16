@@ -101,7 +101,7 @@ block {
 
 
 (* updateConfig entrypoint *)
-function updateConfig(const updateConfigParams : bouuntyUpdateConfigParamsType; var s : bountyStorageType) : return is 
+function updateConfig(const updateConfigParams : bountyUpdateConfigParamsType; var s : bountyStorageType) : return is 
 block {
 
     // get lambda bytes
@@ -235,7 +235,7 @@ block{
 // ------------------------------------------------------------------------------
 
 (*  setBountyCreator entrypoint *)
-function setBountyCreator(const setBountyCreatorParams : setBountyCreatorActionType; var s : bountyStorageType) : return is
+function setBountyCreator(const setBountyCreatorParams : updateWhitelistContractsType; var s : bountyStorageType) : return is
 block {
 
     // get lambda bytes
@@ -285,15 +285,15 @@ block {
 
 
 
-(*  approve entrypoint *)
-function approve(const approveParams : approveActionType; var s : bountyStorageType) : return is
+(*  approveOrReject entrypoint *)
+function approveOrReject(const approveOrRejectParams : approveOrRejectActionType; var s : bountyStorageType) : return is
 block {
 
     // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaApprove", s.lambdaLedger);
+    const lambdaBytes : bytes = getLambdaBytes("lambdaApproveOrReject", s.lambdaLedger);
 
     // init bounty lambda action
-    const bountyLambdaAction : bountyLambdaActionType = LambdaApprove(approveParams);
+    const bountyLambdaAction : bountyLambdaActionType = LambdaApproveOrReject(approveOrRejectParams);
 
     // init response
     const response : return = unpackLambda(lambdaBytes, bountyLambdaAction, s);  
@@ -361,6 +361,23 @@ block {
 
 
 
+(*  cancelApplication entrypoint *)
+function cancelApplication(const cancelApplicationParams : cancelApplicationActionType; var s : bountyStorageType) : return is
+block {
+
+    // get lambda bytes
+    const lambdaBytes : bytes = getLambdaBytes("lambdaCancelApplication", s.lambdaLedger);
+
+    // init bounty lambda action
+    const bountyLambdaAction : bountyLambdaActionType = LambdaCancelApplication(cancelApplicationParams);
+
+    // init response
+    const response : return = unpackLambda(lambdaBytes, bountyLambdaAction, s);  
+
+} with response
+
+
+
 (*  completeBounty entrypoint *)
 function completeBounty(const completeBountyParams : completeBountyActionType; var s : bountyStorageType) : return is
 block {
@@ -370,6 +387,23 @@ block {
 
     // init bounty lambda action
     const bountyLambdaAction : bountyLambdaActionType = LambdaCompleteBounty(completeBountyParams);
+
+    // init response
+    const response : return = unpackLambda(lambdaBytes, bountyLambdaAction, s);  
+
+} with response
+
+
+
+(*  stopBounty entrypoint *)
+function stopBounty(const stopBountyParams : stopBountyActionType; var s : bountyStorageType) : return is
+block {
+
+    // get lambda bytes
+    const lambdaBytes : bytes = getLambdaBytes("lambdaStopBounty", s.lambdaLedger);
+
+    // init bounty lambda action
+    const bountyLambdaAction : bountyLambdaActionType = LambdaStopBounty(stopBountyParams);
 
     // init response
     const response : return = unpackLambda(lambdaBytes, bountyLambdaAction, s);  

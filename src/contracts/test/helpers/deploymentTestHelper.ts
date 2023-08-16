@@ -16,45 +16,27 @@ import { OnChainView } from "@taquito/taquito/dist/types/contract/contract-metho
 
 
 // Contracts Storage Type
-import { freezeRuleEngineStorageType }      from "../../storage/storageTypes/freezeRuleEngineStorageType"
-import { launchpadStorageType }             from "../../storage/storageTypes/launchpadStorageType"
-import { marketplaceStorageType }           from "../../storage/storageTypes/marketplaceStorageType"
-import { tokenRegistryStorageType }         from "../../storage/storageTypes/tokenRegistryStorageType"
-import { treasuryStorageType }              from "../../storage/storageTypes/treasuryStorageType"
+import { bountyStorageType }                from "../../storage/storageTypes/bountyStorageType"
 
 
 // Tokens Storage Type
-import { cmtaTokenStorageType }             from "../../storage/storageTypes/cmtaTokenStorageType";
-import { securityTokenStorageType }         from "../../storage/storageTypes/securityTokenStorageType";
 import { mavrykFa2TokenStorageType }        from "../../storage/storageTypes/mavrykFa2TokenStorageType";
 import { mavrykFa12TokenStorageType }       from "../../storage/storageTypes/mavrykFa12TokenStorageType";
 
 
 // Contract Lambdas
-import launchpadLambdas                     from "../../build/lambdas/launchpadLambdas.json"
-import marketplaceLambdas                   from "../../build/lambdas/marketplaceLambdas.json"
-import tokenRegistryLambdas                 from "../../build/lambdas/tokenRegistryLambdas.json"
-import treasuryLambdas                      from "../../build/lambdas/treasuryLambdas.json"
+import bountyLambdas                        from "../../build/lambdas/bountyLambdas.json"
 
 const generalContractLambdas = {
-    "launchpad"             : launchpadLambdas,
-    "marketplace"           : marketplaceLambdas,
-    "tokenRegistry"         : tokenRegistryLambdas,
-    "treasury"              : treasuryLambdas,
+    "bounty"             : bountyLambdas,
 }
 
 type generalContractStorageType = 
 
     // contracts
-    freezeRuleEngineStorageType | 
-    launchpadStorageType |    
-    marketplaceStorageType |    
-    tokenRegistryStorageType |
-    treasuryStorageType |
+    bountyStorageType |
     
     // tokens
-    cmtaTokenStorageType | 
-    securityTokenStorageType | 
     mavrykFa12TokenStorageType | 
     mavrykFa2TokenStorageType 
     

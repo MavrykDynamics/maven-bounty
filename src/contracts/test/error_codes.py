@@ -42,6 +42,7 @@ error_TRANSFER_ENTRYPOINT_IN_FA2_CONTRACT_NOT_FOUND                             
 error_GET_GENERAL_CONTRACT_OPT_VIEW_IN_GOVERNANCE_CONTRACT_NOT_FOUND                                    = 28
 error_ONLY_ADMINISTRATOR_OR_GOVERNANCE_ALLOWED                                                          = 29
 error_ONLY_SELF_OR_SPECIFIED_ADDRESS_ALLOWED                                                            = 30
+error_ONLY_ADMINISTRATOR_OR_SUPER_ADMINISTRATOR_ALLOWED                                                 = 31
 
 
 
@@ -51,116 +52,54 @@ error_ONLY_SELF_OR_SPECIFIED_ADDRESS_ALLOWED                                    
 
 
 
-error_ADMINISTRATOR_NOT_FOUND                                                                           = 31
-error_NOT_ADMIN                                                                                         = 32
 
-error_TOKEN_EXISTS                                                                                      = 33
-error_TOKEN_CONTEXT_NOT_FOUND                                                                           = 34
-error_TOKEN_UNDEFINED                                                                                   = 35
-error_TOKEN_PAUSED                                                                                      = 36
-
-error_USER_NOT_FOUND                                                                                    = 37
-error_CANNOT_TRANSFER                                                                                   = 38
-error_INSUFFICIENT_BALANCE                                                                              = 39
-
-error_SNAPSHOT_ALREADY_SCHEDULED                                                                        = 40
-error_SNAPSHOT_IN_PAST                                                                                  = 41
-
-error_VIEW_IS_TRANSFER_VALID_NOT_FOUND                                                                  = 42
-error_MINT_ENTRYPOINT_IN_FA2_CONTRACT_NOT_FOUND                                                         = 43
+error_ADMINISTRATOR_NOT_FOUND                                                                           = 32
+error_NOT_ADMIN                                                                                         = 33
+error_NO_NEW_SUPER_ADMIN_FOUND                                                                          = 34
+error_SENDER_IS_NOT_NEW_SUPER_ADMIN                                                                     = 35
 
 
+error_ONLY_ADMINISTRATOR_OR_BOUNTY_CREATOR_ALLOWED                                                      = 36
+error_ONLY_ADMIN_OR_CREATOR_OR_WHITELISTED_ALLOWED                                                      = 37
+
+error_INVALID_STATUS                                                                                    = 38
+error_INVALID_STATUS_FOR_BOUNTY_REVIEW                                                                  = 39
+
+error_MILESTONE_REWARDS_AND_TOTAL_REWARDS_DO_NOT_TALLY                                                  = 40
+error_BOUNTY_RECORD_NOT_FOUND                                                                           = 41
+error_MILESTONES_FOR_BOUNTY_NOT_FOUND                                                                   = 42
+error_APPLICANT_RECORD_NOT_FOUND                                                                        = 43
+error_USER_RECORD_NOT_FOUND                                                                             = 44
+error_MILESTONE_RECORD_FOR_BOUNTY_NOT_FOUND                                                             = 45
+error_MILESTONE_RECORD_FOR_APPLICANT_NOT_FOUND                                                          = 46
+error_MILESTONE_LOG_FOR_APPLICANT_NOT_FOUND                                                             = 47
+error_MILESTONE_LOG_RECORD_NOT_FOUND_IN_APPLICANT_RECORD                                                = 48
 
 
+error_BOUNTY_IS_NOT_ACTIVE                                                                              = 49
+error_BOUNTY_IS_PAUSED                                                                                  = 50
+error_BOUNTY_HAS_NO_SPACE_FOR_NEW_APPLICANTS                                                            = 51
+error_USER_HAS_NO_SPACE_FOR_NEW_BOUNTIES                                                                = 52
+error_USER_CANNOT_APPLY_FOR_NEW_BOUNTIES                                                                = 53
+error_APPLICATION_STATUS_IS_NOT_PENDING                                                                 = 54
+error_BOUNTY_CANNOT_BE_STOPPED_BY_USER                                                                  = 55
+error_BOUNTY_HAS_ALREADY_BEEN_COMPLETED_AND_APPROVED                                                    = 56
+error_MILESTONE_NEEDS_TO_BE_SPECIFIED_FOR_REVIEW                                                        = 57
+error_MILESTONE_LOG_NOT_FOUND_IN_APPLICANT_RECORD                                                       = 58
+error_CURRENT_MILESTONE_NOT_FOUND                                                                       = 59
+error_MILESTONE_TO_REVIEW_NEEDS_TO_BE_THE_SAME_AS_CURRENT_MILESTONE                                     = 60
+error_BOUNTY_HAS_REACHED_MAX_APPROVED_APPLICANTS                                                        = 61
+error_BOUNTY_HAS_NO_MILESTONES                                                                          = 62
+error_MILESTONE_NEEDS_TO_BE_SPECIFIED_TO_SEND_BOUNTY_REWARD                                             = 63
 
+error_SET_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                   = 64
+error_TOGGLE_PAUSE_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                          = 65
+error_APPROVE_OR_REJECT_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                            = 66
+error_REVIEW_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                = 67
+error_SEND_BOUNTY_REWARD_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                           = 68
 
+error_APPLY_FOR_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                             = 69
+error_CANCEL_APPLICATION_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                           = 70
+error_COMPLETE_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                              = 71
+error_STOP_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                  = 72
 
-
-
-error_ADD_TOKEN_ENTRYPOINT_IN_TOKEN_REGISTRY_CONTRACT_PAUSED                                             = 44
-error_REMOVE_TOKEN_ENTRYPOINT_IN_TOKEN_REGISTRY_CONTRACT_PAUSED                                          = 45
-error_FA2_TOKEN_RECORD_NOT_FOUND_TO_BE_REMOVED                                                           = 46
-error_TOKEN_RECORD_NOT_FOUND                                                                             = 47
-
-error_NO_NEW_SUPER_ADMIN_FOUND                                                                           = 48
-error_SENDER_IS_NOT_NEW_SUPER_ADMIN                                                                      = 49
-
-
-
-
-
-
-
-
-
-error_LAUNCH_RECORD_NOT_FOUND                                                                            = 50
-error_SALE_OPTION_NOT_FOUND                                                                              = 51
-error_MAX_AMOUNT_PER_WALLET_FOR_SALE_OPTION_TOTAL_EXCEEDED                                               = 52
-error_MAX_AMOUNT_CAP_FOR_SALE_OPTION_EXCEEDED                                                            = 53
-error_MAX_AMOUNT_CAP_FOR_LAUNCH_EXCEEDED                                                                 = 54
-
-error_INVALID_TOKEN_ISSUANCE_TYPE                                                                        = 55
-error_INVALID_TOKEN_DISTRIBUTION_TYPE                                                                    = 56
-error_LAUNCH_IS_NOT_ACTIVE                                                                               = 57
-error_LAUNCH_IS_NOT_PAUSED                                                                               = 58
-error_LAUNCH_HAS_ENDED                                                                                   = 59
-error_SALE_HAS_NOT_STARTED                                                                               = 60
-error_USER_WHITELIST_RECORD_NOT_FOUND                                                                    = 61
-error_USER_WHITELIST_ALLOWED_AMOUNT_EXCEEDED                                                             = 62
-error_WHITELIST_OPTION_DOES_NOT_EXIST                                                                    = 63
-error_PAYMENT_OPTION_NOT_FOUND                                                                           = 64
-error_AMOUNT_BOUGHT_MUST_EXCEED_MIN_PURCHASE_AMOUNT                                                      = 65
-
-
-error_SALE_END_SHOULD_BE_AFTER_SALE_START                                                                = 66
-error_WHITELIST_SALE_END_SHOULD_BE_AFTER_WHITELIST_SALE_START                                            = 67
-error_WHITELIST_SALE_START_NOT_SPECIFIED                                                                 = 68
-
-
-
-
-
-
-
-
-error_SENDER_IS_NOT_CREATOR                                                                              = 69
-error_LISTER_CANNOT_PURCHASE_HIS_LISTING                                                                 = 70
-error_LISTING_HAS_EXPIRED                                                                                = 71
-error_OFFER_HAS_EXPIRED                                                                                  = 72
-
-error_CURRENCY_RECORD_NOT_FOUND                                                                          = 73
-error_LISTING_RECORD_NOT_FOUND                                                                           = 74
-error_OFFER_RECORD_NOT_FOUND                                                                             = 75
-error_INVALID_CURRENCY                                                                                   = 76
-
-error_SET_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 77
-error_REMOVE_CURRENCY_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                          = 78
-error_CREATE_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                           = 79
-error_EDIT_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 80
-error_REMOVE_LISTING_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                           = 81
-error_PURCHASE_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                                 = 82
-error_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                                    = 83
-error_ACCEPT_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 84
-error_REMOVE_OFFER_ENTRYPOINT_IN_MARKETPLACE_CONTRACT_PAUSED                                             = 85
-
-
-error_PURCHASE_AMOUNT_CANNOT_BE_GREATER_THAN_LISTING_AMOUNT                                              = 86
-error_OFFER_AMOUNT_CANNOT_BE_GREATER_THAN_LISTING_AMOUNT                                                 = 87
-error_OFFER_STATUS_IS_NOT_OPEN                                                                           = 88
-error_LISTING_STATUS_IS_NOT_ACTIVE                                                                       = 89
-error_QUICK_BUY_OPTION_DOES_NOT_EXIST_ON_LISTING                                                         = 90
-
-
-
-
-
-
-
-
-error_TREASURY_NOT_FOUND                                                                                 = 91
-
-error_DOORMAN_CONTRACT_NOT_FOUND                                                                         = 92
-error_MVK_TOKEN_CONTRACT_NOT_FOUND                                                                       = 93
-error_UPDATE_OPERATORS_ENTRYPOINT_IN_MVK_TOKEN_CONTRACT_NOT_FOUND                                        = 94
-error_STAKE_ENTRYPOINT_IN_DOORMAN_CONTRACT_NOT_FOUND                                                     = 95
-error_UNSTAKE_ENTRYPOINT_IN_DOORMAN_CONTRACT_NOT_FOUND                                                   = 96

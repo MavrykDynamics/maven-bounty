@@ -7,33 +7,31 @@ chai.use(chaiAsPromised)
 chai.should()
 
 // ------------------------------------------------------------------------------
-// Contract Address
-// ------------------------------------------------------------------------------
-
-import contractDeployments from '../contractDeployments.json'
-
-// ------------------------------------------------------------------------------
 // Contract Helpers
 // ------------------------------------------------------------------------------
 
-import { GeneralContract, setGeneralContractLambdas } from '../helpers/deploymentTestHelper'
+import { GeneralContract, setGeneralContractLambdas }  from '../helpers/deploymentTestHelper'
 import { bob } from '../../scripts/sandbox/accounts'
-import * as helperFunctions from '../helpers/helperFunctions'
 
 // ------------------------------------------------------------------------------
 // Contract Storage
 // ------------------------------------------------------------------------------
 
-import { marketplaceStorage } from '../../storage/marketplaceStorage'
+import { bountyStorage } from '../../storage/bountyStorage'
+import {
+    signerFactory,
+} from '../helpers/helperFunctions'
+
 
 // ------------------------------------------------------------------------------
 // Contract Deployment Start
 // ------------------------------------------------------------------------------
 
-describe('Marketplace', async () => {
-  
+describe('Bounty', async () => {
+    
     var utils: Utils
-    var marketplace
+    var bounty 
+    var ledgerKey
     var tezos
 
     before('setup', async () => {
@@ -46,25 +44,22 @@ describe('Marketplace', async () => {
             // Originate and deploy contracts
             //----------------------------
         
-            marketplaceStorage.generalContracts.set('treasury', bob.pkh);
-            marketplace = await GeneralContract.originate(utils.tezos, "marketplace", marketplaceStorage);
-            await saveContractAddress('marketplaceAddress', marketplace.contract.address)
-        
-            /* ---- ---- ---- ---- ---- */
-        
-            tezos = marketplace.tezos
-            await helperFunctions.signerFactory(tezos, bob.sk);
+            bounty = await GeneralContract.originate(utils.tezos, "bounty", bountyStorage)
+            await saveContractAddress('bountyAddress', bounty.contract.address)
+
+            tezos = bounty.tezos
+            await signerFactory(tezos, bob.sk)
 
             // Set Lambdas
-            await setGeneralContractLambdas(tezos, "marketplace", marketplace.contract)
-
+            await setGeneralContractLambdas(tezos, "bounty", bounty.contract)
+        
         } catch(e){
             console.dir(e, {depth: 5})
         }
 
     })
 
-    it(`marketplace contract deployment`, async () => {
+    it(`bounty contract deployed`, async () => {
         try {
             console.log('-- -- -- -- -- -- -- -- -- -- -- -- --')
         } catch (e) {

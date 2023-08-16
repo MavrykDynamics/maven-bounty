@@ -1,8 +1,8 @@
 import { MichelsonMap, MichelsonMapKey } from "@taquito/michelson-encoder"
 import { BigNumber } from "bignumber.js"
 
-export type marketplaceStorageType = {
-    
+export type bountyStorageType = {
+
     superAdmin              : string;
     admins                  : [string];   
     newSuperAdmin           : string | null;
@@ -12,14 +12,14 @@ export type marketplaceStorageType = {
     breakGlassConfig        : {};
 
     whitelistContracts      : MichelsonMap<MichelsonMapKey, unknown>;
+    bountyCreators          : MichelsonMap<MichelsonMapKey, unknown>;
     generalContracts        : MichelsonMap<MichelsonMapKey, unknown>;
 
-    nextListingId           : BigNumber;
-    nextOfferId             : BigNumber;
+    nextBountyId            : BigNumber;
 
-    listingLedger           : MichelsonMap<MichelsonMapKey, unknown>;
-    offerLedger             : MichelsonMap<MichelsonMapKey, unknown>;
-    currencyLedger          : MichelsonMap<MichelsonMapKey, unknown>;
+    bountyLedger            : MichelsonMap<MichelsonMapKey, unknown>;
+    applicantLedger         : MichelsonMap<MichelsonMapKey, unknown>;
+    userLedger              : MichelsonMap<MichelsonMapKey, unknown>;
 
     lambdaLedger            : MichelsonMap<MichelsonMapKey, unknown>;
 

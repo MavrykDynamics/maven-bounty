@@ -29,8 +29,10 @@
 
 type action is
 
+    |   Default                     of unit
+
         // Admin Entrypoints
-        SetSuperAdmin               of (address)
+    |   SetSuperAdmin               of (address)
     |   ClaimSuperAdmin             of (unit)
     |   SetAdmin                    of (address)
     |   RemoveAdmin                 of (address)
@@ -48,7 +50,7 @@ type action is
     |   TogglePauseEntrypoint       of bountyTogglePauseEntrypointType
 
         // Bounty Admin Entrypoints
-    |   SetBountyCreator            of setBountyCreatorActionType
+    |   SetBountyCreator            of updateWhitelistContractsType
     |   SetBounty                   of setBountyActionType
     |   TogglePauseBounty           of togglePauseBountyActionType
     |   ApproveOrReject             of approveOrRejectActionType
@@ -108,8 +110,10 @@ function main (const action : action; const s : bountyStorageType) : return is
 
     case action of [
 
+        |   Default(_params)                      -> ((nil : list(operation)), s)
+
             // Admin Entrypoints
-            SetSuperAdmin(parameters)             -> setSuperAdmin(parameters, s)
+        |   SetSuperAdmin(parameters)             -> setSuperAdmin(parameters, s)
         |   ClaimSuperAdmin(_parameters)          -> claimSuperAdmin(s)
         |   SetAdmin(parameters)                  -> setAdmin(parameters, s)
         |   RemoveAdmin(parameters)               -> removeAdmin(parameters, s)

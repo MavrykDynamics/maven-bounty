@@ -12,7 +12,7 @@ type bountyBreakGlassConfigType is [@layout:comb] record [
     sendBountyRewardIsPaused        : bool;
     
     applyForBountyIsPaused          : bool;
-    withdrawApplicationIsPaused     : bool;
+    cancelApplicationIsPaused       : bool;
     completeBountyIsPaused          : bool;
     stopBountyIsPaused              : bool;
 ]
@@ -24,15 +24,15 @@ type bountyConfigType is [@layout:comb] record [
 
 
 type rewardsDiffRecordType is [@layout:comb] record [
-    rewardTokenType      : tokenType;
     amount               : int;
+    rewardTokenType      : tokenType;
 ]
 type rewardsDiffType is map(string, rewardsDiffRecordType)
 
 
 type rewardsRecordType is [@layout:comb] record [
-    rewardTokenType      : tokenType;
     amount               : nat;
+    rewardTokenType      : tokenType;
 ]
 type rewardsType is map(string, rewardsRecordType)
 
@@ -44,6 +44,7 @@ type milestoneRecordType is [@layout:comb] record [
     rewards              : rewardsType;
 ]
 type milestonesType is map(nat, milestoneRecordType)
+
 
 type bountyProgressType is 
     |   Milestone       of nat
@@ -86,6 +87,7 @@ type milestoneLogRecordType is [@layout:comb] record [
 ]
 type milestoneLogType is map(nat, milestoneLogRecordType)
 
+
 type applicantRecordType is [@layout:comb] record [
     status               : string;               // PENDING / APPROVED / REJECTED / CANCELED / STOPPED / REVIEW_PENDING / REVIEW_APPROVED / REVIEW_DISPUTED / REVIEW_REJECTED / REWARDED
     completed            : bool;                 // set to True by applicant (e.g. when all milestones are completed)
@@ -108,6 +110,16 @@ type userRecordType is [@layout:comb] record [
     appliedBounties             : set(nat);
 ]
 type userLedgerType is big_map(address, userRecordType)
+
+
+type bountyCreatorRecordType is [@layout:comb] record [
+    name            : string; 
+    description     : string;
+    image           : option(string);
+    bounties        : set(nat);
+]
+
+type bountyCreatorLedgerType is big_map(address, bountyCreatorRecord)
 
 // ------------------------------------------------------------------------------
 // Action Types
@@ -136,7 +148,7 @@ type updateBountyActionType is [@layout:comb] record [
 ]
 
 
-type updateBountyWhitelistType is [@layout:comb] record [
+type updateBountyWhitelistActionType is [@layout:comb] record [
     bountyId        : nat;
     addresses       : set(address);
     updateType      : updateType;
@@ -188,14 +200,15 @@ type sendBountyRewardActionType is [@layout:comb] record [
 ]
 
 
-type applyForBountyActionType is nat    // bountyId
-type completeBountyActionType is nat    // bountyId
-type stopBountyActionType is nat        // bountyId
+type applyForBountyActionType is nat        // bountyId
+type completeBountyActionType is nat        // bountyId
+type cancelApplicationActionType is nat     // bountyId
+type stopBountyActionType is nat            // bountyId
 
 type bountyUpdateConfigNewValueType is nat
 type bountyUpdateConfigActionType is 
         ConfigMaxActiveBounties     of unit
-    |   ConfigEmpty                 of unit
+    |   ConfigMaxApplications       of unit
 
 type bountyUpdateConfigParamsType is [@layout:comb] record [
     updateConfigNewValue    : bountyUpdateConfigNewValueType; 
@@ -214,7 +227,7 @@ type bountyPausableEntrypointType is
     |   StopBounty               of bool
     
 type bountyTogglePauseEntrypointType is [@layout:comb] record [
-    targetEntrypoint  : mbountyPausableEntrypointType;
+    targetEntrypoint  : bountyPausableEntrypointType;
     empty             : unit
 ];
 

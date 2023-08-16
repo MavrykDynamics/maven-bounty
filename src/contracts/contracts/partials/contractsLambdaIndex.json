@@ -1,23 +1,5 @@
 {
-    "tokenRegistry": [
-        "lambdaSetSuperAdmin",
-        "lambdaClaimSuperAdmin",
-        "lambdaSetAdmin",
-        "lambdaRemoveAdmin",
-
-        "lambdaUpdateMetadata",
-        "lambdaUpdateWhitelistContracts",
-        "lambdaUpdateGeneralContracts",
-        "lambdaMistakenTransfer",
-    
-        "lambdaPauseAll",
-        "lambdaUnpauseAll",
-        "lambdaTogglePauseEntrypoint",
-    
-        "lambdaSetToken",
-        "lambdaRemoveToken"
-    ],
-    "marketplace": [
+    "bounty": [
         "lambdaSetSuperAdmin",
         "lambdaClaimSuperAdmin",
         "lambdaSetAdmin",
@@ -33,60 +15,17 @@
         "lambdaUnpauseAll",
         "lambdaTogglePauseEntrypoint",
     
-        "lambdaSetCurrency",
+        "lambdaSetBountyCreator",
+        "lambdaSetBounty",
+        "lambdaTogglePauseBounty",
+        "lambdaApproveOrReject",
+        "lambdaReviewBounty",
+        "lambdaSendBountyReward",
 
-        "lambdaCreateListing",
-        "lambdaEditListing",
-        "lambdaRemoveListing",
-        "lambdaPurchase",
-        "lambdaOffer",
-        "lambdaAcceptOffer",
-        "lambdaRemoveOffer"
-    ],
-    "launchpad": [
-        "lambdaSetSuperAdmin",
-        "lambdaClaimSuperAdmin",
-        "lambdaSetAdmin",
-        "lambdaRemoveAdmin",
+        "lambdaApplyForBounty",
+        "lambdaCancelApplication",
+        "lambdaCompleteBounty",
+        "lambdaStopBounty"
 
-        "lambdaUpdateMetadata",
-        "lambdaUpdateConfig",
-        "lambdaUpdateWhitelistContracts",
-        "lambdaUpdateGeneralContracts",
-        "lambdaMistakenTransfer",
-    
-        "lambdaPauseAll",
-        "lambdaUnpauseAll",
-        "lambdaTogglePauseEntrypoint",
-    
-        "lambdaCreateTokenLaunch",
-        "lambdaSetLaunchWhitelist",
-        "lambdaEditTokenLaunch",
-        "lambdaEditSaleOption",
-        "lambdaStartLaunch",
-        "lambdaCloseLaunch",
-        "lambdaPauseLaunch",
-        "lambdaUnpauseLaunch",
-        "lambdaDistributeTokens",
-
-        "lambdaPurchase"
-    ],
-    "treasury": [
-        "lambdaSetSuperAdmin",
-        "lambdaClaimSuperAdmin",
-        "lambdaSetAdmin",
-        "lambdaRemoveAdmin",
-
-        "lambdaSetBaker",
-        "lambdaUpdateMetadata",
-        "lambdaUpdateWhitelistContracts",
-        "lambdaUpdateGeneralContracts",
-        "lambdaUpdateWhitelistTokenContracts",
-    
-        "lambdaTransfer",
-        
-        "lambdaUpdateMvkOperators",
-        "lambdaStakeMvk",
-        "lambdaUnstakeMvk"
     ]
 }

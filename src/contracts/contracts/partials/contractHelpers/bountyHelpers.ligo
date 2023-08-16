@@ -18,6 +18,18 @@ block {
 } with unit
 
 
+// verify sender is admin or super admin
+function verifySenderIsAdminOrSuperAdmin(const superAdminAddress : address; const admins : set(address)) : unit is
+block {
+
+    const senderIsSuperAdmin : bool = superAdminAddress = Tezos.get_sender();
+    const senderIsAdmin : bool = admins contains Tezos.get_sender();
+    if senderIsSuperAdmin or senderIsAdmin then skip else failwith(error_ONLY_ADMINISTRATOR_OR_SUPER_ADMINISTRATOR_ALLOWED);
+
+} with unit
+
+
+
 
 // verify sender is admin or bounty creator
 function verifySenderIsAdminOrBountyCreator(const s : bountyStorageType) : unit is
@@ -25,7 +37,7 @@ block {
 
     const senderIsAdmin : bool = s.admins contains Tezos.get_sender();
     const senderIsBountyCreator : bool = checkInWhitelistContracts(Tezos.get_sender(), s.bountyCreators);
-    if senderIsAdmin OR senderIsBountyCreator then skip else failwith(error_ONLY_ADMINISTRATOR_OR_BOUNTY_CREATOR_ALLOWED);
+    if senderIsAdmin or senderIsBountyCreator then skip else failwith(error_ONLY_ADMINISTRATOR_OR_BOUNTY_CREATOR_ALLOWED);
 
 } with unit
 
@@ -38,7 +50,7 @@ block {
     const senderIsAdmin : bool = s.admins contains Tezos.get_sender();
     const senderIsBountyCreator : bool = creator = Tezos.get_sender();
     const senderIsWhitelisted : bool = whitelisted contains Tezos.get_sender();
-    if senderIsAdmin OR senderIsBountyCreator OR senderIsWhitelisted then skip else failwith(error_ONLY_ADMIN_OR_CREATOR_OR_WHITELISTED_ALLOWED);
+    if senderIsAdmin or senderIsBountyCreator or senderIsWhitelisted then skip else failwith(error_ONLY_ADMIN_OR_CREATOR_OR_WHITELISTED_ALLOWED);
 
 } with unit
 
@@ -56,29 +68,35 @@ function pauseAllBountyEntrypoints(var s : bountyStorageType) : bountyStorageTyp
 block {
 
     // set all pause configs to True
-    if s.breakGlassConfig.createListingIsPaused then skip
-    else s.breakGlassConfig.createListingIsPaused := True;
 
-    if s.breakGlassConfig.editListingIsPaused then skip
-    else s.breakGlassConfig.editListingIsPaused := True;
+    // admin bounty entrypoints
+    if s.breakGlassConfig.setBountyIsPaused then skip
+    else s.breakGlassConfig.setBountyIsPaused := True;
 
-    if s.breakGlassConfig.removeListingIsPaused then skip
-    else s.breakGlassConfig.removeListingIsPaused := True;
+    if s.breakGlassConfig.togglePauseBountyIsPaused then skip
+    else s.breakGlassConfig.togglePauseBountyIsPaused := True;
 
-    if s.breakGlassConfig.purchaseIsPaused then skip
-    else s.breakGlassConfig.purchaseIsPaused := True;
+    if s.breakGlassConfig.approveOrRejectIsPaused then skip
+    else s.breakGlassConfig.approveOrRejectIsPaused := True;
 
-    if s.breakGlassConfig.offerIsPaused then skip
-    else s.breakGlassConfig.offerIsPaused := True;
+    if s.breakGlassConfig.reviewBountyIsPaused then skip
+    else s.breakGlassConfig.reviewBountyIsPaused := True;
 
-    if s.breakGlassConfig.acceptOfferIsPaused then skip
-    else s.breakGlassConfig.acceptOfferIsPaused := True;
+    if s.breakGlassConfig.sendBountyRewardIsPaused then skip
+    else s.breakGlassConfig.sendBountyRewardIsPaused := True;
 
-    if s.breakGlassConfig.removeOfferIsPaused then skip
-    else s.breakGlassConfig.removeOfferIsPaused := True;
+    // bounty entrypoints
+    if s.breakGlassConfig.applyForBountyIsPaused then skip
+    else s.breakGlassConfig.applyForBountyIsPaused := True;
 
-    if s.breakGlassConfig.setCurrencyIsPaused then skip
-    else s.breakGlassConfig.setCurrencyIsPaused := True;
+    if s.breakGlassConfig.cancelApplicationIsPaused then skip
+    else s.breakGlassConfig.cancelApplicationIsPaused := True;
+
+    if s.breakGlassConfig.completeBountyIsPaused then skip
+    else s.breakGlassConfig.completeBountyIsPaused := True;
+
+    if s.breakGlassConfig.stopBountyIsPaused then skip
+    else s.breakGlassConfig.stopBountyIsPaused := True;
 
 } with s
 
@@ -89,28 +107,34 @@ function unpauseAllBountyEntrypoints(var s : bountyStorageType) : bountyStorageT
 block {
 
     // set all pause configs to False
-    if s.breakGlassConfig.createListingIsPaused then s.breakGlassConfig.createListingIsPaused := False
+
+    // admin bounty entrypoints
+    if s.breakGlassConfig.setBountyIsPaused then s.breakGlassConfig.setBountyIsPaused := False
     else skip;
 
-    if s.breakGlassConfig.editListingIsPaused then s.breakGlassConfig.editListingIsPaused := False
+    if s.breakGlassConfig.togglePauseBountyIsPaused then s.breakGlassConfig.togglePauseBountyIsPaused := False
     else skip;
 
-    if s.breakGlassConfig.removeListingIsPaused then s.breakGlassConfig.removeListingIsPaused := False
+    if s.breakGlassConfig.approveOrRejectIsPaused then s.breakGlassConfig.approveOrRejectIsPaused := False
     else skip;
 
-    if s.breakGlassConfig.purchaseIsPaused then s.breakGlassConfig.purchaseIsPaused := False
+    if s.breakGlassConfig.reviewBountyIsPaused then s.breakGlassConfig.reviewBountyIsPaused := False
     else skip;
 
-    if s.breakGlassConfig.offerIsPaused then s.breakGlassConfig.offerIsPaused := False
+    if s.breakGlassConfig.sendBountyRewardIsPaused then s.breakGlassConfig.sendBountyRewardIsPaused := False
     else skip;
     
-    if s.breakGlassConfig.acceptOfferIsPaused then s.breakGlassConfig.acceptOfferIsPaused := False
+    // bounty entrypoints
+    if s.breakGlassConfig.applyForBountyIsPaused then s.breakGlassConfig.applyForBountyIsPaused := False
     else skip;
 
-    if s.breakGlassConfig.removeOfferIsPaused then s.breakGlassConfig.removeOfferIsPaused := False
+    if s.breakGlassConfig.cancelApplicationIsPaused then s.breakGlassConfig.cancelApplicationIsPaused := False
     else skip;
 
-    if s.breakGlassConfig.setCurrencyIsPaused then s.breakGlassConfig.setCurrencyIsPaused := False
+    if s.breakGlassConfig.completeBountyIsPaused then s.breakGlassConfig.completeBountyIsPaused := False
+    else skip;
+
+    if s.breakGlassConfig.stopBountyIsPaused then s.breakGlassConfig.stopBountyIsPaused := False
     else skip;
 
 } with s
@@ -182,24 +206,30 @@ block {
 function getBountyMilestoneRecord(const bountyRecord : bountyRecordType; const milestoneId : nat) : milestoneRecordType is
 block {
 
-    const milestoneRecord : milestoneRecordType = bountyRecord.milestones[milestoneId] of [
-            Some(_record) -> _record
-        |   None          -> failwith(error_MILESTONE_RECORD_FOR_BOUNTY_NOT_FOUND)
+    const milestoneRecord : milestoneRecordType = case bountyRecord.milestones of [
+            Some(_milestones) -> case _milestones[milestoneId] of [
+                    Some(_record) -> _record
+                |   None          -> failwith(error_MILESTONE_RECORD_FOR_BOUNTY_NOT_FOUND)
+            ]
+        |   None          -> failwith(error_MILESTONES_FOR_BOUNTY_NOT_FOUND)
     ];
 
 } with milestoneRecord
 
 
 
-function getApplicantMilestoneRecord(const applicantRecord : applicantRecordType; const milestoneId : nat) : milestoneRecordType is
+function getApplicantMilestoneRecord(const applicantRecord : applicantRecordType; const milestoneId : nat) : milestoneLogRecordType is
 block {
 
-    const milestoneRecord : milestoneRecordType = applicantRecord.milestoneLog[milestoneId] of [
-            Some(_record) -> _record
-        |   None          -> failwith(error_MILESTONE_RECORD_FOR_APPLICANT_NOT_FOUND)
+    const milestoneLogRecord : milestoneLogRecordType = case applicantRecord.milestoneLog of [
+            Some(_milestoneLog) -> case _milestoneLog[milestoneId] of [
+                    Some(_record) -> _record
+                |   None          -> failwith(error_MILESTONE_RECORD_FOR_APPLICANT_NOT_FOUND)
+            ]
+        |   None          -> failwith(error_MILESTONE_LOG_FOR_APPLICANT_NOT_FOUND)
     ];
 
-} with milestoneRecord
+} with milestoneLogRecord
 
 
 
@@ -220,7 +250,7 @@ block {
 
     const userRecord : userRecordType = case s.userLedger[userAddress] of [
             Some(_record) -> _record
-        |   None          -> [
+        |   None          -> record [
                 activeBountyCount       = 0n;
                 activeBounties          = (set[] : set(nat));
                 currentApplicationCount = 0n;
@@ -369,8 +399,13 @@ block {
 
 
 
-function verifyMilestoneAndTotalRewardsTally(const totalRewards : rewardsType; const milestones : milestonesType) : unit is 
+function verifyMilestoneAndTotalRewardsTally(const totalRewards : rewardsType; const milestones : option(milestonesType)) : unit is 
 block {
+
+    const milestones : milestonesType = case milestones of [
+            Some(_v) -> _v
+        |   None     -> failwith(error_BOUNTY_HAS_NO_MILESTONES)
+    ];
 
     var milestoneRewardTally: map(string, nat) := map [];
     
@@ -383,7 +418,7 @@ block {
                 |   None          -> 0n
             ];
 
-            milestoneRewardTally[_tokenName] := currentRewardAmount + reward.rewardAmount;
+            milestoneRewardTally[_tokenName] := currentRewardAmount + reward.amount;
         };
 
     };
@@ -392,7 +427,7 @@ block {
     for tokenName -> tallyAmount in map milestoneRewardTally block {
         
         const expectedTotalAmount : nat = case totalRewards[tokenName] of [
-                Some(_amount) -> _amount
+                Some(_token)  -> _token.amount
             |   None          -> 0n
         ];
 
@@ -415,14 +450,14 @@ block {
 
         for _tokenName -> reward in map milestone.rewards block {
             
-            const currentRewardAmount : nat = case milestoneRewardTally[_tokenName] of [
-                    Some(_amount) -> _amount 
-                |   None          -> 0n
+            const currentRewardAmount : nat = case newTotalRewards[_tokenName] of [
+                    Some(_token) -> _token.amount 
+                |   None         -> 0n
             ];
 
             newTotalRewards[_tokenName] := record [
+                amount          = currentRewardAmount + reward.amount;
                 rewardTokenType = reward.rewardTokenType;
-                amount          = currentRewardAmount + reward.rewardAmount;
             ];
         };
 
@@ -432,7 +467,12 @@ block {
 
 
 
-function differenceBetweenRewards(const initialRewards: rewardsType; const initialMaxApprovedApplicants : nat; const updatedRewards: rewardsType; const updatedMaxApprovedApplicants : nat): rewardsType is
+function differenceBetweenRewards(
+    const initialRewards : rewardsType; 
+    const initialMaxApprovedApplicants : nat; 
+    const updatedRewards : rewardsType;
+    const updatedMaxApprovedApplicants : nat
+) : rewardsDiffType is
 block {
 
     var diffMap : rewardsDiffType := map [];
@@ -470,7 +510,7 @@ block {
 
 
 
-function createNewBountyRecord(const createBountyParams : createBountyActionType; var s : bountyStorageType) : bountyRecordType is 
+function createNewBountyRecord(const createBountyParams : createBountyActionType) : bountyRecordType is 
 block {
 
     verifyValidStatus(createBountyParams.status);
@@ -484,9 +524,14 @@ block {
         verifyMilestoneAndTotalRewardsTally(createBountyParams.totalRewards, createBountyParams.milestones);
     } else skip;
 
+    const whitelisted : set(address) = case createBountyParams.whitelisted of [
+            Some(_v) -> _v
+        |   None     -> (set[] : set(address))
+    ];
+
     const bountyRecord : bountyRecordType = record [
         creator                     = Tezos.get_sender();
-        whitelisted                 = createBountyParams.whitelisted;
+        whitelisted                 = whitelisted;
 
         name                        = createBountyParams.name;
         description                 = createBountyParams.description;
@@ -498,7 +543,7 @@ block {
 
         maxApprovedApplicants       = createBountyParams.maxApprovedApplicants;
         currentApprovedApplicants   = (map[] : currentApprovedApplicantsType);
-        completedApplicants         = (set[] : set(nat));
+        completedApplicants         = (set[] : set(address));
 
         milestones                  = createBountyParams.milestones;
         totalRewards                = createBountyParams.totalRewards;
@@ -513,8 +558,9 @@ block {
 
     const applicantRecord : applicantRecordType = record [
         status              = "PENDING";
-        reviewed            = False;
         completed           = False;
+        reviewed            = False;
+        review              = (None : option(string));
 
         currentMilestone    = (None : option(nat));
         milestoneLog        = (None : option(milestoneLogType));
@@ -527,19 +573,20 @@ block {
 
 
 
-function createNewMilestoneLog(const _ : unit) : milestoneRecordType is 
+function createNewMilestoneLog(const _ : unit) : milestoneLogRecordType is 
 block {
 
-    const milestoneRecord : milestoneRecordType = record [
+    const milestoneLogRecord : milestoneLogRecordType = record [
         status          = "REVIEW_PENDING";
         completed       = False;
         reviewed        = False;
         review          = (None : option(string));
+
         rewarded        = False;
         rewardTimestamp = (None : option(timestamp));
     ];
 
-} with milestoneRecord
+} with milestoneLogRecord
 
 // ------------------------------------------------------------------------------
 // Contract Helper Functions End
