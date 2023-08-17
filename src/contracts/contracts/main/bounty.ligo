@@ -50,7 +50,7 @@ type action is
     |   TogglePauseEntrypoint       of bountyTogglePauseEntrypointType
 
         // Bounty Admin Entrypoints
-    |   SetBountyCreator            of updateWhitelistContractsType
+    |   SetBountyCreator            of setBountyCreatorActionType
     |   SetBounty                   of setBountyActionType
     |   TogglePauseBounty           of togglePauseBountyActionType
     |   ApproveOrReject             of approveOrRejectActionType

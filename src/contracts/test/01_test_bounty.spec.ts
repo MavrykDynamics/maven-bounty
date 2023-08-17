@@ -181,7 +181,7 @@ describe('Test: Bounty Contract', async () => {
                 
                 await signerFactory(tezos, superAdminSk);
                 const bountyCreator = alice.pkh;
-                const updateType    = "update";
+                const updateType    = "setNewBountyCreator";
                 storageMap          = "bountyCreators";
 
                 initialContractMapValue = await getStorageMapValue(bountyStorage, storageMap, bountyCreator);
@@ -589,6 +589,101 @@ describe('Test: Bounty Contract', async () => {
                 } else {
                     assert.equal(bountyRecord.hasMilestones         , true);
                 }
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+    })
+
+    describe('%applyForBounty', function () {
+        
+        beforeEach("Set signer to user (mallory)", async () => {
+            bountyStorage = await bountyInstance.storage()
+            user    = mallory.pkh;
+            userSk  = mallory.sk;
+            await signerFactory(tezos, userSk);
+        });
+
+        it('user (mallory) can apply to a bounty', async () => {
+            try {
+
+                const bountyId                      = bountyWithOneMilestoneId
+
+                const initialUserRecord              = await bountyStorage.userLedger.get(user);
+                const initialActiveBountyCount       = initialUserRecord == undefined ? 0 : initialUserRecord.activeBountyCount.toNumber();
+                const initialCurrentApplicationCount = initialUserRecord == undefined ? 0 : initialUserRecord.currentApplicationCount.toNumber();
+                
+                const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                    bountyId
+                ).send();
+                await applyForBountyOperation.confirmation();
+
+                bountyStorage = await bountyInstance.storage();
+
+                const applicantRecord = await bountyStorage.applicantLedger.get([bountyId, user]);
+                const userRecord      = await bountyStorage.userLedger.get(user);
+                const appliedBounties = userRecord.appliedBounties.map(b => b.toNumber());
+                const activeBounties  = userRecord.activeBounties.map(b => b.toNumber());
+
+                // check applicant record
+                assert.equal(applicantRecord.status             , 'PENDING');
+                assert.equal(applicantRecord.completed          , false);
+                assert.equal(applicantRecord.reviewed           , false);
+                assert.equal(applicantRecord.review             , null);
+                assert.equal(applicantRecord.currentMilestone   , null);
+                assert.equal(applicantRecord.milestoneLog       , null);
+                assert.equal(applicantRecord.fullyRewarded      , false);
+                assert.equal(applicantRecord.lastRewardTimestamp, null);
+
+                // check user record
+                assert.equal(userRecord.activeBountyCount.toNumber()        , initialActiveBountyCount);
+                assert.equal(userRecord.currentApplicationCount.toNumber()  , initialCurrentApplicationCount + 1);
+                assert.equal(appliedBounties.includes(bountyId.toNumber())  , true);
+                assert.equal(activeBounties.includes(bountyId.toNumber())   , false);
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+        it('user (mallory) can apply to multiple bounties', async () => {
+            try {
+
+                const bountyId                      = bountyWithOneMilestoneId
+
+                const initialUserRecord              = await bountyStorage.userLedger.get(user);
+                const initialActiveBountyCount       = initialUserRecord == undefined ? 0 : initialUserRecord.activeBountyCount.toNumber();
+                const initialCurrentApplicationCount = initialUserRecord == undefined ? 0 : initialUserRecord.currentApplicationCount.toNumber();
+                
+                const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                    bountyId
+                ).send();
+                await applyForBountyOperation.confirmation();
+
+                bountyStorage = await bountyInstance.storage();
+
+                const applicantRecord = await bountyStorage.applicantLedger.get([bountyId, user]);
+                const userRecord      = await bountyStorage.userLedger.get(user);
+                const appliedBounties = userRecord.appliedBounties.map(b => b.toNumber());
+                const activeBounties  = userRecord.activeBounties.map(b => b.toNumber());
+
+                // check applicant record
+                assert.equal(applicantRecord.status             , 'PENDING');
+                assert.equal(applicantRecord.completed          , false);
+                assert.equal(applicantRecord.reviewed           , false);
+                assert.equal(applicantRecord.review             , null);
+                assert.equal(applicantRecord.currentMilestone   , null);
+                assert.equal(applicantRecord.milestoneLog       , null);
+                assert.equal(applicantRecord.fullyRewarded      , false);
+                assert.equal(applicantRecord.lastRewardTimestamp, null);
+
+                // check user record
+                assert.equal(userRecord.activeBountyCount.toNumber()        , initialActiveBountyCount);
+                assert.equal(userRecord.currentApplicationCount.toNumber()  , initialCurrentApplicationCount + 1);
+                assert.equal(appliedBounties.includes(bountyId.toNumber())  , true);
+                assert.equal(activeBounties.includes(bountyId.toNumber())   , false);
 
             } catch (e) {
                 console.log(e)

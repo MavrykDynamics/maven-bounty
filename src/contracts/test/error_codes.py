@@ -70,36 +70,38 @@ error_BOUNTY_RECORD_NOT_FOUND                                                   
 error_MILESTONES_FOR_BOUNTY_NOT_FOUND                                                                   = 42
 error_APPLICANT_RECORD_NOT_FOUND                                                                        = 43
 error_USER_RECORD_NOT_FOUND                                                                             = 44
-error_MILESTONE_RECORD_FOR_BOUNTY_NOT_FOUND                                                             = 45
-error_MILESTONE_RECORD_FOR_APPLICANT_NOT_FOUND                                                          = 46
-error_MILESTONE_LOG_FOR_APPLICANT_NOT_FOUND                                                             = 47
-error_MILESTONE_LOG_RECORD_NOT_FOUND_IN_APPLICANT_RECORD                                                = 48
+error_BOUNTY_CREATOR_RECORD_NOT_FOUND                                                                   = 45
+error_MILESTONE_RECORD_FOR_BOUNTY_NOT_FOUND                                                             = 46
+error_MILESTONE_RECORD_FOR_APPLICANT_NOT_FOUND                                                          = 47
+error_MILESTONE_LOG_FOR_APPLICANT_NOT_FOUND                                                             = 48
+error_MILESTONE_LOG_RECORD_NOT_FOUND_IN_APPLICANT_RECORD                                                = 49
 
 
-error_BOUNTY_IS_NOT_ACTIVE                                                                              = 49
-error_BOUNTY_IS_PAUSED                                                                                  = 50
-error_BOUNTY_HAS_NO_SPACE_FOR_NEW_APPLICANTS                                                            = 51
-error_USER_HAS_NO_SPACE_FOR_NEW_BOUNTIES                                                                = 52
-error_USER_CANNOT_APPLY_FOR_NEW_BOUNTIES                                                                = 53
-error_APPLICATION_STATUS_IS_NOT_PENDING                                                                 = 54
-error_BOUNTY_CANNOT_BE_STOPPED_BY_USER                                                                  = 55
-error_BOUNTY_HAS_ALREADY_BEEN_COMPLETED_AND_APPROVED                                                    = 56
-error_MILESTONE_NEEDS_TO_BE_SPECIFIED_FOR_REVIEW                                                        = 57
-error_MILESTONE_LOG_NOT_FOUND_IN_APPLICANT_RECORD                                                       = 58
-error_CURRENT_MILESTONE_NOT_FOUND                                                                       = 59
-error_MILESTONE_TO_REVIEW_NEEDS_TO_BE_THE_SAME_AS_CURRENT_MILESTONE                                     = 60
-error_BOUNTY_HAS_REACHED_MAX_APPROVED_APPLICANTS                                                        = 61
-error_BOUNTY_HAS_NO_MILESTONES                                                                          = 62
-error_MILESTONE_NEEDS_TO_BE_SPECIFIED_TO_SEND_BOUNTY_REWARD                                             = 63
+error_BOUNTY_IS_NOT_ACTIVE                                                                              = 50
+error_BOUNTY_IS_PAUSED                                                                                  = 51
+error_BOUNTY_HAS_NO_SPACE_FOR_NEW_APPLICANTS                                                            = 52
+error_USER_HAS_NO_SPACE_FOR_NEW_BOUNTIES                                                                = 53
+error_USER_HAS_REACHED_MAX_APPLICATIONS_ALLOWED                                                         = 54
+error_APPLICATION_STATUS_IS_NOT_PENDING                                                                 = 55
+error_BOUNTY_CANNOT_BE_STOPPED_BY_USER                                                                  = 56
+error_BOUNTY_HAS_ALREADY_BEEN_COMPLETED_AND_APPROVED                                                    = 57
+error_MILESTONE_NEEDS_TO_BE_SPECIFIED_FOR_REVIEW                                                        = 58
+error_MILESTONE_LOG_NOT_FOUND_IN_APPLICANT_RECORD                                                       = 59
+error_CURRENT_MILESTONE_NOT_FOUND                                                                       = 60
+error_MILESTONE_TO_REVIEW_NEEDS_TO_BE_THE_SAME_AS_CURRENT_MILESTONE                                     = 61
+error_BOUNTY_HAS_REACHED_MAX_APPROVED_APPLICANTS                                                        = 62
+error_BOUNTY_HAS_NO_MILESTONES                                                                          = 63
+error_MILESTONE_NEEDS_TO_BE_SPECIFIED_TO_SEND_BOUNTY_REWARD                                             = 64
+error_USER_HAS_ALREADY_APPLIED_FOR_THIS_BOUNTY                                                          = 65
 
-error_SET_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                   = 64
-error_TOGGLE_PAUSE_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                          = 65
-error_APPROVE_OR_REJECT_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                            = 66
-error_REVIEW_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                = 67
-error_SEND_BOUNTY_REWARD_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                           = 68
 
-error_APPLY_FOR_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                             = 69
-error_CANCEL_APPLICATION_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                           = 70
-error_COMPLETE_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                              = 71
-error_STOP_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                  = 72
+error_SET_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                   = 66
+error_TOGGLE_PAUSE_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                          = 67
+error_APPROVE_OR_REJECT_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                            = 68
+error_REVIEW_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                = 69
+error_SEND_BOUNTY_REWARD_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                           = 70
+error_APPLY_FOR_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                             = 71
+error_CANCEL_APPLICATION_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                           = 72
+error_COMPLETE_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                              = 73
+error_STOP_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                  = 74
 

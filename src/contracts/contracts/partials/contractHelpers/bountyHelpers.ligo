@@ -30,13 +30,20 @@ block {
 
 
 
+function checkInBountyCreators(const userAddress : address; var bountyCreators : bountyCreatorsLedgerType) : bool is 
+block {
+
+    const inBountyCreatorsMap : bool = Big_map.mem(userAddress, bountyCreators);
+
+} with inBountyCreatorsMap
+
 
 // verify sender is admin or bounty creator
 function verifySenderIsAdminOrBountyCreator(const s : bountyStorageType) : unit is
 block {
 
     const senderIsAdmin : bool = s.admins contains Tezos.get_sender();
-    const senderIsBountyCreator : bool = checkInWhitelistContracts(Tezos.get_sender(), s.bountyCreators);
+    const senderIsBountyCreator : bool = checkInBountyCreators(Tezos.get_sender(), s.bountyCreators);
     if senderIsAdmin or senderIsBountyCreator then skip else failwith(error_ONLY_ADMINISTRATOR_OR_BOUNTY_CREATOR_ALLOWED);
 
 } with unit
@@ -178,6 +185,18 @@ function getTransferEntrypointFromTokenAddress(const tokenAddress : address) : c
 // ------------------------------------------------------------------------------
 // Getter Functions Begin
 // ------------------------------------------------------------------------------
+
+function getBountyCreatorRecord(const bountyCreatorAddress : address; const s : bountyStorageType) : bountyCreatorRecordType is
+block {
+
+    const bountyCreatorRecord : bountyCreatorRecordType = case s.bountyCreators[bountyCreatorAddress] of [
+            Some(_record) -> _record
+        |   None          -> failwith(error_BOUNTY_CREATOR_RECORD_NOT_FOUND)
+    ];
+
+} with bountyCreatorRecord
+
+
 
 function getBountyRecord(const bountyId : nat; const s : bountyStorageType) : bountyRecordType is
 block {
@@ -338,7 +357,7 @@ block {
 
     if currentApplicationCount < maxApplications 
     then skip
-    else failwith(error_USER_CANNOT_APPLY_FOR_NEW_BOUNTIES);
+    else failwith(error_USER_HAS_REACHED_MAX_APPLICATIONS_ALLOWED);
 
 } with unit
 
@@ -350,6 +369,18 @@ block {
     if activeBountyCount < maxActiveBounties 
     then skip
     else failwith(error_USER_HAS_NO_SPACE_FOR_NEW_BOUNTIES);
+
+} with unit
+
+
+
+function verifyUserHasNotAlreadyAppliedForBounty(const bountyId : nat; const userAddress : address; const s : bountyStorageType) : unit is
+block {
+
+    case s.applicantLedger[(bountyId, userAddress)] of [
+            Some(_v) -> failwith(error_USER_HAS_ALREADY_APPLIED_FOR_THIS_BOUNTY)
+        |   None     -> skip
+    ];
 
 } with unit
 
@@ -507,6 +538,79 @@ block {
     };
 
 } with diffMap;
+
+
+
+function createNewBountyCreatorRecord(
+    const nameOpt : option(string); 
+    const descOpt : option(string);
+    const websiteOpt : option(string); 
+    const imageOpt : option(string)
+) : bountyCreatorRecordType is
+block {
+
+    var bountyCreatorRecord : bountyCreatorRecordType := record [
+        name        = "";
+        description = "";
+        website     = "";
+        image       = Some("");
+        bounties    = (set[] : set(nat));
+    ];
+
+    case nameOpt of [
+            Some(_newName) -> bountyCreatorRecord.name := _newName
+        |   None -> skip
+    ];
+
+    case descOpt of [
+            Some(_newDescription) -> bountyCreatorRecord.description := _newDescription
+        |   None -> skip
+    ];
+
+    case websiteOpt of [
+            Some(_newWebsite) -> bountyCreatorRecord.website := _newWebsite
+        |   None -> skip
+    ];
+
+    case imageOpt of [
+            Some(_newImage) -> bountyCreatorRecord.image := imageOpt
+        |   None -> skip
+    ];
+
+} with bountyCreatorRecord
+
+
+
+function updateBountyCreatorRecord(
+    var bountyCreatorRecord : bountyCreatorRecordType;
+    const nameOpt : option(string); 
+    const descOpt : option(string);
+    const websiteOpt : option(string); 
+    const imageOpt : option(string)
+) : bountyCreatorRecordType is
+block {
+
+    case nameOpt of [
+            Some(_newName) -> bountyCreatorRecord.name := _newName
+        |   None -> skip
+    ];
+
+    case descOpt of [
+            Some(_newDescription) -> bountyCreatorRecord.description := _newDescription
+        |   None -> skip
+    ];
+
+    case websiteOpt of [
+            Some(_newWebsite) -> bountyCreatorRecord.website := _newWebsite
+        |   None -> skip
+    ];
+
+    case imageOpt of [
+            Some(_newImage) -> bountyCreatorRecord.image := imageOpt
+        |   None -> skip
+    ];
+
+} with bountyCreatorRecord
 
 
 

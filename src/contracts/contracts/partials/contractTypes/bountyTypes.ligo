@@ -115,11 +115,12 @@ type userLedgerType is big_map(address, userRecordType)
 type bountyCreatorRecordType is [@layout:comb] record [
     name            : string; 
     description     : string;
+    website         : string;
     image           : option(string);
-    bounties        : set(nat);
+    bounties        : set(nat);         // loose reference to bounties created for convenience (N.B. may have discrepancies if bounty creator was added, then removed, then added again)
 ]
 
-type bountyCreatorLedgerType is big_map(address, bountyCreatorRecord)
+type bountyCreatorsLedgerType is big_map(address, bountyCreatorRecordType)
 
 // ------------------------------------------------------------------------------
 // Action Types
@@ -164,6 +165,30 @@ type updateMilestoneActionType is [@layout:comb] record [
 ] 
 
 type togglePauseBountyActionType is nat // bountyId
+
+
+
+type setNewBountyCreatorActionType is [@layout:comb] record [
+    creatorAddress  : address;
+    name            : option(string); 
+    description     : option(string);
+    website         : option(string);
+    image           : option(string);
+    bounties        : option(set(nat));
+]
+
+type updateBountyCreatorProfileActionType is [@layout:comb] record [
+    name            : option(string); 
+    description     : option(string);
+    website         : option(string);
+    image           : option(string);
+]
+
+
+type setBountyCreatorActionType is 
+    |   SetNewBountyCreator         of setNewBountyCreatorActionType
+    |   RemoveBountyCreator         of address
+    |   UpdateBountyCreatorProfile  of updateBountyCreatorProfileActionType
 
 
 type setBountyActionType is 
@@ -258,7 +283,7 @@ type bountyLambdaActionType is
     |   LambdaTogglePauseEntrypoint       of bountyTogglePauseEntrypointType
 
         // Bounty Admin Lambdas
-    |   LambdaSetBountyCreator            of updateWhitelistContractsType
+    |   LambdaSetBountyCreator            of setBountyCreatorActionType
     |   LambdaSetBounty                   of setBountyActionType
     |   LambdaTogglePauseBounty           of togglePauseBountyActionType
     |   LambdaApproveOrReject             of approveOrRejectActionType
@@ -287,11 +312,11 @@ type bountyStorageType is [@layout:comb] record [
     breakGlassConfig          : bountyBreakGlassConfigType;
 
     whitelistContracts        : whitelistContractsType;    
-    bountyCreators            : whitelistContractsType;    
     generalContracts          : generalContractsType;
 
     nextBountyId              : nat;
 
+    bountyCreators            : bountyCreatorsLedgerType;    
     bountyLedger              : bountyLedgerType;
     applicantLedger           : applicantLedgerType;
     userLedger                : userLedgerType;

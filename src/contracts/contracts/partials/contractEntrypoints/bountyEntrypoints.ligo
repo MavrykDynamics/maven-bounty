@@ -235,7 +235,7 @@ block{
 // ------------------------------------------------------------------------------
 
 (*  setBountyCreator entrypoint *)
-function setBountyCreator(const setBountyCreatorParams : updateWhitelistContractsType; var s : bountyStorageType) : return is
+function setBountyCreator(const setBountyCreatorParams : setBountyCreatorActionType; var s : bountyStorageType) : return is
 block {
 
     // get lambda bytes

@@ -292,8 +292,51 @@ block {
     case bountyLambdaAction of [
         |   LambdaSetBountyCreator(setBountyCreatorParams) -> {
 
-                verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); // check that sender is admin 
-                s.bountyCreators := updateWhitelistContractsMap(setBountyCreatorParams, s.bountyCreators);
+                case setBountyCreatorParams of [
+
+                    |   SetNewBountyCreator(setNewBountyCreatorParams) -> {
+
+                            verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); // check that sender is admin 
+                            
+                            const bountyCreatorAddress : address = setNewBountyCreatorParams.creatorAddress;
+
+                            // create new bounty creator record
+                            const bountyCreatorRecord : bountyCreatorRecordType = createNewBountyCreatorRecord(
+                                setNewBountyCreatorParams.name,
+                                setNewBountyCreatorParams.description,
+                                setNewBountyCreatorParams.website,
+                                setNewBountyCreatorParams.image
+                            );
+
+                            s.bountyCreators[bountyCreatorAddress] := bountyCreatorRecord;
+
+                        }
+                    |   RemoveBountyCreator(bountyCreatorAddress) -> {
+
+                            verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); // check that sender is admin 
+                            remove (bountyCreatorAddress : address) from map s.bountyCreators;
+
+                        }
+                    |   UpdateBountyCreatorProfile(updateBountyCreatorProfile) -> {
+
+                            const bountyCreatorAddress : address = Tezos.get_sender();
+                            
+                            var bountyCreatorRecord : bountyCreatorRecordType := getBountyCreatorRecord(bountyCreatorAddress, s);
+
+                            // update bounty creator record
+                            bountyCreatorRecord := updateBountyCreatorRecord(
+                                bountyCreatorRecord,
+                                updateBountyCreatorProfile.name,
+                                updateBountyCreatorProfile.description,
+                                updateBountyCreatorProfile.website,
+                                updateBountyCreatorProfile.image
+                            );
+
+                            // update storage
+                            s.bountyCreators[bountyCreatorAddress] := bountyCreatorRecord;
+
+                        }
+                ];
 
             }
         |   _ -> skip
@@ -991,6 +1034,8 @@ block {
                 verifyUserCanApplyForNewBounties(userRecord.currentApplicationCount, s.config.maxApplications);
 
                 verifyUserHasSpaceForNewBounties(userRecord.activeBountyCount, s.config.maxActiveBounties);
+
+                verifyUserHasNotAlreadyAppliedForBounty(bountyId, sender, s);
 
                 // ---------------------------------------------
 
