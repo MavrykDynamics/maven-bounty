@@ -117,40 +117,6 @@ block {
 
 
 
-(*  updateWhitelistContracts entrypoint *)
-function updateWhitelistContracts(const updateWhitelistContractsParams : updateWhitelistContractsType; var s : bountyStorageType) : return is
-block {
-
-    // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaUpdateWhitelistContracts", s.lambdaLedger);
-
-    // init bounty lambda action
-    const bountyLambdaAction : bountyLambdaActionType = LambdaUpdateWhitelistContracts(updateWhitelistContractsParams);
-
-    // init response
-    const response : return = unpackLambda(lambdaBytes, bountyLambdaAction, s);  
-
-} with response
-
-
-
-(*  updateGeneralContracts entrypoint *)
-function updateGeneralContracts(const updateGeneralContractsParams : updateGeneralContractsType; var s : bountyStorageType) : return is
-block {
-
-    // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaUpdateGeneralContracts", s.lambdaLedger);
-
-    // init bounty lambda action
-    const bountyLambdaAction : bountyLambdaActionType = LambdaUpdateGeneralContracts(updateGeneralContractsParams);
-
-    // init response
-    const response : return = unpackLambda(lambdaBytes, bountyLambdaAction, s);  
-
-} with response
-
-
-
 (*  mistakenTransfer entrypoint *)
 function mistakenTransfer(const destinationParams : transferActionType; var s : bountyStorageType) : return is
 block {
@@ -168,64 +134,6 @@ block {
 
 // ------------------------------------------------------------------------------
 // Housekeeping Entrypoints End
-// ------------------------------------------------------------------------------
-
-
-// ------------------------------------------------------------------------------
-// Pause / Break Glass Entrypoints Begin
-// ------------------------------------------------------------------------------
-
-(*  pauseAll entrypoint *)
-function pauseAll(var s : bountyStorageType) : return is
-block {
-
-    // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaPauseAll", s.lambdaLedger);
-
-    // init bounty lambda action
-    const bountyLambdaAction : bountyLambdaActionType = LambdaPauseAll(unit);
-
-    // init response
-    const response : return = unpackLambda(lambdaBytes, bountyLambdaAction, s);  
-    
-} with response
-
-
-
-(*  unpauseAll entrypoint *)
-function unpauseAll(var s : bountyStorageType) : return is
-block {
-
-    // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaUnpauseAll", s.lambdaLedger);
-
-    // init bounty lambda action
-    const bountyLambdaAction : bountyLambdaActionType = LambdaUnpauseAll(unit);
-
-    // init response
-    const response : return = unpackLambda(lambdaBytes, bountyLambdaAction, s);  
-
-} with response
-
-
-
-(*  togglePauseEntrypoint entrypoint  *)
-function togglePauseEntrypoint(const targetEntrypoint : bountyTogglePauseEntrypointType; const s : bountyStorageType) : return is
-block{
-
-    // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaTogglePauseEntrypoint", s.lambdaLedger);
-
-    // init bounty lambda action
-    const bountyLambdaAction : bountyLambdaActionType = LambdaTogglePauseEntrypoint(targetEntrypoint);
-
-    // init response
-    const response : return = unpackLambda(lambdaBytes, bountyLambdaAction, s);
-
-} with response
-
-// ------------------------------------------------------------------------------
-// Pause / Break Glass Entrypoints End
 // ------------------------------------------------------------------------------
 
 

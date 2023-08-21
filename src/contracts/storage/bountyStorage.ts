@@ -5,7 +5,11 @@ import { bountyStorageType } from "./storageTypes/bountyStorageType"
 
 const config = {
     maxActiveBounties          : 5, 
-    maxApplications            : 2
+    maxApplications            : 2,
+    
+    maxMembersPerGroup         : 5,
+    maxGroupsCreatedPerUser    : 5,
+    maxGroupsPerUser           : 5
 }
 
 
@@ -33,13 +37,14 @@ export const bountyStorage : bountyStorageType = {
 
     metadata                  : metadata,
     config                    : config,
-    breakGlassConfig          : {},
+    // breakGlassConfig          : {},
 
-    whitelistContracts        : MichelsonMap.fromLiteral({}),
+    // whitelistContracts        : MichelsonMap.fromLiteral({}),
+    // generalContracts          : MichelsonMap.fromLiteral({}),
     bountyCreators            : MichelsonMap.fromLiteral({}),
-    generalContracts          : MichelsonMap.fromLiteral({}),
     
     nextBountyId              : new BigNumber(0),
+    nextGroupId               : new BigNumber(0),
     
     bountyLedger              : MichelsonMap.fromLiteral({}),
     applicationLedger         : MichelsonMap.fromLiteral({}),

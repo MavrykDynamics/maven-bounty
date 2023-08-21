@@ -40,14 +40,14 @@ type action is
         // Housekeeping Entrypoints
     |   UpdateMetadata              of updateMetadataType
     |   UpdateConfig                of bountyUpdateConfigParamsType
-    |   UpdateWhitelistContracts    of updateWhitelistContractsType
-    |   UpdateGeneralContracts      of updateGeneralContractsType
+    // |   UpdateWhitelistContracts    of updateWhitelistContractsType
+    // |   UpdateGeneralContracts      of updateGeneralContractsType
     |   MistakenTransfer            of transferActionType
 
         // Pause / Break Glass Entrypoints
-    |   PauseAll                    of (unit)
-    |   UnpauseAll                  of (unit)
-    |   TogglePauseEntrypoint       of bountyTogglePauseEntrypointType
+    // |   PauseAll                    of (unit)
+    // |   UnpauseAll                  of (unit)
+    // |   TogglePauseEntrypoint       of bountyTogglePauseEntrypointType
 
         // Bounty Admin Entrypoints
     |   SetBountyCreator            of setBountyCreatorActionType
@@ -127,14 +127,14 @@ function main (const action : action; const s : bountyStorageType) : return is
             // Housekeeping Entrypoints
         |   UpdateMetadata(parameters)            -> updateMetadata(parameters, s)
         |   UpdateConfig(parameters)              -> updateConfig(parameters, s)
-        |   UpdateWhitelistContracts(parameters)  -> updateWhitelistContracts(parameters, s)
-        |   UpdateGeneralContracts(parameters)    -> updateGeneralContracts(parameters, s)
+        // |   UpdateWhitelistContracts(parameters)  -> updateWhitelistContracts(parameters, s)
+        // |   UpdateGeneralContracts(parameters)    -> updateGeneralContracts(parameters, s)
         |   MistakenTransfer(parameters)          -> mistakenTransfer(parameters, s)
 
             // Pause / Break Glass Entrypoints
-        |   PauseAll(_parameters)                 -> pauseAll(s)
-        |   UnpauseAll(_parameters)               -> unpauseAll(s)
-        |   TogglePauseEntrypoint(parameters)     -> togglePauseEntrypoint(parameters, s)
+        // |   PauseAll(_parameters)                 -> pauseAll(s)
+        // |   UnpauseAll(_parameters)               -> unpauseAll(s)
+        // |   TogglePauseEntrypoint(parameters)     -> togglePauseEntrypoint(parameters, s)
 
             // Bounty Admin Entrypoints
         |   SetBountyCreator(parameters)          -> setBountyCreator(parameters, s)

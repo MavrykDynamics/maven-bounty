@@ -141,36 +141,36 @@ block {
 
 
 (*  updateWhitelistContracts lambda *)
-function lambdaUpdateWhitelistContracts(const bountyLambdaAction : bountyLambdaActionType; var s: bountyStorageType) : return is
-block {
+// function lambdaUpdateWhitelistContracts(const bountyLambdaAction : bountyLambdaActionType; var s: bountyStorageType) : return is
+// block {
 
-    verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
+//     verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
 
-    case bountyLambdaAction of [
-        |   LambdaUpdateWhitelistContracts(updateWhitelistContractsParams) -> {
-                s.whitelistContracts := updateWhitelistContractsMap(updateWhitelistContractsParams, s.whitelistContracts);
-            }
-        |   _ -> skip
-    ];
+//     case bountyLambdaAction of [
+//         |   LambdaUpdateWhitelistContracts(updateWhitelistContractsParams) -> {
+//                 s.whitelistContracts := updateWhitelistContractsMap(updateWhitelistContractsParams, s.whitelistContracts);
+//             }
+//         |   _ -> skip
+//     ];
 
-} with (noOperations, s)
+// } with (noOperations, s)
 
 
 
 (*  updateGeneralContracts lambda *)
-function lambdaUpdateGeneralContracts(const bountyLambdaAction : bountyLambdaActionType; var s: bountyStorageType) : return is
-block {
+// function lambdaUpdateGeneralContracts(const bountyLambdaAction : bountyLambdaActionType; var s: bountyStorageType) : return is
+// block {
 
-    verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
+//     verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
 
-    case bountyLambdaAction of [
-        |   LambdaUpdateGeneralContracts(updateGeneralContractsParams) -> {
-                s.generalContracts := updateGeneralContractsMap(updateGeneralContractsParams, s.generalContracts);
-            }
-        |   _ -> skip
-    ];
+//     case bountyLambdaAction of [
+//         |   LambdaUpdateGeneralContracts(updateGeneralContractsParams) -> {
+//                 s.generalContracts := updateGeneralContractsMap(updateGeneralContractsParams, s.generalContracts);
+//             }
+//         |   _ -> skip
+//     ];
 
-} with (noOperations, s)
+// } with (noOperations, s)
 
 
 
@@ -205,80 +205,80 @@ block {
 // ------------------------------------------------------------------------------
 
 (*  pauseAll lambda *)
-function lambdaPauseAll(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
-block {
+// function lambdaPauseAll(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
+// block {
 
-    verifyNoAmountSent(Unit);     
-    verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
+//     verifyNoAmountSent(Unit);     
+//     verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
 
-    case bountyLambdaAction of [
-        |   LambdaPauseAll(_parameters) -> {
+//     case bountyLambdaAction of [
+//         |   LambdaPauseAll(_parameters) -> {
               
-                // set all pause configs to True
-                s := pauseAllBountyEntrypoints(s);
+//                 // set all pause configs to True
+//                 s := pauseAllBountyEntrypoints(s);
               
-            }
-        |   _ -> skip
-    ];  
+//             }
+//         |   _ -> skip
+//     ];  
 
-} with (noOperations, s)
+// } with (noOperations, s)
 
 
 
 (*  unpauseAll lambda *)
-function lambdaUnpauseAll(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
-block {
+// function lambdaUnpauseAll(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
+// block {
 
-    verifyNoAmountSent(Unit);     
-    verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
+//     verifyNoAmountSent(Unit);     
+//     verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
 
-    case bountyLambdaAction of [
-        |   LambdaUnpauseAll(_parameters) -> {
+//     case bountyLambdaAction of [
+//         |   LambdaUnpauseAll(_parameters) -> {
                 
-                // set all pause configs to False
-                s := unpauseAllBountyEntrypoints(s);
+//                 // set all pause configs to False
+//                 s := unpauseAllBountyEntrypoints(s);
               
-            }
-        |   _ -> skip
-    ];
+//             }
+//         |   _ -> skip
+//     ];
 
-} with (noOperations, s)
+// } with (noOperations, s)
 
 
 
 (*  togglePauseEntrypoint lambda *)
-function lambdaTogglePauseEntrypoint(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
-block {
+// function lambdaTogglePauseEntrypoint(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
+// block {
 
-    verifyNoAmountSent(Unit);     
-    verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
+//     verifyNoAmountSent(Unit);     
+//     verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
 
-    case bountyLambdaAction of [
-        |   LambdaTogglePauseEntrypoint(params) -> {
+//     case bountyLambdaAction of [
+//         |   LambdaTogglePauseEntrypoint(params) -> {
 
-                case params.targetEntrypoint of [
-                        SetBounty (_v)              -> s.breakGlassConfig.setBountyIsPaused                 := _v
-                    |   TogglePauseBounty (_v)      -> s.breakGlassConfig.togglePauseBountyIsPaused         := _v
-                    |   ApproveOrReject (_v)        -> s.breakGlassConfig.approveOrRejectIsPaused           := _v
-                    |   ReviewBounty (_v)           -> s.breakGlassConfig.reviewBountyIsPaused              := _v
-                    |   SendBountyReward (_v)       -> s.breakGlassConfig.sendBountyRewardIsPaused          := _v
+//                 case params.targetEntrypoint of [
+//                         SetBounty (_v)              -> s.breakGlassConfig.setBountyIsPaused                 := _v
+//                     |   TogglePauseBounty (_v)      -> s.breakGlassConfig.togglePauseBountyIsPaused         := _v
+//                     |   ApproveOrReject (_v)        -> s.breakGlassConfig.approveOrRejectIsPaused           := _v
+//                     |   ReviewBounty (_v)           -> s.breakGlassConfig.reviewBountyIsPaused              := _v
+//                     |   SendBountyReward (_v)       -> s.breakGlassConfig.sendBountyRewardIsPaused          := _v
 
-                    |   FormGroup (_v)              -> s.breakGlassConfig.formGroupIsPaused                 := _v
-                    |   AddGroupMember (_v)         -> s.breakGlassConfig.addGroupMemberIsPaused            := _v
-                    |   ConfirmGroupMembership (_v) -> s.breakGlassConfig.confirmGroupMembershipIsPaused    := _v
-                    |   LeaveGroup (_v)             -> s.breakGlassConfig.leaveGroupIsPaused                := _v
+//                     |   FormGroup (_v)              -> s.breakGlassConfig.formGroupIsPaused                 := _v
+//                     |   AddGroupMember (_v)         -> s.breakGlassConfig.addGroupMemberIsPaused            := _v
+//                     |   ConfirmGroupMembership (_v) -> s.breakGlassConfig.confirmGroupMembershipIsPaused    := _v
+//                     |   LeaveGroup (_v)             -> s.breakGlassConfig.leaveGroupIsPaused                := _v
 
-                    |   ApplyForBounty (_v)         -> s.breakGlassConfig.applyForBountyIsPaused            := _v
-                    |   CancelApplication (_v)      -> s.breakGlassConfig.cancelApplicationIsPaused         := _v
-                    |   CompleteBounty (_v)         -> s.breakGlassConfig.completeBountyIsPaused            := _v
-                    |   StopBounty (_v)             -> s.breakGlassConfig.stopBountyIsPaused                := _v
-                ]
+//                     |   ApplyForBounty (_v)         -> s.breakGlassConfig.applyForBountyIsPaused            := _v
+//                     |   CancelApplication (_v)      -> s.breakGlassConfig.cancelApplicationIsPaused         := _v
+//                     |   CompleteBounty (_v)         -> s.breakGlassConfig.completeBountyIsPaused            := _v
+//                     |   StopBounty (_v)             -> s.breakGlassConfig.stopBountyIsPaused                := _v
+//                 ]
                 
-            }
-        |   _ -> skip
-    ];
+//             }
+//         |   _ -> skip
+//     ];
 
-} with (noOperations, s)
+// } with (noOperations, s)
 
 // ------------------------------------------------------------------------------
 // Pause / Break Glass Lambdas End
@@ -354,8 +354,6 @@ block {
 (*  setBounty lambda *)
 function lambdaSetBounty(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
 block {
-
-    verifyEntrypointIsNotPaused(s.breakGlassConfig.setBountyIsPaused, error_SET_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED);
 
     var operations : list(operation) := nil;
 
@@ -623,8 +621,6 @@ block {
 function lambdaTogglePauseBounty(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
 block {
 
-    verifyEntrypointIsNotPaused(s.breakGlassConfig.togglePauseBountyIsPaused, error_TOGGLE_PAUSE_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED);
-
     case bountyLambdaAction of [
         |   LambdaTogglePauseBounty(bountyId) -> {
 
@@ -656,8 +652,6 @@ block {
 (*  approveOrReject lambda *)
 function lambdaApproveOrReject(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
 block {
-
-    verifyEntrypointIsNotPaused(s.breakGlassConfig.approveOrRejectIsPaused, error_APPROVE_OR_REJECT_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED);
 
     case bountyLambdaAction of [
         |   LambdaApproveOrReject(approveOrRejectParams) -> {
@@ -772,8 +766,6 @@ block {
 (*  reviewBounty lambda *)
 function lambdaReviewBounty(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
 block {
-
-    verifyEntrypointIsNotPaused(s.breakGlassConfig.reviewBountyIsPaused, error_REVIEW_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED);
 
     case bountyLambdaAction of [
         |   LambdaReviewBounty(reviewBountyParams) -> {
@@ -954,8 +946,6 @@ block {
 
     var operations : list(operation) := nil;
 
-    verifyEntrypointIsNotPaused(s.breakGlassConfig.sendBountyRewardIsPaused, error_SEND_BOUNTY_REWARD_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED);
-
     case bountyLambdaAction of [
         |   LambdaSendBountyReward(sendBountyRewardParams) -> {
 
@@ -1128,8 +1118,6 @@ block {
 function lambdaFormGroup(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
 block {
 
-    verifyEntrypointIsNotPaused(s.breakGlassConfig.formGroupIsPaused, error_FORM_GROUP_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED);
-
     case bountyLambdaAction of [
         |   LambdaFormGroup(_params) -> {
 
@@ -1169,8 +1157,6 @@ block {
 function lambdaAddGroupMember(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
 block {
 
-    verifyEntrypointIsNotPaused(s.breakGlassConfig.addGroupMemberIsPaused, error_ADD_GROUP_MEMBER_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED);
-
     case bountyLambdaAction of [
         |   LambdaAddGroupMember(addGroupMemberParams) -> {
 
@@ -1205,8 +1191,6 @@ block {
 (*  confirmGroupMembership lambda *)
 function lambdaConfirmGroupMembership(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
 block {
-
-    verifyEntrypointIsNotPaused(s.breakGlassConfig.confirmGroupMembershipIsPaused, error_CONFIRM_GROUP_MEMBERSHIP_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED);
 
     case bountyLambdaAction of [
         |   LambdaConfirmGroupMembership(groupId) -> {
@@ -1247,8 +1231,6 @@ block {
 (*  leaveGroup lambda *)
 function lambdaLeaveGroup(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
 block {
-
-    verifyEntrypointIsNotPaused(s.breakGlassConfig.leaveGroupIsPaused, error_LEAVE_GROUP_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED);
 
     case bountyLambdaAction of [
         |   LambdaLeaveGroup(groupId) -> {
@@ -1302,8 +1284,6 @@ block {
 (*  applyForBounty lambda *)
 function lambdaApplyForBounty(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
 block {
-
-    verifyEntrypointIsNotPaused(s.breakGlassConfig.applyForBountyIsPaused, error_APPLY_FOR_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED);
 
     case bountyLambdaAction of [
         |   LambdaApplyForBounty(applyForBountyParams) -> {
@@ -1379,8 +1359,6 @@ block {
 function lambdaCancelApplication(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
 block {
 
-    verifyEntrypointIsNotPaused(s.breakGlassConfig.cancelApplicationIsPaused, error_CANCEL_APPLICATION_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED);
-
     case bountyLambdaAction of [
         |   LambdaCancelApplication(cancelApplicationParams) -> {
 
@@ -1448,8 +1426,6 @@ block {
 (*  completeBounty lambda *)
 function lambdaCompleteBounty(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
 block {
-
-    verifyEntrypointIsNotPaused(s.breakGlassConfig.completeBountyIsPaused, error_COMPLETE_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED);
 
     case bountyLambdaAction of [
         |   LambdaCompleteBounty(completeBountyParams) -> {
@@ -1556,8 +1532,6 @@ block {
 (*  stopBounty lambda *)
 function lambdaStopBounty(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
 block {
-
-    verifyEntrypointIsNotPaused(s.breakGlassConfig.stopBountyIsPaused, error_STOP_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED);
 
     case bountyLambdaAction of [
         |   LambdaStopBounty(stopBountyParams) -> {

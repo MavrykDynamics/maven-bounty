@@ -20,27 +20,9 @@
 
 
 
-(*  View: get break glass config *)
-[@view] function getBreakGlassConfig(const _ : unit; const s : bountyStorageType) : bountyBreakGlassConfigType is
-    s.breakGlassConfig
-
-
-
-(* View: get whitelist contracts opt *)
-[@view] function getWhitelistContractOpt(const contractAddress : address; const s : bountyStorageType) : option(unit) is 
-    Big_map.find_opt(contractAddress, s.whitelistContracts)
-
-
-
 (* View: get bounty creators opt *)
 [@view] function getBountyCreatorsOpt(const userAddress : address; const s : bountyStorageType) : option(bountyCreatorRecordType) is 
     Big_map.find_opt(userAddress, s.bountyCreators)
-
-
-
-(* get: general contracts opt *)
-[@view] function getGeneralContractOpt(const contractName : string; const s : bountyStorageType) : option(address) is
-    Map.find_opt(contractName, s.generalContracts)
 
 
 

@@ -4,24 +4,6 @@
 
 type bountyIdType is nat
 
-type bountyBreakGlassConfigType is [@layout:comb] record [
-    setBountyIsPaused               : bool;
-    togglePauseBountyIsPaused       : bool;
-    approveOrRejectIsPaused         : bool;
-    reviewBountyIsPaused            : bool;
-    sendBountyRewardIsPaused        : bool;
-
-    formGroupIsPaused               : bool;
-    addGroupMemberIsPaused          : bool;
-    confirmGroupMembershipIsPaused  : bool;
-    leaveGroupIsPaused              : bool;
-    
-    applyForBountyIsPaused          : bool;
-    cancelApplicationIsPaused       : bool;
-    completeBountyIsPaused          : bool;
-    stopBountyIsPaused              : bool;
-]
-
 type bountyConfigType is [@layout:comb] record [
     maxActiveBounties           : nat;
     maxApplications             : nat;
@@ -122,7 +104,11 @@ type bountyLedgerType is big_map(bountyIdType, bountyRecordType)
 
 type groupRecordType is [@layout:comb] record [
     creator                     : address;
-    status                      : string;
+    status                      : string; // 
+
+    // bountyInProgress - bool
+    // name,desc,image - option
+
     members                     : set(address);
     activeBountyCount           : nat; 
     activeBounties              : set(nat);
@@ -282,11 +268,6 @@ type stopBountyActionType is [@layout:comb] record [
     applicant   : applicantType;
 ]
 
-// type applyForBountyActionType is nat        // bountyId
-// type cancelApplicationActionType is nat     // bountyId
-// type completeBountyActionType is nat        // bountyId
-// type stopBountyActionType is nat            // bountyId
-
 type bountyUpdateConfigNewValueType is nat
 type bountyUpdateConfigActionType is 
         ConfigMaxActiveBounties     of unit
@@ -296,28 +277,6 @@ type bountyUpdateConfigParamsType is [@layout:comb] record [
     updateConfigNewValue    : bountyUpdateConfigNewValueType; 
     updateConfigAction      : bountyUpdateConfigActionType;
 ]
-
-type bountyPausableEntrypointType is
-        SetBounty                of bool
-    |   TogglePauseBounty        of bool
-    |   ApproveOrReject          of bool
-    |   ReviewBounty             of bool
-    |   SendBountyReward         of bool
-    
-    |   FormGroup                of bool
-    |   AddGroupMember           of bool
-    |   ConfirmGroupMembership   of bool
-    |   LeaveGroup               of bool
-
-    |   ApplyForBounty           of bool
-    |   CancelApplication        of bool
-    |   CompleteBounty           of bool
-    |   StopBounty               of bool
-    
-type bountyTogglePauseEntrypointType is [@layout:comb] record [
-    targetEntrypoint  : bountyPausableEntrypointType;
-    empty             : unit
-];
 
 
 type addGroupMemberActionType is [@layout:comb] record [
@@ -344,16 +303,9 @@ type bountyLambdaActionType is
         // Housekeeping Lambdas
     |   LambdaUpdateMetadata              of updateMetadataType
     |   LambdaUpdateConfig                of bountyUpdateConfigParamsType
-    |   LambdaUpdateWhitelistContracts    of updateWhitelistContractsType
-    |   LambdaUpdateGeneralContracts      of updateGeneralContractsType
     |   LambdaMistakenTransfer            of transferActionType
 
-        // Pause / Break Glass Lambdas
-    |   LambdaPauseAll                    of (unit)
-    |   LambdaUnpauseAll                  of (unit)
-    |   LambdaTogglePauseEntrypoint       of bountyTogglePauseEntrypointType
-
-        // Bounty Admin Lambdas
+        // Bounty Admin and Bounty Creators Lambdas
     |   LambdaSetBountyCreator            of setBountyCreatorActionType
     |   LambdaSetBounty                   of setBountyActionType
     |   LambdaTogglePauseBounty           of togglePauseBountyActionType
@@ -373,6 +325,7 @@ type bountyLambdaActionType is
     |   LambdaCompleteBounty              of completeBountyActionType
     |   LambdaStopBounty                  of stopBountyActionType
     
+
 // ------------------------------------------------------------------------------
 // Storage
 // ------------------------------------------------------------------------------
@@ -386,10 +339,6 @@ type bountyStorageType is [@layout:comb] record [
 
     metadata                  : metadataType;
     config                    : bountyConfigType;
-    breakGlassConfig          : bountyBreakGlassConfigType;
-
-    whitelistContracts        : whitelistContractsType;    
-    generalContracts          : generalContractsType;
 
     nextBountyId              : nat;
     nextGroupId               : nat;

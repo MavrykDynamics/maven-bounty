@@ -9,13 +9,14 @@ export type bountyStorageType = {
     
     metadata                : MichelsonMap<MichelsonMapKey, unknown>;
     config                  : {};
-    breakGlassConfig        : {};
+    // breakGlassConfig        : {};
 
-    whitelistContracts      : MichelsonMap<MichelsonMapKey, unknown>;
+    // whitelistContracts      : MichelsonMap<MichelsonMapKey, unknown>;
+    // generalContracts        : MichelsonMap<MichelsonMapKey, unknown>;
     bountyCreators          : MichelsonMap<MichelsonMapKey, unknown>;
-    generalContracts        : MichelsonMap<MichelsonMapKey, unknown>;
 
     nextBountyId            : BigNumber;
+    nextGroupId             : BigNumber;
 
     bountyLedger            : MichelsonMap<MichelsonMapKey, unknown>;
     applicationLedger       : MichelsonMap<MichelsonMapKey, unknown>;
