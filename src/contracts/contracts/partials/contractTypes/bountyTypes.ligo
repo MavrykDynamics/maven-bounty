@@ -10,6 +10,11 @@ type bountyBreakGlassConfigType is [@layout:comb] record [
     approveOrRejectIsPaused         : bool;
     reviewBountyIsPaused            : bool;
     sendBountyRewardIsPaused        : bool;
+
+    formGroupIsPaused               : bool;
+    addGroupMemberIsPaused          : bool;
+    confirmGroupMembershipIsPaused  : bool;
+    leaveGroupIsPaused              : bool;
     
     applyForBountyIsPaused          : bool;
     cancelApplicationIsPaused       : bool;
@@ -18,9 +23,47 @@ type bountyBreakGlassConfigType is [@layout:comb] record [
 ]
 
 type bountyConfigType is [@layout:comb] record [
-    maxActiveBounties       : nat;
-    maxApplications         : nat;
+    maxActiveBounties           : nat;
+    maxApplications             : nat;
+    
+    maxMembersPerGroup          : nat;
+    maxGroupsCreatedPerUser     : nat;
+    maxGroupsPerUser            : nat;
 ];
+
+
+type milestoneLogRecordType is [@layout:comb] record [
+    status               : string;               // PENDING / APPROVED / REJECTED / COMPLETED / REVIEW_PENDING / REVIEW_APPROVED / REVIEW_DISPUTED / REVIEW_REJECTED / REWARDED
+    completed            : bool;                 // to be set by applicant
+    reviewed             : bool;                 // to be reviewed by bounty creator
+    review               : option(string);       // to be set by bounty creator
+
+    rewarded             : bool;                 // to be rewarded by bounty creator
+    rewardTimestamp      : option(timestamp);
+]
+type milestoneLogType is map(nat, milestoneLogRecordType)
+
+
+
+type applicationRecordType is [@layout:comb] record [
+    status               : string;               // PENDING / APPROVED / REJECTED / CANCELED / STOPPED / REVIEW_PENDING / REVIEW_APPROVED / REVIEW_DISPUTED / REVIEW_REJECTED / REWARDED
+    completed            : bool;                 // set to True by applicant (e.g. when all milestones are completed)
+    reviewed             : bool;                 // to be reviewed by bounty creator
+    review               : option(string);       // to be set by bounty creator
+    
+    currentMilestone     : option(nat);          // milestone counter for bounty if exists
+    milestoneLog         : option(milestoneLogType);
+    
+    fullyRewarded        : bool;
+    lastRewardTimestamp  : option(timestamp);
+]
+
+type applicantType is 
+    |   User      of address
+    |   Group     of nat
+
+type applicationLedgerType is big_map((bountyIdType * applicantType), applicationRecordType)
+
 
 
 type rewardsDiffRecordType is [@layout:comb] record [
@@ -51,7 +94,7 @@ type bountyProgressType is
     |   NoMilestone 
     |   Completed
 
-type currentApprovedApplicantsType is map(address, bountyProgressType)
+type currentApprovedApplicantsType is map(applicantType, bountyProgressType)
 
 type bountyRecordType is [@layout:comb] record [
     creator                     : address;
@@ -67,7 +110,7 @@ type bountyRecordType is [@layout:comb] record [
     
     maxApprovedApplicants       : nat;
     currentApprovedApplicants   : currentApprovedApplicantsType;
-    completedApplicants         : set(address);
+    completedApplicants         : set(applicantType);
 
     milestones                  : option(milestonesType); 
     totalRewards                : rewardsType;     // total rewards per applicant if everything is completed successfully - will be used as reference for total rewards if milestones are set (i.e. milestone rewards take precedence)
@@ -76,31 +119,17 @@ type bountyLedgerType is big_map(bountyIdType, bountyRecordType)
 
 
 
-type milestoneLogRecordType is [@layout:comb] record [
-    status               : string;               // PENDING / APPROVED / REJECTED / COMPLETED / REVIEW_PENDING / REVIEW_APPROVED / REVIEW_DISPUTED / REVIEW_REJECTED / REWARDED
-    completed            : bool;                 // to be set by applicant
-    reviewed             : bool;                 // to be reviewed by bounty creator
-    review               : option(string);       // to be set by bounty creator
 
-    rewarded             : bool;                 // to be rewarded by bounty creator
-    rewardTimestamp      : option(timestamp);
+type groupRecordType is [@layout:comb] record [
+    creator                     : address;
+    status                      : string;
+    members                     : set(address);
+    activeBountyCount           : nat; 
+    activeBounties              : set(nat);
+    currentApplicationCount     : nat;
+    appliedBounties             : set(nat);
 ]
-type milestoneLogType is map(nat, milestoneLogRecordType)
-
-
-type applicantRecordType is [@layout:comb] record [
-    status               : string;               // PENDING / APPROVED / REJECTED / CANCELED / STOPPED / REVIEW_PENDING / REVIEW_APPROVED / REVIEW_DISPUTED / REVIEW_REJECTED / REWARDED
-    completed            : bool;                 // set to True by applicant (e.g. when all milestones are completed)
-    reviewed             : bool;                 // to be reviewed by bounty creator
-    review               : option(string);       // to be set by bounty creator
-    
-    currentMilestone     : option(nat);          // milestone counter for bounty if exists
-    milestoneLog         : option(milestoneLogType);
-    
-    fullyRewarded        : bool;
-    lastRewardTimestamp  : option(timestamp);
-]
-type applicantLedgerType is big_map((bountyIdType * address), applicantRecordType)
+type groupLedgerType is big_map(nat, groupRecordType)
 
 
 type userRecordType is [@layout:comb] record [
@@ -108,8 +137,16 @@ type userRecordType is [@layout:comb] record [
     activeBounties              : set(nat);
     currentApplicationCount     : nat;
     appliedBounties             : set(nat);
+    groupInvites                : set(nat); 
+    groupsCreated               : set(nat);
+    groups                      : set(nat);
 ]
 type userLedgerType is big_map(address, userRecordType)
+
+
+type applicantRecordType is 
+    |   User    of userRecordType
+    |   Group   of groupRecordType
 
 
 type bountyCreatorRecordType is [@layout:comb] record [
@@ -204,14 +241,14 @@ type approvalType is
 
 type approveOrRejectActionType is [@layout:comb] record [
     bountyId    : nat;
-    applicant   : address;
+    applicant   : applicantType;
     approval    : approvalType;
 ]
 
 
 type reviewBountyActionType is [@layout:comb] record [
     bountyId            : nat;
-    applicant           : address;
+    applicant           : applicantType;
     status              : string;
     milestoneReview     : option(string);
     bountyReview        : option(string);
@@ -221,14 +258,34 @@ type reviewBountyActionType is [@layout:comb] record [
 type sendBountyRewardActionType is [@layout:comb] record [
     bountyId     : nat;
     milestoneId  : option(nat);
-    applicants   : set(address);
+    applicants   : set(applicantType);
 ]
 
 
-type applyForBountyActionType is nat        // bountyId
-type completeBountyActionType is nat        // bountyId
-type cancelApplicationActionType is nat     // bountyId
-type stopBountyActionType is nat            // bountyId
+type applyForBountyActionType is [@layout:comb] record [
+    bountyId    : nat;
+    applicant   : applicantType;
+]
+
+type cancelApplicationActionType is [@layout:comb] record [
+    bountyId    : nat;
+    applicant   : applicantType;
+]
+
+type completeBountyActionType is [@layout:comb] record [
+    bountyId    : nat;
+    applicant   : applicantType;
+]
+
+type stopBountyActionType is [@layout:comb] record [
+    bountyId    : nat;
+    applicant   : applicantType;
+]
+
+// type applyForBountyActionType is nat        // bountyId
+// type cancelApplicationActionType is nat     // bountyId
+// type completeBountyActionType is nat        // bountyId
+// type stopBountyActionType is nat            // bountyId
 
 type bountyUpdateConfigNewValueType is nat
 type bountyUpdateConfigActionType is 
@@ -246,6 +303,12 @@ type bountyPausableEntrypointType is
     |   ApproveOrReject          of bool
     |   ReviewBounty             of bool
     |   SendBountyReward         of bool
+    
+    |   FormGroup                of bool
+    |   AddGroupMember           of bool
+    |   ConfirmGroupMembership   of bool
+    |   LeaveGroup               of bool
+
     |   ApplyForBounty           of bool
     |   CancelApplication        of bool
     |   CompleteBounty           of bool
@@ -256,6 +319,14 @@ type bountyTogglePauseEntrypointType is [@layout:comb] record [
     empty             : unit
 ];
 
+
+type addGroupMemberActionType is [@layout:comb] record [
+    groupId  : nat;
+    member   : address;
+]
+
+type confirmGroupMembershipActionType is nat
+type leaveGroupActionType is nat
 
 // ------------------------------------------------------------------------------
 // Lambda Action Types
@@ -290,6 +361,12 @@ type bountyLambdaActionType is
     |   LambdaReviewBounty                of reviewBountyActionType
     |   LambdaSendBountyReward            of sendBountyRewardActionType
         
+        // Group Lambdas
+    |   LambdaFormGroup                   of (unit)
+    |   LambdaAddGroupMember              of addGroupMemberActionType
+    |   LambdaConfirmGroupMembership      of confirmGroupMembershipActionType
+    |   LambdaLeaveGroup                  of leaveGroupActionType
+
         // Bounty Lambdas
     |   LambdaApplyForBounty              of applyForBountyActionType
     |   LambdaCancelApplication           of cancelApplicationActionType
@@ -315,10 +392,12 @@ type bountyStorageType is [@layout:comb] record [
     generalContracts          : generalContractsType;
 
     nextBountyId              : nat;
+    nextGroupId               : nat;
 
     bountyCreators            : bountyCreatorsLedgerType;    
     bountyLedger              : bountyLedgerType;
-    applicantLedger           : applicantLedgerType;
+    applicationLedger         : applicationLedgerType;
+    groupLedger               : groupLedgerType;
     userLedger                : userLedgerType;
 
     lambdaLedger              : lambdaLedgerType;

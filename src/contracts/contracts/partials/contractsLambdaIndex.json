@@ -22,6 +22,11 @@
         "lambdaReviewBounty",
         "lambdaSendBountyReward",
 
+        "lambdaFormGroup",
+        "lambdaAddGroupMember",
+        "lambdaConfirmGroupMembership",
+        "lambdaLeaveGroup",
+
         "lambdaApplyForBounty",
         "lambdaCancelApplication",
         "lambdaCompleteBounty",

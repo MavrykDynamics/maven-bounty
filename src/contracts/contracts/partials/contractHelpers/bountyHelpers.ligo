@@ -61,6 +61,27 @@ block {
 
 } with unit
 
+
+
+function verifySenderIsGroupCreator(const groupCreator : address; const sender : address) : unit is
+block {
+
+    if groupCreator = sender
+    then skip
+    else failwith(error_SENDER_IS_NOT_GROUP_CREATOR);
+
+} with unit
+
+
+function verifySenderIsApplicant(const applicant : address; const sender : address) : unit is
+block {
+
+    if applicant = sender
+    then skip
+    else failwith(error_SENDER_IS_NOT_APPLICANT);
+
+} with unit
+
 // ------------------------------------------------------------------------------
 // Admin Helper Functions End
 // ------------------------------------------------------------------------------
@@ -91,6 +112,19 @@ block {
 
     if s.breakGlassConfig.sendBountyRewardIsPaused then skip
     else s.breakGlassConfig.sendBountyRewardIsPaused := True;
+
+    // group entrypoints
+    if s.breakGlassConfig.formGroupIsPaused then skip
+    else s.breakGlassConfig.formGroupIsPaused := True;
+
+    if s.breakGlassConfig.addGroupMemberIsPaused then skip
+    else s.breakGlassConfig.addGroupMemberIsPaused := True;
+
+    if s.breakGlassConfig.confirmGroupMembershipIsPaused then skip
+    else s.breakGlassConfig.confirmGroupMembershipIsPaused := True;
+
+    if s.breakGlassConfig.leaveGroupIsPaused then skip
+    else s.breakGlassConfig.leaveGroupIsPaused := True;
 
     // bounty entrypoints
     if s.breakGlassConfig.applyForBountyIsPaused then skip
@@ -131,6 +165,19 @@ block {
     if s.breakGlassConfig.sendBountyRewardIsPaused then s.breakGlassConfig.sendBountyRewardIsPaused := False
     else skip;
     
+    // group entrypoints
+    if s.breakGlassConfig.formGroupIsPaused then s.breakGlassConfig.formGroupIsPaused := False
+    else skip;
+
+    if s.breakGlassConfig.addGroupMemberIsPaused then s.breakGlassConfig.addGroupMemberIsPaused := False
+    else skip;
+
+    if s.breakGlassConfig.confirmGroupMembershipIsPaused then s.breakGlassConfig.confirmGroupMembershipIsPaused := False
+    else skip;
+
+    if s.breakGlassConfig.leaveGroupIsPaused then s.breakGlassConfig.leaveGroupIsPaused := False
+    else skip;
+
     // bounty entrypoints
     if s.breakGlassConfig.applyForBountyIsPaused then s.breakGlassConfig.applyForBountyIsPaused := False
     else skip;
@@ -210,15 +257,15 @@ block {
 
 
 
-function getApplicantRecord(const bountyId : nat; const applicant : address; const s : bountyStorageType) : applicantRecordType is
+function getApplicationRecord(const bountyId : nat; const applicant : applicantType; const s : bountyStorageType) : applicationRecordType is
 block {
 
-    const applicantRecord : applicantRecordType = case s.applicantLedger[(bountyId, applicant)] of [
+    const applicationRecord : applicationRecordType = case s.applicationLedger[(bountyId, applicant)] of [
             Some(_record) -> _record
-        |   None          -> failwith(error_APPLICANT_RECORD_NOT_FOUND)
+        |   None          -> failwith(error_APPLICATION_RECORD_NOT_FOUND)
     ];
 
-} with applicantRecord
+} with applicationRecord
 
 
 
@@ -237,10 +284,10 @@ block {
 
 
 
-function getApplicantMilestoneRecord(const applicantRecord : applicantRecordType; const milestoneId : nat) : milestoneLogRecordType is
+function getApplicantMilestoneRecord(const applicationRecord : applicationRecordType; const milestoneId : nat) : milestoneLogRecordType is
 block {
 
-    const milestoneLogRecord : milestoneLogRecordType = case applicantRecord.milestoneLog of [
+    const milestoneLogRecord : milestoneLogRecordType = case applicationRecord.milestoneLog of [
             Some(_milestoneLog) -> case _milestoneLog[milestoneId] of [
                     Some(_record) -> _record
                 |   None          -> failwith(error_MILESTONE_RECORD_FOR_APPLICANT_NOT_FOUND)
@@ -264,6 +311,18 @@ block {
 
 
 
+function getGroupRecord(const groupId : nat; const s : bountyStorageType) : groupRecordType is
+block {
+
+    const groupRecord : groupRecordType = case s.groupLedger[groupId] of [
+            Some(_record) -> _record
+        |   None          -> failwith(error_GROUP_RECORD_NOT_FOUND)
+    ];
+
+} with groupRecord
+
+
+
 function getOrCreateUserRecord(const userAddress : address; const s : bountyStorageType) : userRecordType is
 block {
 
@@ -274,10 +333,30 @@ block {
                 activeBounties          = (set[] : set(nat));
                 currentApplicationCount = 0n;
                 appliedBounties         = (set[] : set(nat));
+                groupInvites            = (set[] : set(nat));
+                groupsCreated           = (set[] : set(nat));
+                groups                  = (set[] : set(nat));   
             ]
     ];
 
 } with userRecord
+
+
+
+function createGroupRecord(const creator : address) : groupRecordType is 
+block {
+
+    const groupRecord : groupRecordType = record [
+        creator                     = creator;
+        status                      = "ACTIVE";
+        members                     = (set[] : set(address));
+        activeBountyCount           = 0n;
+        activeBounties              = (set[] : set(nat));
+        currentApplicationCount     = 0n;
+        appliedBounties             = (set[] : set(nat));
+    ];
+
+} with groupRecord
 
 // ------------------------------------------------------------------------------
 // Getter Functions End
@@ -352,7 +431,7 @@ block {
 
 
 
-function verifyUserCanApplyForNewBounties(const currentApplicationCount : nat; const maxApplications : nat) : unit is 
+function verifyMaxApplicationsNotReached(const currentApplicationCount : nat; const maxApplications : nat) : unit is 
 block {
 
     if currentApplicationCount < maxApplications 
@@ -363,7 +442,7 @@ block {
 
 
 
-function verifyUserHasSpaceForNewBounties(const activeBountyCount : nat; const maxActiveBounties : nat) : unit is 
+function verifyMaxActiveBountiesNotReached(const activeBountyCount : nat; const maxActiveBounties : nat) : unit is 
 block {
 
     if activeBountyCount < maxActiveBounties 
@@ -374,13 +453,57 @@ block {
 
 
 
-function verifyUserHasNotAlreadyAppliedForBounty(const bountyId : nat; const userAddress : address; const s : bountyStorageType) : unit is
+function verifyUserHasNotAlreadyAppliedForBounty(const bountyId : nat; const applicant : applicantType; const s : bountyStorageType) : unit is
 block {
 
-    case s.applicantLedger[(bountyId, userAddress)] of [
+    case s.applicationLedger[(bountyId, applicant)] of [
             Some(_v) -> failwith(error_USER_HAS_ALREADY_APPLIED_FOR_THIS_BOUNTY)
         |   None     -> skip
     ];
+
+} with unit
+
+
+
+function verifyMaxGroupsCreatedPerUserNotReached(const groups : set(nat); const maxGroupsCreatedPerUser : nat) : unit is 
+block {
+
+    if Set.cardinal(groups) < maxGroupsCreatedPerUser 
+    then skip
+    else failwith(error_MAX_GROUPS_CREATED_PER_USER_REACHED);
+
+} with unit
+
+
+
+function verifyUserIsInGroup(const user : address; const groupMembers : set(address)) : unit is
+block {
+
+    if groupMembers contains user 
+    then skip
+    else failwith(error_USER_IS_NOT_IN_GROUP);
+
+} with unit
+
+
+
+function verifyUserIsInvitedToGroup(const groupInvites : set(nat); const groupId : nat) : unit is
+block {
+
+    if groupInvites contains groupId 
+    then skip
+    else failwith(error_USER_IS_NOT_INVITED_TO_JOIN_GROUP);
+
+} with unit
+
+
+
+function verifyMaxMembersPerGroupNotReached(const groupMembers : set(address); const maxMembersPerGroup : nat) : unit is
+block{
+
+    if Set.cardinal(groupMembers) < maxMembersPerGroup 
+    then skip 
+    else failwith(error_MAX_MEMBERS_PER_GROUP_REACHED);
 
 } with unit
 
@@ -647,7 +770,7 @@ block {
 
         maxApprovedApplicants       = createBountyParams.maxApprovedApplicants;
         currentApprovedApplicants   = (map[] : currentApprovedApplicantsType);
-        completedApplicants         = (set[] : set(address));
+        completedApplicants         = (set[] : set(applicantType));
 
         milestones                  = createBountyParams.milestones;
         totalRewards                = createBountyParams.totalRewards;
@@ -657,10 +780,10 @@ block {
 
 
 
-function createNewApplicantRecord(const _ : unit) : applicantRecordType is 
+function createNewApplicationRecord(const _ : unit) : applicationRecordType is 
 block {
 
-    const applicantRecord : applicantRecordType = record [
+    const applicationRecord : applicationRecordType = record [
         status              = "PENDING";
         completed           = False;
         reviewed            = False;
@@ -673,7 +796,7 @@ block {
         lastRewardTimestamp = (None : option(timestamp));
     ];
 
-} with applicantRecord
+} with applicationRecord
 
 
 

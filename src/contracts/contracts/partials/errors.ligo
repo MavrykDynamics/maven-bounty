@@ -58,50 +58,57 @@
 [@inline] const error_NO_NEW_SUPER_ADMIN_FOUND                                                                          = 34n;
 [@inline] const error_SENDER_IS_NOT_NEW_SUPER_ADMIN                                                                     = 35n;
 
-
 [@inline] const error_ONLY_ADMINISTRATOR_OR_BOUNTY_CREATOR_ALLOWED                                                      = 36n;
 [@inline] const error_ONLY_ADMIN_OR_CREATOR_OR_WHITELISTED_ALLOWED                                                      = 37n;
+[@inline] const error_SENDER_IS_NOT_GROUP_CREATOR                                                                       = 38n;
+[@inline] const error_SENDER_IS_NOT_APPLICANT                                                                           = 39n;
 
-[@inline] const error_INVALID_STATUS                                                                                    = 38n;
-[@inline] const error_INVALID_STATUS_FOR_BOUNTY_REVIEW                                                                  = 39n;
+[@inline] const error_INVALID_STATUS                                                                                    = 40n;
+[@inline] const error_INVALID_STATUS_FOR_BOUNTY_REVIEW                                                                  = 41n;
 
-[@inline] const error_MILESTONE_REWARDS_AND_TOTAL_REWARDS_DO_NOT_TALLY                                                  = 40n;
-[@inline] const error_BOUNTY_RECORD_NOT_FOUND                                                                           = 41n;
-[@inline] const error_MILESTONES_FOR_BOUNTY_NOT_FOUND                                                                   = 42n;
-[@inline] const error_APPLICANT_RECORD_NOT_FOUND                                                                        = 43n;
-[@inline] const error_USER_RECORD_NOT_FOUND                                                                             = 44n;
-[@inline] const error_BOUNTY_CREATOR_RECORD_NOT_FOUND                                                                   = 45n;
-[@inline] const error_MILESTONE_RECORD_FOR_BOUNTY_NOT_FOUND                                                             = 46n;
-[@inline] const error_MILESTONE_RECORD_FOR_APPLICANT_NOT_FOUND                                                          = 47n;
-[@inline] const error_MILESTONE_LOG_FOR_APPLICANT_NOT_FOUND                                                             = 48n;
-[@inline] const error_MILESTONE_LOG_RECORD_NOT_FOUND_IN_APPLICANT_RECORD                                                = 49n;
+[@inline] const error_MILESTONE_REWARDS_AND_TOTAL_REWARDS_DO_NOT_TALLY                                                  = 42n;
+[@inline] const error_BOUNTY_RECORD_NOT_FOUND                                                                           = 43n;
+[@inline] const error_MILESTONES_FOR_BOUNTY_NOT_FOUND                                                                   = 44n;
+[@inline] const error_APPLICATION_RECORD_NOT_FOUND                                                                      = 45n;
+[@inline] const error_USER_RECORD_NOT_FOUND                                                                             = 46n;
+[@inline] const error_GROUP_RECORD_NOT_FOUND                                                                            = 47n;
+[@inline] const error_BOUNTY_CREATOR_RECORD_NOT_FOUND                                                                   = 48n;
+[@inline] const error_MILESTONE_RECORD_FOR_BOUNTY_NOT_FOUND                                                             = 49n;
+[@inline] const error_MILESTONE_RECORD_FOR_APPLICANT_NOT_FOUND                                                          = 50n;
+[@inline] const error_MILESTONE_LOG_FOR_APPLICANT_NOT_FOUND                                                             = 51n;
+[@inline] const error_MILESTONE_LOG_RECORD_NOT_FOUND_IN_APPLICANT_RECORD                                                = 52n;
+[@inline] const error_USER_IS_NOT_IN_GROUP                                                                              = 53n;
+[@inline] const error_USER_IS_NOT_INVITED_TO_JOIN_GROUP                                                                 = 54n;
+[@inline] const error_MAX_MEMBERS_PER_GROUP_REACHED                                                                     = 55n;
+[@inline] const error_MAX_GROUPS_CREATED_PER_USER_REACHED                                                               = 56n;
 
+[@inline] const error_BOUNTY_IS_NOT_ACTIVE                                                                              = 57n;
+[@inline] const error_BOUNTY_IS_PAUSED                                                                                  = 58n;
+[@inline] const error_BOUNTY_HAS_NO_SPACE_FOR_NEW_APPLICANTS                                                            = 59n;
+[@inline] const error_USER_HAS_NO_SPACE_FOR_NEW_BOUNTIES                                                                = 60n;
+[@inline] const error_USER_HAS_REACHED_MAX_APPLICATIONS_ALLOWED                                                         = 61n;
+[@inline] const error_APPLICATION_STATUS_IS_NOT_PENDING                                                                 = 62n;
+[@inline] const error_BOUNTY_CANNOT_BE_STOPPED_BY_USER                                                                  = 63n;
+[@inline] const error_BOUNTY_HAS_ALREADY_BEEN_COMPLETED_AND_APPROVED                                                    = 64n;
+[@inline] const error_MILESTONE_NEEDS_TO_BE_SPECIFIED_FOR_REVIEW                                                        = 65n;
+[@inline] const error_MILESTONE_LOG_NOT_FOUND_IN_APPLICANT_RECORD                                                       = 66n;
+[@inline] const error_CURRENT_MILESTONE_NOT_FOUND                                                                       = 67n;
+[@inline] const error_MILESTONE_TO_REVIEW_NEEDS_TO_BE_THE_SAME_AS_CURRENT_MILESTONE                                     = 68n;
+[@inline] const error_BOUNTY_HAS_REACHED_MAX_APPROVED_APPLICANTS                                                        = 69n;
+[@inline] const error_BOUNTY_HAS_NO_MILESTONES                                                                          = 70n;
+[@inline] const error_MILESTONE_NEEDS_TO_BE_SPECIFIED_TO_SEND_BOUNTY_REWARD                                             = 71n;
+[@inline] const error_USER_HAS_ALREADY_APPLIED_FOR_THIS_BOUNTY                                                          = 72n;
 
-[@inline] const error_BOUNTY_IS_NOT_ACTIVE                                                                              = 50n;
-[@inline] const error_BOUNTY_IS_PAUSED                                                                                  = 51n;
-[@inline] const error_BOUNTY_HAS_NO_SPACE_FOR_NEW_APPLICANTS                                                            = 52n;
-[@inline] const error_USER_HAS_NO_SPACE_FOR_NEW_BOUNTIES                                                                = 53n;
-[@inline] const error_USER_HAS_REACHED_MAX_APPLICATIONS_ALLOWED                                                         = 54n;
-[@inline] const error_APPLICATION_STATUS_IS_NOT_PENDING                                                                 = 55n;
-[@inline] const error_BOUNTY_CANNOT_BE_STOPPED_BY_USER                                                                  = 56n;
-[@inline] const error_BOUNTY_HAS_ALREADY_BEEN_COMPLETED_AND_APPROVED                                                    = 57n;
-[@inline] const error_MILESTONE_NEEDS_TO_BE_SPECIFIED_FOR_REVIEW                                                        = 58n;
-[@inline] const error_MILESTONE_LOG_NOT_FOUND_IN_APPLICANT_RECORD                                                       = 59n;
-[@inline] const error_CURRENT_MILESTONE_NOT_FOUND                                                                       = 60n;
-[@inline] const error_MILESTONE_TO_REVIEW_NEEDS_TO_BE_THE_SAME_AS_CURRENT_MILESTONE                                     = 61n;
-[@inline] const error_BOUNTY_HAS_REACHED_MAX_APPROVED_APPLICANTS                                                        = 62n;
-[@inline] const error_BOUNTY_HAS_NO_MILESTONES                                                                          = 63n;
-[@inline] const error_MILESTONE_NEEDS_TO_BE_SPECIFIED_TO_SEND_BOUNTY_REWARD                                             = 64n;
-[@inline] const error_USER_HAS_ALREADY_APPLIED_FOR_THIS_BOUNTY                                                          = 65n;
-
-
-[@inline] const error_SET_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                   = 66n;
-[@inline] const error_TOGGLE_PAUSE_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                          = 67n;
-[@inline] const error_APPROVE_OR_REJECT_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                            = 68n;
-[@inline] const error_REVIEW_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                = 69n;
-[@inline] const error_SEND_BOUNTY_REWARD_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                           = 70n;
-[@inline] const error_APPLY_FOR_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                             = 71n;
-[@inline] const error_CANCEL_APPLICATION_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                           = 72n;
-[@inline] const error_COMPLETE_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                              = 73n;
-[@inline] const error_STOP_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                  = 74n;
-
+[@inline] const error_SET_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                   = 73n;
+[@inline] const error_TOGGLE_PAUSE_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                          = 74n;
+[@inline] const error_APPROVE_OR_REJECT_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                            = 75n;
+[@inline] const error_REVIEW_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                = 76n;
+[@inline] const error_SEND_BOUNTY_REWARD_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                           = 77n;
+[@inline] const error_APPLY_FOR_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                             = 78n;
+[@inline] const error_CANCEL_APPLICATION_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                           = 79n;
+[@inline] const error_COMPLETE_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                              = 80n;
+[@inline] const error_STOP_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                  = 81n;
+[@inline] const error_FORM_GROUP_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                   = 82n;
+[@inline] const error_ADD_GROUP_MEMBER_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                             = 83n;
+[@inline] const error_CONFIRM_GROUP_MEMBERSHIP_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                     = 84n;
+[@inline] const error_LEAVE_GROUP_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                  = 85n;

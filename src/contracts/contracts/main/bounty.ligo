@@ -57,6 +57,12 @@ type action is
     |   ReviewBounty                of reviewBountyActionType
     |   SendBountyReward            of sendBountyRewardActionType
 
+        // Group Entrypoints
+    |   FormGroup                   of (unit)
+    |   AddGroupMember              of addGroupMemberActionType
+    |   ConfirmGroupMembership      of confirmGroupMembershipActionType
+    |   LeaveGroup                  of leaveGroupActionType
+
         // Bounty Entrypoints
     |   ApplyForBounty              of applyForBountyActionType
     |   CancelApplication           of cancelApplicationActionType
@@ -137,6 +143,12 @@ function main (const action : action; const s : bountyStorageType) : return is
         |   ApproveOrReject(parameters)           -> approveOrReject(parameters, s)
         |   ReviewBounty(parameters)              -> reviewBounty(parameters, s)
         |   SendBountyReward(parameters)          -> sendBountyReward(parameters, s)
+
+            // Group Entrypoints
+        |   FormGroup(_parameters)                -> formGroup(s)
+        |   AddGroupMember(parameters)            -> addGroupMember(parameters, s)
+        |   ConfirmGroupMembership(parameters)    -> confirmGroupMembership(parameters, s)
+        |   LeaveGroup(parameters)                -> leaveGroup(parameters, s)
 
             // Bounty Entrypoints
         |   ApplyForBounty(parameters)            -> applyForBounty(parameters, s)  

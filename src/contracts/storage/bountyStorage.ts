@@ -42,7 +42,8 @@ export const bountyStorage : bountyStorageType = {
     nextBountyId              : new BigNumber(0),
     
     bountyLedger              : MichelsonMap.fromLiteral({}),
-    applicantLedger           : MichelsonMap.fromLiteral({}),
+    applicationLedger         : MichelsonMap.fromLiteral({}),
+    groupLedger               : MichelsonMap.fromLiteral({}),
     userLedger                : MichelsonMap.fromLiteral({}),
 
     lambdaLedger              : MichelsonMap.fromLiteral({})

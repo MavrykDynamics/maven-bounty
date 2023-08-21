@@ -18,7 +18,8 @@ export type bountyStorageType = {
     nextBountyId            : BigNumber;
 
     bountyLedger            : MichelsonMap<MichelsonMapKey, unknown>;
-    applicantLedger         : MichelsonMap<MichelsonMapKey, unknown>;
+    applicationLedger       : MichelsonMap<MichelsonMapKey, unknown>;
+    groupLedger             : MichelsonMap<MichelsonMapKey, unknown>;
     userLedger              : MichelsonMap<MichelsonMapKey, unknown>;
 
     lambdaLedger            : MichelsonMap<MichelsonMapKey, unknown>;

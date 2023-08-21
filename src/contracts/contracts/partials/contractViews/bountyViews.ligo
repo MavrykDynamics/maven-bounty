@@ -50,9 +50,9 @@
 
 
 
-(* View: getApplicantRecordOpt *)
-[@view] function getApplicantRecordOpt(const applicantKey : (nat * address); const s : bountyStorageType) : option(applicantRecordType) is
-    Big_map.find_opt(applicantKey, s.applicantLedger)
+(* View: getApplicationRecordOpt *)
+[@view] function getApplicationRecordOpt(const applicationKey : (nat * applicantType); const s : bountyStorageType) : option(applicationRecordType) is
+    Big_map.find_opt(applicationKey, s.applicationLedger)
 
 
 

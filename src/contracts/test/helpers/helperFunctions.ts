@@ -303,20 +303,11 @@ export function mapsAreEqual(map1, map2) {
       }
       if (typeof val2.amount === "object" && val2.amount.toNumber) {
         val2.amount = val2.amount.toNumber();
-        // console.log(`val2 :${val2.amount}`);
       }
-
-    //   console.log(`val1 json :${JSON.stringify(val1)}`);
-    //   console.log(`val2 json :${JSON.stringify(val2)}`);
-  
-      // Deep comparison for rewardTokenType and other nested objects
-    //   if (JSON.stringify(val1.amount) !== JSON.stringify(val2)) return false;
 
     }
   
     return true;
   }
   
-  // Usage
-//   assert(mapsAreEqual(bountyRecord.totalRewards.valueMap, totalRewards.valueMap));
   

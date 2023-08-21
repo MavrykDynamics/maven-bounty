@@ -341,6 +341,82 @@ block {
 
 
 // ------------------------------------------------------------------------------
+// Group Entrypoints Begin
+// ------------------------------------------------------------------------------
+
+(*  formGroup entrypoint *)
+function formGroup(var s : bountyStorageType) : return is
+block {
+
+    // get lambda bytes
+    const lambdaBytes : bytes = getLambdaBytes("lambdaFormGroup", s.lambdaLedger);
+
+    // init bounty lambda action
+    const bountyLambdaAction : bountyLambdaActionType = LambdaFormGroup(unit);
+
+    // init response
+    const response : return = unpackLambda(lambdaBytes, bountyLambdaAction, s);  
+
+} with response
+
+
+
+(*  addGroupMember entrypoint *)
+function addGroupMember(const addGroupMemberParams : addGroupMemberActionType; var s : bountyStorageType) : return is
+block {
+
+    // get lambda bytes
+    const lambdaBytes : bytes = getLambdaBytes("lambdaAddGroupMember", s.lambdaLedger);
+
+    // init bounty lambda action
+    const bountyLambdaAction : bountyLambdaActionType = LambdaAddGroupMember(addGroupMemberParams);
+
+    // init response
+    const response : return = unpackLambda(lambdaBytes, bountyLambdaAction, s);  
+
+} with response
+
+
+
+(*  confirmGroupMembership entrypoint *)
+function confirmGroupMembership(const confirmGroupMembershipParams : confirmGroupMembershipActionType; var s : bountyStorageType) : return is
+block {
+
+    // get lambda bytes
+    const lambdaBytes : bytes = getLambdaBytes("lambdaConfirmGroupMembership", s.lambdaLedger);
+
+    // init bounty lambda action
+    const bountyLambdaAction : bountyLambdaActionType = LambdaConfirmGroupMembership(confirmGroupMembershipParams);
+
+    // init response
+    const response : return = unpackLambda(lambdaBytes, bountyLambdaAction, s);  
+
+} with response
+
+
+
+(*  leaveGroup entrypoint *)
+function leaveGroup(const leaveGroupParams : leaveGroupActionType; var s : bountyStorageType) : return is
+block {
+
+    // get lambda bytes
+    const lambdaBytes : bytes = getLambdaBytes("lambdaLeaveGroup", s.lambdaLedger);
+
+    // init bounty lambda action
+    const bountyLambdaAction : bountyLambdaActionType = LambdaLeaveGroup(leaveGroupParams);
+
+    // init response
+    const response : return = unpackLambda(lambdaBytes, bountyLambdaAction, s);  
+
+} with response
+
+// ------------------------------------------------------------------------------
+// Group Entrypoints End
+// ------------------------------------------------------------------------------
+
+
+
+// ------------------------------------------------------------------------------
 // Bounty Entrypoints Begin
 // ------------------------------------------------------------------------------
 
