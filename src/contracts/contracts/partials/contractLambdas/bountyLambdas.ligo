@@ -129,8 +129,11 @@ block {
                 const updateConfigNewValue  : bountyUpdateConfigNewValueType = updateConfigParams.updateConfigNewValue;
 
                 case updateConfigAction of [
-                    |   ConfigMaxActiveBounties (_v)  -> s.config.maxActiveBounties         := updateConfigNewValue
-                    |   ConfigMaxApplications (_v)    -> s.config.maxApplications           := updateConfigNewValue
+                    |   ConfigMaxActiveBounties (_v)        -> s.config.maxActiveBounties         := updateConfigNewValue
+                    |   ConfigMaxApplications (_v)          -> s.config.maxApplications           := updateConfigNewValue
+                    |   ConfigMaxMembersPerGroup (_v)       -> s.config.maxMembersPerGroup        := updateConfigNewValue
+                    |   ConfigMaxGroupsCreatedPerUser (_v)  -> s.config.maxGroupsCreatedPerUser   := updateConfigNewValue
+                    |   ConfigMaxGroupsPerUser (_v)         -> s.config.maxGroupsPerUser          := updateConfigNewValue
                 ];
             }
         |   _ -> skip
@@ -196,92 +199,6 @@ block {
 
 // ------------------------------------------------------------------------------
 // Housekeeping Lambdas End
-// ------------------------------------------------------------------------------
-
-
-
-// ------------------------------------------------------------------------------
-// Pause / Break Glass Lambdas Begin
-// ------------------------------------------------------------------------------
-
-(*  pauseAll lambda *)
-// function lambdaPauseAll(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
-// block {
-
-//     verifyNoAmountSent(Unit);     
-//     verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
-
-//     case bountyLambdaAction of [
-//         |   LambdaPauseAll(_parameters) -> {
-              
-//                 // set all pause configs to True
-//                 s := pauseAllBountyEntrypoints(s);
-              
-//             }
-//         |   _ -> skip
-//     ];  
-
-// } with (noOperations, s)
-
-
-
-(*  unpauseAll lambda *)
-// function lambdaUnpauseAll(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
-// block {
-
-//     verifyNoAmountSent(Unit);     
-//     verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
-
-//     case bountyLambdaAction of [
-//         |   LambdaUnpauseAll(_parameters) -> {
-                
-//                 // set all pause configs to False
-//                 s := unpauseAllBountyEntrypoints(s);
-              
-//             }
-//         |   _ -> skip
-//     ];
-
-// } with (noOperations, s)
-
-
-
-(*  togglePauseEntrypoint lambda *)
-// function lambdaTogglePauseEntrypoint(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
-// block {
-
-//     verifyNoAmountSent(Unit);     
-//     verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
-
-//     case bountyLambdaAction of [
-//         |   LambdaTogglePauseEntrypoint(params) -> {
-
-//                 case params.targetEntrypoint of [
-//                         SetBounty (_v)              -> s.breakGlassConfig.setBountyIsPaused                 := _v
-//                     |   TogglePauseBounty (_v)      -> s.breakGlassConfig.togglePauseBountyIsPaused         := _v
-//                     |   ApproveOrReject (_v)        -> s.breakGlassConfig.approveOrRejectIsPaused           := _v
-//                     |   ReviewBounty (_v)           -> s.breakGlassConfig.reviewBountyIsPaused              := _v
-//                     |   SendBountyReward (_v)       -> s.breakGlassConfig.sendBountyRewardIsPaused          := _v
-
-//                     |   FormGroup (_v)              -> s.breakGlassConfig.formGroupIsPaused                 := _v
-//                     |   AddGroupMember (_v)         -> s.breakGlassConfig.addGroupMemberIsPaused            := _v
-//                     |   ConfirmGroupMembership (_v) -> s.breakGlassConfig.confirmGroupMembershipIsPaused    := _v
-//                     |   LeaveGroup (_v)             -> s.breakGlassConfig.leaveGroupIsPaused                := _v
-
-//                     |   ApplyForBounty (_v)         -> s.breakGlassConfig.applyForBountyIsPaused            := _v
-//                     |   CancelApplication (_v)      -> s.breakGlassConfig.cancelApplicationIsPaused         := _v
-//                     |   CompleteBounty (_v)         -> s.breakGlassConfig.completeBountyIsPaused            := _v
-//                     |   StopBounty (_v)             -> s.breakGlassConfig.stopBountyIsPaused                := _v
-//                 ]
-                
-//             }
-//         |   _ -> skip
-//     ];
-
-// } with (noOperations, s)
-
-// ------------------------------------------------------------------------------
-// Pause / Break Glass Lambdas End
 // ------------------------------------------------------------------------------
 
 
@@ -1119,7 +1036,7 @@ function lambdaFormGroup(const bountyLambdaAction : bountyLambdaActionType; var 
 block {
 
     case bountyLambdaAction of [
-        |   LambdaFormGroup(_params) -> {
+        |   LambdaFormGroup(formGroupParams) -> {
 
                 const creator : address = Tezos.get_sender();
 
@@ -1135,7 +1052,22 @@ block {
 
                 // create new group
                 const groupId   : nat             = s.nextGroupId;
-                const newGroup  : groupRecordType = createGroupRecord(creator);
+                var newGroup   : groupRecordType := createGroupRecord(creator);
+
+                case formGroupParams.name of [
+                        Some(_v) -> newGroup.name := formGroupParams.name
+                    |   None     -> skip
+                ];
+
+                case formGroupParams.description of [
+                        Some(_v) -> newGroup.description := formGroupParams.description
+                    |   None     -> skip
+                ];
+
+                case formGroupParams.image of [
+                        Some(_v) -> newGroup.image := formGroupParams.image
+                    |   None     -> skip
+                ];
                 
                 // update user record
                 userRecord.groups := Set.add(groupId, userRecord.groups);
@@ -1153,32 +1085,78 @@ block {
 
 
 
-(*  addGroupMember lambda *)
-function lambdaAddGroupMember(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
+(*  setGroupMember lambda *)
+function lambdaSetGroupMember(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
 block {
 
     case bountyLambdaAction of [
-        |   LambdaAddGroupMember(addGroupMemberParams) -> {
+        |   LambdaSetGroupMember(setGroupMemberParams) -> {
 
-                const creator   : address = Tezos.get_sender();
-                const groupId   : nat     = addGroupMemberParams.groupId;
-                const member    : address = addGroupMemberParams.member;
+                const sender        : address                   = Tezos.get_sender();
+                const groupId       : nat                       = setGroupMemberParams.groupId;
+                const member        : address                   = setGroupMemberParams.member;
+                const updateType    : manageGroupMembersType    = setGroupMemberParams.updateType;
                 
-                const groupRecord : groupRecordType = getGroupRecord(groupId, s);
+                var groupRecord : groupRecordType := getGroupRecord(groupId, s);
 
                 // ---------------------------------------------
                 // verification checks
                 // ---------------------------------------------
 
-                verifySenderIsGroupCreator(groupRecord.creator, creator);
+                const groupCreator : address = groupRecord.creator;
+                verifySenderIsGroupCreator(groupCreator, sender);
 
                 // ---------------------------------------------
 
                 var memberRecord  : userRecordType := getUserRecord(member, s);
-                memberRecord.groupInvites := Set.add(groupId, memberRecord.groupInvites);
 
-                // update storage
-                s.userLedger[member]  := memberRecord;
+                case updateType of [
+                    |   Invite(_) -> {
+                            
+                            if sender = groupCreator then failwith(error_GROUP_CREATOR_CANNOT_INVITE_HIMSELF) else skip;
+                            memberRecord.groupInvites := Set.add(groupId, memberRecord.groupInvites);
+
+                            // update storage
+                            s.userLedger[member]  := memberRecord;
+                        }
+                    |   Remove(_) -> {
+
+                            if sender = groupCreator then failwith(error_GROUP_CREATOR_CANNOT_REMOVE_HIMSELF) else skip;
+
+                            // remove member from group
+                            groupRecord.members := Set.remove(member, groupRecord.members);
+
+                            // update member user record
+                            memberRecord.groups := Set.remove(groupId, memberRecord.groups);
+
+                            // update storage
+                            s.userLedger[member]    := memberRecord;
+                            s.groupLedger[groupId]  := groupRecord;
+
+                        }
+                    |   Approve(_) -> {
+
+                            if groupRecord.applicants contains member then skip else failwith(error_MEMBER_DID_NOT_APPLY_FOR_GROUP);
+
+                            verifyMaxMembersPerGroupNotReached(groupRecord.members, s.config.maxMembersPerGroup);
+
+                            // remove group id from group invites if it exists
+                            if memberRecord.groupInvites contains groupId then {
+                                memberRecord.groupInvites  := Set.remove(groupId, memberRecord.groupInvites);
+                            } else skip;
+
+                            memberRecord.groupApplications    := Set.remove(groupId, memberRecord.groupApplications);
+
+                            // add member to group
+                            memberRecord.groups     := Set.add(groupId, memberRecord.groups);
+                            groupRecord.members     := Set.add(sender, groupRecord.members);
+
+                            // update storage
+                            s.userLedger[member]    := memberRecord;
+                            s.groupLedger[groupId]  := groupRecord;
+
+                        }
+                ];
 
             }
         |   _ -> skip
@@ -1188,37 +1166,61 @@ block {
 
 
 
-(*  confirmGroupMembership lambda *)
-function lambdaConfirmGroupMembership(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
+(*  groupMembership lambda *)
+function lambdaGroupMembership(const bountyLambdaAction : bountyLambdaActionType; var s : bountyStorageType) : return is
 block {
 
     case bountyLambdaAction of [
-        |   LambdaConfirmGroupMembership(groupId) -> {
+        |   LambdaGroupMembership(groupMembershipActionParams) -> {
 
                 const sender    : address           = Tezos.get_sender();
                 var userRecord  : userRecordType   := getUserRecord(sender, s);
-                var group       : groupRecordType  := getGroupRecord(groupId, s);
 
-                // ---------------------------------------------
-                // verification checks
-                // ---------------------------------------------
+                case groupMembershipActionParams of [
+                    |   ApplyForGroup(_groupId) -> {
+                            
+                            var group : groupRecordType  := getGroupRecord(_groupId, s);
+                            const groupCreator : address = group.creator;
 
-                verifyUserIsInvitedToGroup(userRecord.groupInvites, groupId);
+                            if sender = groupCreator then failwith(error_GROUP_CREATOR_CANNOT_APPLY_FOR_HIS_OWN_GROUP) else skip;
 
-                verifyMaxMembersPerGroupNotReached(group.members, s.config.maxMembersPerGroup);
+                            if group.members contains sender then failwith(error_SENDER_IS_ALREADY_GROUP_MEMBER) else skip;
 
-                // ---------------------------------------------
+                            // register user application
+                            group.applicants                := Set.add(sender, group.applicants);
+                            userRecord.groupApplications    := Set.add(_groupId, userRecord.groupApplications);
+                            
+                            // update storage
+                            s.groupLedger[_groupId]   := group;
 
-                // add user to group members
-                group.members            := Set.add(sender, group.members);
-                
-                // update user record
-                userRecord.groupInvites  := Set.remove(groupId, userRecord.groupInvites);
-                userRecord.groups        := Set.add(groupId, userRecord.groups);
+                        }
+                    |   ConfirmGroupMembership(_groupId) -> {
 
-                // update storage
-                s.groupLedger[groupId]   := group;
-                s.userLedger[sender]     := userRecord;
+                            var group : groupRecordType  := getGroupRecord(_groupId, s);
+
+                            // ---------------------------------------------
+                            // verification checks
+                            // ---------------------------------------------
+
+                            verifyUserIsInvitedToGroup(userRecord.groupInvites, _groupId);
+
+                            verifyMaxMembersPerGroupNotReached(group.members, s.config.maxMembersPerGroup);
+
+                            // ---------------------------------------------
+
+                            // add user to group members
+                            group.members            := Set.add(sender, group.members);
+                            
+                            // update user record
+                            userRecord.groupInvites  := Set.remove(_groupId, userRecord.groupInvites);
+                            userRecord.groups        := Set.add(_groupId, userRecord.groups);
+
+                            // update storage
+                            s.groupLedger[_groupId]  := group;
+                            s.userLedger[sender]     := userRecord;
+
+                        }
+                ];
 
             }
         |   _ -> skip

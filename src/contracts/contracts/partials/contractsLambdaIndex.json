@@ -17,8 +17,8 @@
         "lambdaSendBountyReward",
 
         "lambdaFormGroup",
-        "lambdaAddGroupMember",
-        "lambdaConfirmGroupMembership",
+        "lambdaSetGroupMember",
+        "lambdaGroupMembership",
         "lambdaLeaveGroup",
 
         "lambdaApplyForBounty",

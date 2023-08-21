@@ -101,15 +101,18 @@ type bountyLedgerType is big_map(bountyIdType, bountyRecordType)
 
 
 
-
 type groupRecordType is [@layout:comb] record [
     creator                     : address;
-    status                      : string; // 
+    status                      : string; 
+    bountyInProgress            : bool;
 
-    // bountyInProgress - bool
-    // name,desc,image - option
+    name                        : option(string);
+    description                 : option(string);
+    image                       : option(string);
 
+    applicants                  : set(address); // users who are applying to group
     members                     : set(address);
+
     activeBountyCount           : nat; 
     activeBounties              : set(nat);
     currentApplicationCount     : nat;
@@ -124,6 +127,7 @@ type userRecordType is [@layout:comb] record [
     currentApplicationCount     : nat;
     appliedBounties             : set(nat);
     groupInvites                : set(nat); 
+    groupApplications           : set(nat); 
     groupsCreated               : set(nat);
     groups                      : set(nat);
 ]
@@ -270,8 +274,11 @@ type stopBountyActionType is [@layout:comb] record [
 
 type bountyUpdateConfigNewValueType is nat
 type bountyUpdateConfigActionType is 
-        ConfigMaxActiveBounties     of unit
-    |   ConfigMaxApplications       of unit
+        ConfigMaxActiveBounties         of unit
+    |   ConfigMaxApplications           of unit
+    |   ConfigMaxMembersPerGroup        of unit
+    |   ConfigMaxGroupsCreatedPerUser   of unit
+    |   ConfigMaxGroupsPerUser          of unit
 
 type bountyUpdateConfigParamsType is [@layout:comb] record [
     updateConfigNewValue    : bountyUpdateConfigNewValueType; 
@@ -279,12 +286,30 @@ type bountyUpdateConfigParamsType is [@layout:comb] record [
 ]
 
 
-type addGroupMemberActionType is [@layout:comb] record [
-    groupId  : nat;
-    member   : address;
+
+type formGroupActionType is [@layout:comb] record [
+    name            : option(string); 
+    description     : option(string);
+    image           : option(string);
 ]
 
-type confirmGroupMembershipActionType is nat
+
+type manageGroupMembersType is 
+    |   Invite      of unit
+    |   Remove      of unit
+    |   Approve     of unit
+
+type setGroupMemberActionType is [@layout:comb] record [
+    groupId     : nat;
+    member      : address;
+    updateType  : manageGroupMembersType;
+]
+
+type groupMembershipActionType is 
+    |   ApplyForGroup           of nat
+    |   ConfirmGroupMembership  of nat
+
+
 type leaveGroupActionType is nat
 
 // ------------------------------------------------------------------------------
@@ -314,9 +339,9 @@ type bountyLambdaActionType is
     |   LambdaSendBountyReward            of sendBountyRewardActionType
         
         // Group Lambdas
-    |   LambdaFormGroup                   of (unit)
-    |   LambdaAddGroupMember              of addGroupMemberActionType
-    |   LambdaConfirmGroupMembership      of confirmGroupMembershipActionType
+    |   LambdaFormGroup                   of formGroupActionType
+    |   LambdaSetGroupMember              of setGroupMemberActionType
+    |   LambdaGroupMembership             of groupMembershipActionType
     |   LambdaLeaveGroup                  of leaveGroupActionType
 
         // Bounty Lambdas

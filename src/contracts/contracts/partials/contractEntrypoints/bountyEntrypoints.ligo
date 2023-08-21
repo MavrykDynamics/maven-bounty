@@ -253,14 +253,14 @@ block {
 // ------------------------------------------------------------------------------
 
 (*  formGroup entrypoint *)
-function formGroup(var s : bountyStorageType) : return is
+function formGroup(const formGroupParams : formGroupActionType; var s : bountyStorageType) : return is
 block {
 
     // get lambda bytes
     const lambdaBytes : bytes = getLambdaBytes("lambdaFormGroup", s.lambdaLedger);
 
     // init bounty lambda action
-    const bountyLambdaAction : bountyLambdaActionType = LambdaFormGroup(unit);
+    const bountyLambdaAction : bountyLambdaActionType = LambdaFormGroup(formGroupParams);
 
     // init response
     const response : return = unpackLambda(lambdaBytes, bountyLambdaAction, s);  
@@ -269,15 +269,15 @@ block {
 
 
 
-(*  addGroupMember entrypoint *)
-function addGroupMember(const addGroupMemberParams : addGroupMemberActionType; var s : bountyStorageType) : return is
+(*  setGroupMember entrypoint *)
+function setGroupMember(const setGroupMemberParams : setGroupMemberActionType; var s : bountyStorageType) : return is
 block {
 
     // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaAddGroupMember", s.lambdaLedger);
+    const lambdaBytes : bytes = getLambdaBytes("lambdaSetGroupMember", s.lambdaLedger);
 
     // init bounty lambda action
-    const bountyLambdaAction : bountyLambdaActionType = LambdaAddGroupMember(addGroupMemberParams);
+    const bountyLambdaAction : bountyLambdaActionType = LambdaSetGroupMember(setGroupMemberParams);
 
     // init response
     const response : return = unpackLambda(lambdaBytes, bountyLambdaAction, s);  
@@ -286,15 +286,15 @@ block {
 
 
 
-(*  confirmGroupMembership entrypoint *)
-function confirmGroupMembership(const confirmGroupMembershipParams : confirmGroupMembershipActionType; var s : bountyStorageType) : return is
+(*  groupMembership entrypoint *)
+function groupMembership(const groupMembershipParams : groupMembershipActionType; var s : bountyStorageType) : return is
 block {
 
     // get lambda bytes
-    const lambdaBytes : bytes = getLambdaBytes("lambdaConfirmGroupMembership", s.lambdaLedger);
+    const lambdaBytes : bytes = getLambdaBytes("lambdaGroupMembership", s.lambdaLedger);
 
     // init bounty lambda action
-    const bountyLambdaAction : bountyLambdaActionType = LambdaConfirmGroupMembership(confirmGroupMembershipParams);
+    const bountyLambdaAction : bountyLambdaActionType = LambdaGroupMembership(groupMembershipParams);
 
     // init response
     const response : return = unpackLambda(lambdaBytes, bountyLambdaAction, s);  

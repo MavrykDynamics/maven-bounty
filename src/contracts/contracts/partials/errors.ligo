@@ -112,3 +112,10 @@
 [@inline] const error_ADD_GROUP_MEMBER_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                             = 83n;
 [@inline] const error_CONFIRM_GROUP_MEMBERSHIP_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                     = 84n;
 [@inline] const error_LEAVE_GROUP_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                  = 85n;
+
+[@inline] const error_MEMBER_DID_NOT_APPLY_FOR_GROUP                                                                    = 86n;
+[@inline] const error_SENDER_IS_ALREADY_GROUP_MEMBER                                                                    = 86n;
+
+[@inline] const error_GROUP_CREATOR_CANNOT_APPLY_FOR_HIS_OWN_GROUP                                                      = 86n;
+[@inline] const error_GROUP_CREATOR_CANNOT_INVITE_HIMSELF                                                               = 86n;
+[@inline] const error_GROUP_CREATOR_CANNOT_REMOVE_HIMSELF                                                               = 86n;

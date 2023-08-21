@@ -224,6 +224,7 @@ block {
                 currentApplicationCount = 0n;
                 appliedBounties         = (set[] : set(nat));
                 groupInvites            = (set[] : set(nat));
+                groupApplications       = (set[] : set(nat));
                 groupsCreated           = (set[] : set(nat));
                 groups                  = (set[] : set(nat));   
             ]
@@ -239,7 +240,15 @@ block {
     const groupRecord : groupRecordType = record [
         creator                     = creator;
         status                      = "ACTIVE";
+        bountyInProgress            = False;
+
+        name                        = (None : option(string));
+        description                 = (None : option(string));
+        image                       = (None : option(string));
+
+        applicants                  = (set[] : set(address));
         members                     = (set[] : set(address));
+
         activeBountyCount           = 0n;
         activeBounties              = (set[] : set(nat));
         currentApplicationCount     = 0n;
