@@ -96,20 +96,29 @@ error_CURRENT_MILESTONE_NOT_FOUND                                               
 error_MILESTONE_TO_REVIEW_NEEDS_TO_BE_THE_SAME_AS_CURRENT_MILESTONE                                     = 68
 error_BOUNTY_HAS_REACHED_MAX_APPROVED_APPLICANTS                                                        = 69
 error_BOUNTY_HAS_NO_MILESTONES                                                                          = 70
-error_MILESTONE_NEEDS_TO_BE_SPECIFIED_TO_SEND_BOUNTY_REWARD                                             = 71
-error_USER_HAS_ALREADY_APPLIED_FOR_THIS_BOUNTY                                                          = 72
+error_BOUNTY_CANNOT_BE_COMPLETED                                                                        = 71
+error_BOUNTY_IS_ALREADY_PENDING_REVIEW                                                                  = 72
+error_MILESTONE_NEEDS_TO_BE_SPECIFIED_TO_SEND_BOUNTY_REWARD                                             = 73
+error_USER_HAS_ALREADY_APPLIED_FOR_THIS_BOUNTY                                                          = 74
+error_GROUP_CREATOR_CANNOT_REMOVE_HIMSELF                                                               = 75
 
-error_SET_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                   = 73
-error_TOGGLE_PAUSE_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                          = 74
-error_APPROVE_OR_REJECT_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                            = 75
-error_REVIEW_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                = 76
-error_SEND_BOUNTY_REWARD_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                           = 77
-error_APPLY_FOR_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                             = 78
-error_CANCEL_APPLICATION_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                           = 79
-error_COMPLETE_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                              = 80
-error_STOP_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                  = 81
-error_FORM_GROUP_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                   = 82
-error_ADD_GROUP_MEMBER_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                             = 83
-error_CONFIRM_GROUP_MEMBERSHIP_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                     = 84
-error_LEAVE_GROUP_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                  = 85
+error_SET_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                   = 76
+error_TOGGLE_PAUSE_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                          = 77
+error_APPROVE_OR_REJECT_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                            = 78
+error_REVIEW_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                = 79
+error_SEND_BOUNTY_REWARD_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                           = 80
+error_APPLY_FOR_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                             = 81
+error_CANCEL_APPLICATION_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                           = 82
+error_COMPLETE_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                              = 83
+error_STOP_BOUNTY_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                  = 84
+error_FORM_GROUP_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                   = 85
+error_ADD_GROUP_MEMBER_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                             = 86
+error_CONFIRM_GROUP_MEMBERSHIP_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                     = 87
+error_LEAVE_GROUP_ENTRYPOINT_IN_BOUNTY_CONTRACT_PAUSED                                                  = 88
 
+error_MEMBER_DID_NOT_APPLY_FOR_GROUP                                                                    = 89
+error_SENDER_IS_ALREADY_GROUP_MEMBER                                                                    = 90
+
+error_GROUP_CREATOR_CANNOT_APPLY_FOR_HIS_OWN_GROUP                                                      = 91
+error_GROUP_CREATOR_CANNOT_INVITE_HIMSELF                                                               = 92
+error_GROUP_HAS_A_BOUNTY_IN_PROGRESS                                                                    = 93

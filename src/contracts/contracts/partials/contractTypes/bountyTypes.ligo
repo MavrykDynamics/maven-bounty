@@ -28,7 +28,7 @@ type milestoneLogType is map(nat, milestoneLogRecordType)
 
 
 type applicationRecordType is [@layout:comb] record [
-    status               : string;               // PENDING / APPROVED / REJECTED / CANCELED / STOPPED / REVIEW_PENDING / REVIEW_APPROVED / REVIEW_DISPUTED / REVIEW_REJECTED / REWARDED
+    status               : string;               // PENDING / APPROVED / REJECTED / CANCELED / STOPPED / REVIEW_PENDING / REVIEW_APPROVED / REVIEW_DISPUTED / REVIEW_REJECTED
     completed            : bool;                 // set to True by applicant (e.g. when all milestones are completed)
     reviewed             : bool;                 // to be reviewed by bounty creator
     review               : option(string);       // to be set by bounty creator

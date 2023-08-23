@@ -580,21 +580,23 @@ block {
                 // get bounty record
                 var bountyRecord : bountyRecordType := getBountyRecord(bountyId, s);
 
+                // get application record
+                var applicationRecord : applicationRecordType := getApplicationRecord(bountyId, applicant, s);
+
                 // ---------------------------------------------
                 // verification checks
                 // ---------------------------------------------
 
                 verifySenderIsAdminOrCreatorOrWhitelisted(bountyRecord.creator, bountyRecord.whitelisted, s);
 
+                verifyApplicationIsPending(applicationRecord.status);
+
                 // ---------------------------------------------
 
-                // get user and applicant record
-                var applicationRecord : applicationRecordType := getApplicationRecord(bountyId, applicant, s);
-
-                // update applicant record
+                // update application record
                 case approval of [
                         Approve(_) -> {
-                            
+
                             applicationRecord.status := "APPROVED";
                             
                             const maxApprovedApplicants      : nat = bountyRecord.maxApprovedApplicants;
@@ -628,43 +630,44 @@ block {
                 case applicant of [
                     |   User(_address)  -> {
                             
-                            var applicantRecord : userRecordType := getUserRecord(_address, s);
+                            var userRecord : userRecordType := getUserRecord(_address, s);
 
                             case approval of [
                                     Approve(_) -> {
-                                        applicantRecord.activeBountyCount := applicantRecord.activeBountyCount + 1n;
-                                        applicantRecord.activeBounties    := Set.add(bountyId, applicantRecord.activeBounties);   
+                                        userRecord.activeBountyCount := userRecord.activeBountyCount + 1n;
+                                        userRecord.activeBounties    := Set.add(bountyId, userRecord.activeBounties);   
                                     }
                                 |   _ -> skip
                             ];
                             
                             // remove application from user record
-                            const finalCurrentApplicationCount  : nat = if abs(applicantRecord.currentApplicationCount - 1n) < 0n then 0n else abs(applicantRecord.currentApplicationCount - 1n);
-                            applicantRecord.currentApplicationCount  := finalCurrentApplicationCount;
-                            applicantRecord.appliedBounties          := Set.remove(bountyId, applicantRecord.appliedBounties);
+                            const finalCurrentApplicationCount  : nat = if abs(userRecord.currentApplicationCount - 1n) < 0n then 0n else abs(userRecord.currentApplicationCount - 1n);
+                            userRecord.currentApplicationCount  := finalCurrentApplicationCount;
+                            userRecord.appliedBounties          := Set.remove(bountyId, userRecord.appliedBounties);
                             
-                            s.userLedger[_address] := applicantRecord;
+                            s.userLedger[_address] := userRecord;
                     
                         }
                     |   Group(_groupId) -> { 
                             
-                            var applicantRecord : groupRecordType := getGroupRecord(_groupId, s);
+                            var groupRecord : groupRecordType := getGroupRecord(_groupId, s);
 
                             case approval of [
                                     Approve(_) -> {
-                                        applicantRecord.activeBountyCount := applicantRecord.activeBountyCount + 1n;
-                                        applicantRecord.activeBounties    := Set.add(bountyId, applicantRecord.activeBounties);
+                                        groupRecord.bountyInProgress  := True;
+                                        groupRecord.activeBountyCount := groupRecord.activeBountyCount + 1n;
+                                        groupRecord.activeBounties    := Set.add(bountyId, groupRecord.activeBounties);
                                         
                                     }
                                 |   _ -> skip
                             ];
 
                             // remove application from user record
-                            const finalCurrentApplicationCount  : nat = if abs(applicantRecord.currentApplicationCount - 1n) < 0n then 0n else abs(applicantRecord.currentApplicationCount - 1n);
-                            applicantRecord.currentApplicationCount  := finalCurrentApplicationCount;
-                            applicantRecord.appliedBounties          := Set.remove(bountyId, applicantRecord.appliedBounties);
+                            const finalCurrentApplicationCount  : nat = if abs(groupRecord.currentApplicationCount - 1n) < 0n then 0n else abs(groupRecord.currentApplicationCount - 1n);
+                            groupRecord.currentApplicationCount  := finalCurrentApplicationCount;
+                            groupRecord.appliedBounties          := Set.remove(bountyId, groupRecord.appliedBounties);
 
-                            s.groupLedger[_groupId] := applicantRecord;
+                            s.groupLedger[_groupId] := groupRecord;
                             
                         }
                 ];
@@ -756,28 +759,33 @@ block {
                             case applicant of [
                                 |   User(_address)  -> {
                                         
-                                        var applicantRecord : userRecordType := getUserRecord(_address, s);
+                                        var userRecord : userRecordType := getUserRecord(_address, s);
 
                                         // check final active bounty count cannot be less than 0
-                                        const finalActiveBountyCount  : nat = if abs(applicantRecord.activeBountyCount - 1n) < 0n then 0n else abs(applicantRecord.activeBountyCount - 1n);
+                                        const finalActiveBountyCount  : nat = if abs(userRecord.activeBountyCount - 1n) < 0n then 0n else abs(userRecord.activeBountyCount - 1n);
 
-                                        applicantRecord.activeBountyCount := finalActiveBountyCount;
-                                        applicantRecord.activeBounties    := Set.remove(bountyId, applicantRecord.activeBounties);
+                                        userRecord.activeBountyCount := finalActiveBountyCount;
+                                        userRecord.activeBounties    := Set.remove(bountyId, userRecord.activeBounties);
 
-                                        s.userLedger[_address] := applicantRecord;
+                                        s.userLedger[_address] := userRecord;
                                 
                                     }
                                 |   Group(_groupId) -> { 
                                         
-                                        var applicantRecord : groupRecordType := getGroupRecord(_groupId, s);
+                                        var groupRecord : groupRecordType := getGroupRecord(_groupId, s);
 
                                         // check final active bounty count cannot be less than 0
-                                        const finalActiveBountyCount  : nat = if abs(applicantRecord.activeBountyCount - 1n) < 0n then 0n else abs(applicantRecord.activeBountyCount - 1n);
+                                        const finalActiveBountyCount  : nat = if abs(groupRecord.activeBountyCount - 1n) < 0n then 0n else abs(groupRecord.activeBountyCount - 1n);
 
-                                        applicantRecord.activeBountyCount := finalActiveBountyCount;
-                                        applicantRecord.activeBounties    := Set.remove(bountyId, applicantRecord.activeBounties);
+                                        groupRecord.activeBountyCount := finalActiveBountyCount;
+                                        groupRecord.activeBounties    := Set.remove(bountyId, groupRecord.activeBounties);
 
-                                        s.groupLedger[_groupId] := applicantRecord;
+                                        // if group has no more active bounties, set bountyInProgress to false
+                                        if finalActiveBountyCount = 0n then {
+                                            groupRecord.bountyInProgress := False;
+                                        };
+
+                                        s.groupLedger[_groupId] := groupRecord;
                                         
                                     }
                             ];
@@ -803,28 +811,33 @@ block {
                         case applicant of [
                             |   User(_address)  -> {
                                     
-                                    var applicantRecord : userRecordType := getUserRecord(_address, s);
+                                    var userRecord : userRecordType := getUserRecord(_address, s);
 
                                     // check final active bounty count cannot be less than 0
-                                    const finalActiveBountyCount  : nat = if abs(applicantRecord.activeBountyCount - 1n) < 0n then 0n else abs(applicantRecord.activeBountyCount - 1n);
+                                    const finalActiveBountyCount  : nat = if abs(userRecord.activeBountyCount - 1n) < 0n then 0n else abs(userRecord.activeBountyCount - 1n);
 
-                                    applicantRecord.activeBountyCount := finalActiveBountyCount;
-                                    applicantRecord.activeBounties    := Set.remove(bountyId, applicantRecord.activeBounties);
+                                    userRecord.activeBountyCount := finalActiveBountyCount;
+                                    userRecord.activeBounties    := Set.remove(bountyId, userRecord.activeBounties);
 
-                                    s.userLedger[_address] := applicantRecord;
+                                    s.userLedger[_address] := userRecord;
                             
                                 }
                             |   Group(_groupId) -> { 
                                     
-                                    var applicantRecord : groupRecordType := getGroupRecord(_groupId, s);
+                                    var groupRecord : groupRecordType := getGroupRecord(_groupId, s);
                                     
                                     // check final active bounty count cannot be less than 0
-                                    const finalActiveBountyCount  : nat = if abs(applicantRecord.activeBountyCount - 1n) < 0n then 0n else abs(applicantRecord.activeBountyCount - 1n);
+                                    const finalActiveBountyCount  : nat = if abs(groupRecord.activeBountyCount - 1n) < 0n then 0n else abs(groupRecord.activeBountyCount - 1n);
 
-                                    applicantRecord.activeBountyCount := finalActiveBountyCount;
-                                    applicantRecord.activeBounties    := Set.remove(bountyId, applicantRecord.activeBounties);
+                                    groupRecord.activeBountyCount := finalActiveBountyCount;
+                                    groupRecord.activeBounties    := Set.remove(bountyId, groupRecord.activeBounties);
 
-                                    s.groupLedger[_groupId] := applicantRecord;
+                                    // if group has no more active bounties, set bountyInProgress to false
+                                    if finalActiveBountyCount = 0n then {
+                                        groupRecord.bountyInProgress := False;
+                                    };
+
+                                    s.groupLedger[_groupId] := groupRecord;
                                     
                                 }
                         ];
@@ -1138,6 +1151,8 @@ block {
 
                             if groupRecord.applicants contains member then skip else failwith(error_MEMBER_DID_NOT_APPLY_FOR_GROUP);
 
+                            verifyGroupHasNoBountyInProgress(groupRecord.bountyInProgress);
+
                             verifyMaxMembersPerGroupNotReached(groupRecord.members, s.config.maxMembersPerGroup);
 
                             // remove group id from group invites if it exists
@@ -1205,6 +1220,8 @@ block {
                             verifyUserIsInvitedToGroup(userRecord.groupInvites, _groupId);
 
                             verifyMaxMembersPerGroupNotReached(group.members, s.config.maxMembersPerGroup);
+
+                            verifyGroupHasNoBountyInProgress(group.bountyInProgress);
 
                             // ---------------------------------------------
 
@@ -1297,6 +1314,7 @@ block {
 
                 // get bounty and user record
                 const bountyRecord : bountyRecordType = getBountyRecord(bountyId, s);
+                const hasMilestones : bool            = bountyRecord.hasMilestones;
                 
                 // ---------------------------------------------
                 // verification checks
@@ -1344,10 +1362,24 @@ block {
                         }
                 ];
 
-                const applicationRecord : applicationRecordType = createNewApplicationRecord(unit);
+                case s.applicationLedger[(bountyId, applicant)] of [
+                        Some(_record) -> {
+                            
+                            var applicationRecord : applicationRecordType := _record;
+                            applicationRecord.status := "PENDING";
 
-                // update application storage
-                s.applicationLedger[(bountyId, applicant)] := applicationRecord;
+                            // update application storage
+                            s.applicationLedger[(bountyId, applicant)] := applicationRecord;
+
+                        }
+                    |   None -> {
+
+                            const applicationRecord : applicationRecordType = createNewApplicationRecord(hasMilestones);
+
+                            // update application storage
+                            s.applicationLedger[(bountyId, applicant)] := applicationRecord;
+                        }
+                ];
 
             }
         |   _ -> skip
@@ -1448,7 +1480,7 @@ block {
 
                 verifyBountyIsNotPaused(bountyRecord.isPaused);
 
-                verifyUserCanCompleteBounty(applicationRecord.status);
+                verifyApplicationCanBeCompleted(applicationRecord.status);
 
                 case applicant of [
                     |   User(_address) -> {
@@ -1510,6 +1542,8 @@ block {
 
                     milestoneLog[currentMilestone]  := milestoneLogRecord;
                     applicationRecord.milestoneLog  := Some(milestoneLog);
+                    
+                    applicationRecord.status        := "REVIEW_PENDING";
 
                 } else {
 
@@ -1583,9 +1617,15 @@ block {
                             // check final active bounty count cannot be less than 0
                             const finalActiveBountyCount  : nat = if abs(groupRecord.activeBountyCount - 1n) < 0n then 0n else abs(groupRecord.activeBountyCount - 1n);
 
-                            // update group storage
                             groupRecord.activeBountyCount  := finalActiveBountyCount;
                             groupRecord.activeBounties     := Set.remove(bountyId, groupRecord.activeBounties);
+
+                            // if group has no more active bounties, set bountyInProgress to false
+                            if finalActiveBountyCount = 0n then {
+                                groupRecord.bountyInProgress := False;
+                            };
+
+                            // update group storage
                             s.groupLedger[_groupId]        := groupRecord;
 
                         }

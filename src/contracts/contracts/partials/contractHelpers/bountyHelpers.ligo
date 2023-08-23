@@ -356,8 +356,10 @@ function verifyUserHasNotAlreadyAppliedForBounty(const bountyId : nat; const app
 block {
 
     case s.applicationLedger[(bountyId, applicant)] of [
-            Some(_v) -> failwith(error_USER_HAS_ALREADY_APPLIED_FOR_THIS_BOUNTY)
-        |   None     -> skip
+            Some(_record) -> {
+                if _record.status = "CANCELED" then skip else failwith(error_USER_HAS_ALREADY_APPLIED_FOR_THIS_BOUNTY);
+            }
+        |   None          -> skip
     ];
 
 } with unit
@@ -430,12 +432,26 @@ block {
 
 
 
-function verifyUserCanCompleteBounty(const status : string) : unit is 
+function verifyApplicationCanBeCompleted(const status : string) : unit is 
 block {
 
     if status = "REVIEW_APPROVED" or status = "REWARDED"
+    then failwith(error_BOUNTY_HAS_ALREADY_BEEN_COMPLETED_AND_APPROVED)
+    else if status = "REJECTED" or status = "CANCELED" or status = "PENDING" or status = "STOPPED"
+    then failwith(error_BOUNTY_CANNOT_BE_COMPLETED)
+    else if status = "REVIEW_PENDING" 
+    then failwith(error_BOUNTY_IS_ALREADY_PENDING_REVIEW)
+    else skip;
+
+} with unit
+
+
+function verifyGroupHasNoBountyInProgress(const bountyInProgress : bool) : unit is 
+block {
+
+    if bountyInProgress = False
     then skip
-    else failwith(error_BOUNTY_HAS_ALREADY_BEEN_COMPLETED_AND_APPROVED);
+    else failwith(error_GROUP_HAS_A_BOUNTY_IN_PROGRESS);
 
 } with unit
 
@@ -679,8 +695,10 @@ block {
 
 
 
-function createNewApplicationRecord(const _ : unit) : applicationRecordType is 
+function createNewApplicationRecord(const hasMilestones : bool) : applicationRecordType is 
 block {
+
+    const currentMilestone : option(nat) = if hasMilestones then Some(1n) else (None : option(nat));
 
     const applicationRecord : applicationRecordType = record [
         status              = "PENDING";
@@ -688,7 +706,7 @@ block {
         reviewed            = False;
         review              = (None : option(string));
 
-        currentMilestone    = (None : option(nat));
+        currentMilestone    = currentMilestone;
         milestoneLog        = (None : option(milestoneLogType));
 
         fullyRewarded       = False;
