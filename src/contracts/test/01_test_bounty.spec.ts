@@ -33,6 +33,8 @@ import {
     updateOperators,
     mapsAreEqual
 } from './helpers/helperFunctions'
+import { group } from 'console'
+import { sign } from 'crypto'
 
 
 // ------------------------------------------------------------------------------
@@ -66,10 +68,14 @@ describe('Test: Bounty Contract', async () => {
     // reference bounties
     let emptyBountyId
     let inactiveBountyId
-    let bountyWithNoMilestoneId
+    let bountyWithNoMilestonesId
     let bountyWithOneMilestoneId
     let bountyWithTwoMilestonesId
     let bountyWithThreeMilestonesId
+
+    // reference groups
+    let firstGroupId
+    let secondGroupId
 
     // contract instances 
     let bountyAddress
@@ -131,6 +137,9 @@ describe('Test: Bounty Contract', async () => {
 
         bountyCreator   = alice.pkh
         bountyCreatorSk = alice.sk
+
+        user            = mallory.pkh;
+        userSk          = mallory.sk;
 
         tokenDecimals   = 6;
 
@@ -614,7 +623,7 @@ describe('Test: Bounty Contract', async () => {
                 const bountyId              = bountyStorage.nextBountyId;
                 
                 // set bounty for tests below
-                bountyWithNoMilestoneId     = bountyId;
+                bountyWithNoMilestonesId     = bountyId;
 
                 const setBountyType         = "createBounty";
                 const whitelisted           = [bob.pkh, alice.pkh, eve.pkh];
@@ -686,278 +695,1036 @@ describe('Test: Bounty Contract', async () => {
 
     })
 
-    describe('%applyForBounty - applicant: user', function () {
+
+    describe(`
+    -----------
+    Group Membership test: `, function () {
+
+        describe('%formGroup', function () {
+            
+            beforeEach("Set signer to user (mallory)", async () => {
+                bountyStorage = await bountyInstance.storage()
+                await signerFactory(tezos, userSk);
+            });
+
+            it('user (mallory) should be able to form a group (no name, desc, image provided)', async () => {
+                try {
+
+                    const groupId = bountyStorage.nextGroupId;
+                    firstGroupId  = groupId;
+                    
+                    const formGroupOperation  = await bountyInstance.methods.formGroup().send();
+                    await formGroupOperation.confirmation();
+
+                    bountyStorage       = await bountyInstance.storage()
+                    const groupRecord   = await bountyStorage.groupLedger.get(groupId);
+
+                    assert.equal(groupRecord.creator, user);
+                    assert.equal(groupRecord.status, "ACTIVE");
+                    assert.equal(groupRecord.bountyInProgress, false);
+
+                    assert.equal(groupRecord.name, null);
+                    assert.equal(groupRecord.description, null);
+                    assert.equal(groupRecord.image, null);
+
+                    assert.equal(groupRecord.activeBountyCount, 0);
+                    assert.equal(groupRecord.currentApplicationCount, 0);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('user (mallory) should be able to form a group (with name, desc, image provided)', async () => {
+                try {
+
+                    const groupId = bountyStorage.nextGroupId;
+                    secondGroupId = groupId;
+
+                    const name    = "New Group name 2"
+                    const desc    = "New Group desc 2"
+                    const image   = "Group image 2"
+                    
+                    const formGroupOperation  = await bountyInstance.methods.formGroup(
+                        name,
+                        desc,
+                        image
+                    ).send();
+                    await formGroupOperation.confirmation();
+
+                    bountyStorage       = await bountyInstance.storage()
+                    const groupRecord   = await bountyStorage.groupLedger.get(groupId);
+
+                    assert.equal(groupRecord.creator, user);
+                    assert.equal(groupRecord.status, "ACTIVE");
+                    assert.equal(groupRecord.bountyInProgress, false);
+
+                    assert.equal(groupRecord.name           , name);
+                    assert.equal(groupRecord.description    , desc);
+                    assert.equal(groupRecord.image          , image);
+
+                    assert.equal(groupRecord.activeBountyCount, 0);
+                    assert.equal(groupRecord.currentApplicationCount, 0);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+        })
+
+
+        describe('%setGroupMember - invite', function () {
+            
+            beforeEach("Set signer to group leader (mallory)", async () => {
+                bountyStorage = await bountyInstance.storage()
+                await signerFactory(tezos, userSk);
+            });
+
+            it('group leader (mallory) should be able to invite members to join his group (trudy, david)', async () => {
+                try {
+
+                    const groupId            = firstGroupId;
+                    const setGroupMemberType = "invite";
+                    
+                    let inviteToGroupOperation  = await bountyInstance.methods.setGroupMember(
+                        groupId,
+                        trudy.pkh,
+                        setGroupMemberType
+                    ).send();
+                    await inviteToGroupOperation.confirmation();
+
+                    inviteToGroupOperation  = await bountyInstance.methods.setGroupMember(
+                        groupId,
+                        david.pkh,
+                        setGroupMemberType
+                    ).send();
+                    await inviteToGroupOperation.confirmation();
+
+                    bountyStorage           = await bountyInstance.storage()
+
+                    const userRecord        = await bountyStorage.userLedger.get(trudy.pkh);
+                    const groupInvites      = userRecord.groupInvites.map(b => b.toNumber());
+
+                    const davidUserRecord   = await bountyStorage.userLedger.get(david.pkh);
+                    const davidGroupInvites = davidUserRecord.groupInvites.map(b => b.toNumber());
+
+                    assert.equal(groupInvites.includes(groupId.toNumber())     , true);
+                    assert.equal(davidGroupInvites.includes(groupId.toNumber())     , true);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('non-group leader (eve) should not be able to invite members to join a group she did not create', async () => {
+                try {
+
+                    await signerFactory(tezos, eve.sk);
+
+                    const groupId            = firstGroupId;
+                    const setGroupMemberType = "invite";
+                    
+                    let failInviteToGroupOperation  = await bountyInstance.methods.setGroupMember(
+                        groupId,
+                        alice.pkh,
+                        setGroupMemberType
+                    );
+                    await chai.expect(failInviteToGroupOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
         
-        beforeEach("Set signer to user (mallory)", async () => {
-            bountyStorage = await bountyInstance.storage()
-            user    = mallory.pkh;
-            userSk  = mallory.sk;
-            await signerFactory(tezos, userSk);
-        });
-
-        it('user (mallory) can apply to a bounty', async () => {
-            try {
-
-                const applicantType                  = "user";
-                const bountyId                       = bountyWithOneMilestoneId
-
-                const initialUserRecord              = await bountyStorage.userLedger.get(user);
-                const initialActiveBountyCount       = initialUserRecord == undefined ? 0 : initialUserRecord.activeBountyCount.toNumber();
-                const initialCurrentApplicationCount = initialUserRecord == undefined ? 0 : initialUserRecord.currentApplicationCount.toNumber();                
-                
-                const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
-                    bountyId,
-                    applicantType,
-                    user
-                ).send();
-                await applyForBountyOperation.confirmation();
-
-                bountyStorage = await bountyInstance.storage();
-
-                const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
-                const userRecord        = await bountyStorage.userLedger.get(user);
-                const appliedBounties   = userRecord.appliedBounties.map(b => b.toNumber());
-                const activeBounties    = userRecord.activeBounties.map(b => b.toNumber());
-                const groupInvites      = userRecord.groupInvites.map(b => b.toNumber());
-                const groupApplications = userRecord.groupApplications.map(b => b.toNumber());
-                const groupsCreated     = userRecord.groupsCreated.map(b => b.toNumber());
-                const groups            = userRecord.groups.map(b => b.toNumber());
-
-                // check applicant record
-                assert.equal(applicationRecord.status             , 'PENDING');
-                assert.equal(applicationRecord.completed          , false);
-                assert.equal(applicationRecord.reviewed           , false);
-                assert.equal(applicationRecord.review             , null);
-                assert.equal(applicationRecord.currentMilestone   , 1);
-                assert.equal(applicationRecord.milestoneLog       , null);
-                assert.equal(applicationRecord.fullyRewarded      , false);
-                assert.equal(applicationRecord.lastRewardTimestamp, null);
-
-                // check user record
-                assert.equal(userRecord.activeBountyCount.toNumber()        , initialActiveBountyCount);
-                assert.equal(userRecord.currentApplicationCount.toNumber()  , initialCurrentApplicationCount + 1);
-                assert.equal(appliedBounties.includes(bountyId.toNumber())  , true); // should return true now
-                assert.equal(activeBounties.includes(bountyId.toNumber())   , false);
-                assert.equal(groupInvites.includes(bountyId.toNumber())     , false);
-                assert.equal(groupApplications.includes(bountyId.toNumber()), false);
-                assert.equal(groupsCreated.includes(bountyId.toNumber())    , false);
-                assert.equal(groups.includes(bountyId.toNumber())           , false);
-
-            } catch (e) {
-                console.log(e)
-            }
         })
 
-        it('user (mallory) cannot apply again to the same bounty', async () => {
-            try {
+        describe('%groupMembership - confirmGroupMembership', function () {
 
-                const applicantType                 = "user";
-                const bountyId                      = bountyWithOneMilestoneId
+            it('user (trudy) should be able to confirm group membership after being invited to join', async () => {
+                try {
 
-                const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
-                    bountyId,
-                    applicantType,
-                    user
-                );
-                await chai.expect(applyForBountyOperation.send()).to.be.rejected;
+                    const user = trudy.pkh;
+                    await signerFactory(tezos, trudy.sk);
 
-            } catch (e) {
-                console.log(e)
-            }
+                    const groupId            = firstGroupId;
+                    const groupMembershipType = "confirmGroupMembership";
+                    
+                    let confirmGroupMembershipOperation  = await bountyInstance.methods.groupMembership(
+                        groupMembershipType,
+                        groupId
+                    ).send();
+                    await confirmGroupMembershipOperation.confirmation();
+
+                    const userRecord   = await bountyStorage.userLedger.get(user);
+                    const groupInvites = userRecord.groupInvites.map(b => b.toNumber());
+                    const groups       = userRecord.groups.map(b => b.toNumber());
+
+                    assert.equal(groupInvites.includes(groupId.toNumber())     , false);
+                    assert.equal(groups.includes(groupId.toNumber())           , true);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('user (david) should not be able to confirm group membership if he was not invited', async () => {
+                try {
+
+                    const user = david.pkh;
+                    await signerFactory(tezos, david.sk);
+
+                    const groupId             = secondGroupId;
+                    const groupMembershipType = "confirmGroupMembership";
+                    
+                    let failConfirmGroupMembershipOperation  = await bountyInstance.methods.groupMembership(
+                        groupMembershipType,
+                        groupId
+                    );
+                    await chai.expect(failConfirmGroupMembershipOperation.send()).to.be.rejected;
+
+                    const userRecord   = await bountyStorage.userLedger.get(user);
+                    const groupInvites = userRecord.groupInvites.map(b => b.toNumber());
+                    const groups       = userRecord.groups.map(b => b.toNumber());
+
+                    assert.equal(groupInvites.includes(groupId.toNumber())     , false);
+                    assert.equal(groups.includes(groupId.toNumber())           , false);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
         })
 
-        it('user (mallory) cannot apply to an inactive bounty', async () => {
-            try {
+        describe('%groupMembership - applyForGroup', function () {
 
-                const applicantType                 = "user";
-                const bountyId                      = inactiveBountyId
+            it('user (oscar) should be able to apply to group', async () => {
+                try {
 
-                const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
-                    bountyId,
-                    applicantType,
-                    user
-                );
-                await chai.expect(applyForBountyOperation.send()).to.be.rejected;
+                    const user = oscar.pkh;
+                    await signerFactory(tezos, oscar.sk);
 
-            } catch (e) {
-                console.log(e)
-            }
+                    const groupId             = firstGroupId;
+                    const groupMembershipType = "applyForGroup";
+                    
+                    let confirmGroupMembershipOperation  = await bountyInstance.methods.groupMembership(
+                        groupMembershipType,
+                        groupId
+                    ).send();
+                    await confirmGroupMembershipOperation.confirmation();
+
+                    bountyStorage = await bountyInstance.storage();
+
+                    const userRecord           = await bountyStorage.userLedger.get(user);
+
+                    const groupInvites         = userRecord.groupInvites.map(b => b.toNumber());
+                    const groupApplications    = userRecord.groupApplications.map(b => b.toNumber());
+                    const groups               = userRecord.groups.map(b => b.toNumber());
+
+                    assert.equal(groupApplications.includes(groupId.toNumber())    , true);
+                    assert.equal(groupInvites.includes(groupId.toNumber())         , false);
+                    assert.equal(groups.includes(groupId.toNumber())               , false);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('user (david) should be able to apply to group even if he was already invited to it', async () => {
+                try {
+
+                    const user = david.pkh;
+                    await signerFactory(tezos, david.sk);
+
+                    const groupId             = firstGroupId;
+                    const groupMembershipType = "applyForGroup";
+                    
+                    let confirmGroupMembershipOperation  = await bountyInstance.methods.groupMembership(
+                        groupMembershipType,
+                        groupId
+                    ).send();
+                    await confirmGroupMembershipOperation.confirmation();
+
+                    bountyStorage = await bountyInstance.storage();
+
+                    const userRecord           = await bountyStorage.userLedger.get(user);
+
+                    const groupInvites         = userRecord.groupInvites.map(b => b.toNumber());
+                    const groupApplications    = userRecord.groupApplications.map(b => b.toNumber());
+                    const groups               = userRecord.groups.map(b => b.toNumber());
+
+                    assert.equal(groupApplications.includes(groupId.toNumber())    , true);
+                    assert.equal(groupInvites.includes(groupId.toNumber())         , true);
+                    assert.equal(groups.includes(groupId.toNumber())               , false);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('user (trudy) should not be able to apply to a group if she is already a member in it', async () => {
+                try {
+
+                    const user = trudy.pkh;
+                    await signerFactory(tezos, trudy.sk);
+
+                    const groupId             = firstGroupId;
+                    const groupMembershipType = "applyForGroup";
+                    
+                    let failConfirmGroupMembershipOperation  = await bountyInstance.methods.groupMembership(
+                        groupMembershipType,
+                        groupId
+                    );
+                    await chai.expect(failConfirmGroupMembershipOperation.send()).to.be.rejected;
+
+                    bountyStorage = await bountyInstance.storage();
+
+                    const userRecord           = await bountyStorage.userLedger.get(user);
+                    const groupInvites         = userRecord.groupInvites.map(b => b.toNumber());
+                    const groupApplications    = userRecord.groupApplications.map(b => b.toNumber());
+                    const groups               = userRecord.groups.map(b => b.toNumber());
+
+                    assert.equal(groupInvites.includes(groupId.toNumber())         , false);
+                    assert.equal(groupApplications.includes(groupId.toNumber())    , false);
+                    assert.equal(groups.includes(groupId.toNumber())               , true);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
         })
 
-        it('user (mallory) cannot apply to a bounty for another person (oscar)', async () => {
-            try {
+        describe('%setGroupMember - approve', function () {
+            
+            beforeEach("Set signer to group leader (mallory)", async () => {
+                bountyStorage = await bountyInstance.storage()
+                await signerFactory(tezos, userSk);
+            });
 
-                const applicantType                 = "user";
-                const bountyId                      = bountyWithThreeMilestonesId
+            it('group leader (mallory) should be able to approve members (david) to join her group', async () => {
+                try {
 
-                const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
-                    bountyId,
-                    applicantType,
-                    oscar.pkh
-                );
-                await chai.expect(applyForBountyOperation.send()).to.be.rejected;
+                    const user               = david.pkh;
+                    const groupId            = firstGroupId;
+                    const setGroupMemberType = "approve";
+                    
+                    let approveGroupApplicationOperation  = await bountyInstance.methods.setGroupMember(
+                        groupId,
+                        user,
+                        setGroupMemberType
+                    ).send();
+                    await approveGroupApplicationOperation.confirmation();
 
-            } catch (e) {
-                console.log(e)
-            }
+                    bountyStorage           = await bountyInstance.storage()
+
+                    const userRecord        = await bountyStorage.userLedger.get(user);
+                    const groupInvites      = userRecord.groupInvites.map(b => b.toNumber());
+                    const groupApplications = userRecord.groupApplications.map(b => b.toNumber());
+                    const groups            = userRecord.groups.map(b => b.toNumber());
+
+                    assert.equal(groupInvites.includes(groupId.toNumber())          , false);
+                    assert.equal(groupApplications.includes(groupId.toNumber())     , false);
+                    assert.equal(groups.includes(groupId.toNumber())                , true);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('user (alice) should not be able to approve members (oscar) to join a group she is not the leader of', async () => {
+                try {
+
+                    await signerFactory(tezos, alice.sk);
+
+                    const user               = oscar.pkh;
+                    const groupId            = firstGroupId;
+                    const setGroupMemberType = "approve";
+                    
+                    let failApproveGroupApplicationOperation  = await bountyInstance.methods.setGroupMember(
+                        groupId,
+                        user,
+                        setGroupMemberType
+                    );
+                    await chai.expect(failApproveGroupApplicationOperation.send()).to.be.rejected;
+
+                    bountyStorage           = await bountyInstance.storage()
+
+                    const userRecord        = await bountyStorage.userLedger.get(user);
+                    const groups            = userRecord.groups.map(b => b.toNumber());
+
+                    assert.equal(groups.includes(groupId.toNumber())                , false);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('admin (eve) should not be able to approve members (oscar) to join a group', async () => {
+                try {
+
+                    await signerFactory(tezos, adminSk);
+
+                    const user               = oscar.pkh;
+                    const groupId            = firstGroupId;
+                    const setGroupMemberType = "approve";
+                    
+                    let failApproveGroupApplicationOperation  = await bountyInstance.methods.setGroupMember(
+                        groupId,
+                        user,
+                        setGroupMemberType
+                    );
+                    await chai.expect(failApproveGroupApplicationOperation.send()).to.be.rejected;
+
+                    bountyStorage           = await bountyInstance.storage()
+
+                    const userRecord        = await bountyStorage.userLedger.get(user);
+                    const groups            = userRecord.groups.map(b => b.toNumber());
+
+                    assert.equal(groups.includes(groupId.toNumber())                , false);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
         })
 
-        it('user (mallory) can apply to multiple bounties', async () => {
-            try {
 
-                const applicantType                  = "user";
-                const bountyId                       = bountyWithThreeMilestonesId
+        describe('%setGroupMember - remove', function () {
+            
+            beforeEach("Set signer to group leader (mallory)", async () => {
+                bountyStorage = await bountyInstance.storage()
+                await signerFactory(tezos, userSk);
+            });
 
-                const initialUserRecord              = await bountyStorage.userLedger.get(user);
-                const initialActiveBountyCount       = initialUserRecord == undefined ? 0 : initialUserRecord.activeBountyCount.toNumber();
-                const initialCurrentApplicationCount = initialUserRecord == undefined ? 0 : initialUserRecord.currentApplicationCount.toNumber();
-                
-                const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
-                    bountyId,
-                    applicantType,
-                    user
-                ).send();
-                await applyForBountyOperation.confirmation();
+            it('user (alice) should not be able to remove members (david) from a group she is not the leader of', async () => {
+                try {
 
-                bountyStorage = await bountyInstance.storage();
+                    await signerFactory(tezos, alice.sk);
 
-                const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
-                const userRecord        = await bountyStorage.userLedger.get(user);
-                const appliedBounties   = userRecord.appliedBounties.map(b => b.toNumber());
-                const activeBounties    = userRecord.activeBounties.map(b => b.toNumber());
-                const groupInvites      = userRecord.groupInvites.map(b => b.toNumber());
-                const groupApplications = userRecord.groupApplications.map(b => b.toNumber());
-                const groupsCreated     = userRecord.groupsCreated.map(b => b.toNumber());
-                const groups            = userRecord.groups.map(b => b.toNumber());
+                    const user               = david.pkh;
+                    const groupId            = firstGroupId;
+                    const setGroupMemberType = "remove";
+                    
+                    let failRemoveGroupApplicationOperation  = await bountyInstance.methods.setGroupMember(
+                        groupId,
+                        user,
+                        setGroupMemberType
+                    );
+                    await chai.expect(failRemoveGroupApplicationOperation.send()).to.be.rejected;
 
-                // check applicant record
-                assert.equal(applicationRecord.status             , 'PENDING');
-                assert.equal(applicationRecord.completed          , false);
-                assert.equal(applicationRecord.reviewed           , false);
-                assert.equal(applicationRecord.review             , null);
-                assert.equal(applicationRecord.currentMilestone   , 1);
-                assert.equal(applicationRecord.milestoneLog       , null);
-                assert.equal(applicationRecord.fullyRewarded      , false);
-                assert.equal(applicationRecord.lastRewardTimestamp, null);
+                    bountyStorage           = await bountyInstance.storage()
 
-                // check user record
-                assert.equal(userRecord.activeBountyCount.toNumber()        , initialActiveBountyCount);
-                assert.equal(userRecord.currentApplicationCount.toNumber()  , initialCurrentApplicationCount + 1);
-                assert.equal(appliedBounties.includes(bountyId.toNumber())  , true); // should return true now
-                assert.equal(activeBounties.includes(bountyId.toNumber())   , false);
-                assert.equal(groupInvites.includes(bountyId.toNumber())     , false);
-                assert.equal(groupApplications.includes(bountyId.toNumber()), false);
-                assert.equal(groupsCreated.includes(bountyId.toNumber())    , false);
-                assert.equal(groups.includes(bountyId.toNumber())           , false);
+                    const userRecord        = await bountyStorage.userLedger.get(user);
+                    const groups            = userRecord.groups.map(b => b.toNumber());
 
-            } catch (e) {
-                console.log(e)
-            }
+                    assert.equal(groups.includes(groupId.toNumber()), true);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('admin (eve) should not be able to remove members (oscar) from a group she is not the leader of', async () => {
+                try {
+
+                    await signerFactory(tezos, adminSk);
+
+                    const user               = david.pkh;
+                    const groupId            = firstGroupId;
+                    const setGroupMemberType = "remove";
+                    
+                    let failRemoveGroupApplicationOperation  = await bountyInstance.methods.setGroupMember(
+                        groupId,
+                        user,
+                        setGroupMemberType
+                    );
+                    await chai.expect(failRemoveGroupApplicationOperation.send()).to.be.rejected;
+
+                    bountyStorage           = await bountyInstance.storage()
+
+                    const userRecord        = await bountyStorage.userLedger.get(user);
+                    const groups            = userRecord.groups.map(b => b.toNumber());
+
+                    assert.equal(groups.includes(groupId.toNumber()), true);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('group leader (mallory) should be able to remove members (david) from her group', async () => {
+                try {
+
+                    const user               = david.pkh;
+                    const groupId            = firstGroupId;
+                    const setGroupMemberType = "remove";
+                    
+                    let approveGroupApplicationOperation  = await bountyInstance.methods.setGroupMember(
+                        groupId,
+                        user,
+                        setGroupMemberType
+                    ).send();
+                    await approveGroupApplicationOperation.confirmation();
+
+                    bountyStorage           = await bountyInstance.storage()
+
+                    const userRecord        = await bountyStorage.userLedger.get(user);
+                    const groupInvites      = userRecord.groupInvites.map(b => b.toNumber());
+                    const groupApplications = userRecord.groupApplications.map(b => b.toNumber());
+                    const groups            = userRecord.groups.map(b => b.toNumber());
+
+                    assert.equal(groupInvites.includes(groupId.toNumber())          , false);
+                    assert.equal(groupApplications.includes(groupId.toNumber())     , false);
+                    assert.equal(groups.includes(groupId.toNumber())                , false);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
         })
-
+        
     })
 
 
-    describe('%cancelApplication', function () {
-        
-        beforeEach("Set signer to user (mallory)", async () => {
-            bountyStorage = await bountyInstance.storage()
-            user    = mallory.pkh;
-            userSk  = mallory.sk;
-            await signerFactory(tezos, userSk);
-        });
+    describe(`
+    -----------
+    Bounty Application: `, function () {
 
-        it('user (mallory) can cancel her bounty application', async () => {
-            try {
-
-                const applicantType                  = "user";
-                const bountyId                       = bountyWithOneMilestoneId
-
-                const initialUserRecord              = await bountyStorage.userLedger.get(user);
-                const initialActiveBountyCount       = initialUserRecord == undefined ? 0 : initialUserRecord.activeBountyCount.toNumber();
-                const initialCurrentApplicationCount = initialUserRecord == undefined ? 0 : initialUserRecord.currentApplicationCount.toNumber();                
-                
-                const cancelBountyBountyOperation = await bountyInstance.methods.cancelApplication(
-                    bountyId,
-                    applicantType,
-                    user
-                ).send();
-                await cancelBountyBountyOperation.confirmation();
-
-                bountyStorage = await bountyInstance.storage();
-
-                const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
-                const userRecord        = await bountyStorage.userLedger.get(user);
-                const appliedBounties   = userRecord.appliedBounties.map(b => b.toNumber());
-                const activeBounties    = userRecord.activeBounties.map(b => b.toNumber());
-                const groupInvites      = userRecord.groupInvites.map(b => b.toNumber());
-                const groupApplications = userRecord.groupApplications.map(b => b.toNumber());
-                const groupsCreated     = userRecord.groupsCreated.map(b => b.toNumber());
-                const groups            = userRecord.groups.map(b => b.toNumber());
-
-                // check applicant record
-                assert.equal(applicationRecord.status             , 'CANCELED');
-                assert.equal(applicationRecord.completed          , false);
-                assert.equal(applicationRecord.reviewed           , false);
-                assert.equal(applicationRecord.review             , null);
-                assert.equal(applicationRecord.currentMilestone   , 1);
-                assert.equal(applicationRecord.milestoneLog       , null);
-                assert.equal(applicationRecord.fullyRewarded      , false);
-                assert.equal(applicationRecord.lastRewardTimestamp, null);
-
-                // check user record
-                assert.equal(userRecord.activeBountyCount.toNumber()        , initialActiveBountyCount);
-                assert.equal(userRecord.currentApplicationCount.toNumber()  , initialCurrentApplicationCount - 1);
-                assert.equal(appliedBounties.includes(bountyId.toNumber())  , false); // true to false
-                assert.equal(activeBounties.includes(bountyId.toNumber())   , false);
-                assert.equal(groupInvites.includes(bountyId.toNumber())     , false);
-                assert.equal(groupApplications.includes(bountyId.toNumber()), false);
-                assert.equal(groupsCreated.includes(bountyId.toNumber())    , false);
-                assert.equal(groups.includes(bountyId.toNumber())           , false);
-
-            } catch (e) {
-                console.log(e)
-            }
-        })
-
-        it('user (mallory) cannot cancel a bounty that has already been canceled', async () => {
-            try {
-
-                const applicantType                 = "user";
-                const bountyId                      = bountyWithOneMilestoneId
-
-                const cancelBountyOperation = await bountyInstance.methods.cancelApplication(
-                    bountyId,
-                    applicantType,
-                    user
-                );
-                await chai.expect(cancelBountyOperation.send()).to.be.rejected;
-
-            } catch (e) {
-                console.log(e)
-            }
-        })
-
-        it('user (oscar) cannot cancel a bounty application from another user (mallory)', async () => {
-            try {
-
-                user    = oscar.pkh;
-                userSk  = oscar.sk;
+        describe('%applyForBounty - applicant: user', function () {
+            
+            beforeEach("Set signer to user (mallory)", async () => {
+                bountyStorage = await bountyInstance.storage()
+                user    = mallory.pkh;
+                userSk  = mallory.sk;
                 await signerFactory(tezos, userSk);
-                
-                const applicantType                 = "user";
-                const bountyId                      = bountyWithThreeMilestonesId
+            });
 
-                const cancelBountyOperation = await bountyInstance.methods.cancelApplication(
-                    bountyId,
-                    applicantType,
-                    mallory.pkh
-                );
-                await chai.expect(cancelBountyOperation.send()).to.be.rejected;
+            it('user (mallory) can apply to a bounty', async () => {
+                try {
 
-            } catch (e) {
-                console.log(e)
-            }
+                    const applicantType                  = "user";
+                    const bountyId                       = bountyWithOneMilestoneId
+
+                    const initialUserRecord              = await bountyStorage.userLedger.get(user);
+                    const initialActiveBountyCount       = initialUserRecord == undefined ? 0 : initialUserRecord.activeBountyCount.toNumber();
+                    const initialCurrentApplicationCount = initialUserRecord == undefined ? 0 : initialUserRecord.currentApplicationCount.toNumber();                
+                    
+                    const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                        bountyId,
+                        applicantType,
+                        user
+                    ).send();
+                    await applyForBountyOperation.confirmation();
+
+                    bountyStorage = await bountyInstance.storage();
+
+                    const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
+                    const userRecord        = await bountyStorage.userLedger.get(user);
+                    const appliedBounties   = userRecord.appliedBounties.map(b => b.toNumber());
+                    const activeBounties    = userRecord.activeBounties.map(b => b.toNumber());
+                    const groupInvites      = userRecord.groupInvites.map(b => b.toNumber());
+                    const groupApplications = userRecord.groupApplications.map(b => b.toNumber());
+                    const groupsCreated     = userRecord.groupsCreated.map(b => b.toNumber());
+                    const groups            = userRecord.groups.map(b => b.toNumber());
+
+                    // check applicant record
+                    assert.equal(applicationRecord.status             , 'PENDING');
+                    assert.equal(applicationRecord.completed          , false);
+                    assert.equal(applicationRecord.reviewed           , false);
+                    assert.equal(applicationRecord.review             , null);
+                    assert.equal(applicationRecord.currentMilestone   , 1);
+                    assert.equal(applicationRecord.milestoneLog       , null);
+                    assert.equal(applicationRecord.fullyRewarded      , false);
+                    assert.equal(applicationRecord.lastRewardTimestamp, null);
+
+                    // check user record
+                    assert.equal(userRecord.activeBountyCount.toNumber()        , initialActiveBountyCount);
+                    assert.equal(userRecord.currentApplicationCount.toNumber()  , initialCurrentApplicationCount + 1);
+                    assert.equal(appliedBounties.includes(bountyId.toNumber())  , true); // should return true now
+                    assert.equal(activeBounties.includes(bountyId.toNumber())   , false);
+                    assert.equal(groupInvites.includes(bountyId.toNumber())     , false);
+                    assert.equal(groupApplications.includes(bountyId.toNumber()), false);
+                    assert.equal(groupsCreated.includes(bountyId.toNumber())    , false);
+                    assert.equal(groups.includes(bountyId.toNumber())           , false);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('user (mallory) cannot apply again to the same bounty', async () => {
+                try {
+
+                    const applicantType                 = "user";
+                    const bountyId                      = bountyWithOneMilestoneId
+
+                    const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                        bountyId,
+                        applicantType,
+                        user
+                    );
+                    await chai.expect(applyForBountyOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('user (mallory) cannot apply to an inactive bounty', async () => {
+                try {
+
+                    const applicantType                 = "user";
+                    const bountyId                      = inactiveBountyId
+
+                    const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                        bountyId,
+                        applicantType,
+                        user
+                    );
+                    await chai.expect(applyForBountyOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('user (mallory) cannot apply to a bounty for another person (oscar)', async () => {
+                try {
+
+                    const applicantType                 = "user";
+                    const bountyId                      = bountyWithThreeMilestonesId
+
+                    const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                        bountyId,
+                        applicantType,
+                        oscar.pkh
+                    );
+                    await chai.expect(applyForBountyOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('user (mallory) can apply to multiple bounties (bounty with three milstones)', async () => {
+                try {
+
+                    const applicantType                  = "user";
+                    const bountyId                       = bountyWithThreeMilestonesId
+
+                    const initialUserRecord              = await bountyStorage.userLedger.get(user);
+                    const initialActiveBountyCount       = initialUserRecord == undefined ? 0 : initialUserRecord.activeBountyCount.toNumber();
+                    const initialCurrentApplicationCount = initialUserRecord == undefined ? 0 : initialUserRecord.currentApplicationCount.toNumber();
+                    
+                    const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                        bountyId,
+                        applicantType,
+                        user
+                    ).send();
+                    await applyForBountyOperation.confirmation();
+
+                    bountyStorage = await bountyInstance.storage();
+
+                    const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
+                    const userRecord        = await bountyStorage.userLedger.get(user);
+                    const appliedBounties   = userRecord.appliedBounties.map(b => b.toNumber());
+                    const activeBounties    = userRecord.activeBounties.map(b => b.toNumber());
+                    const groupInvites      = userRecord.groupInvites.map(b => b.toNumber());
+                    const groupApplications = userRecord.groupApplications.map(b => b.toNumber());
+                    const groupsCreated     = userRecord.groupsCreated.map(b => b.toNumber());
+                    const groups            = userRecord.groups.map(b => b.toNumber());
+
+                    // check applicant record
+                    assert.equal(applicationRecord.status             , 'PENDING');
+                    assert.equal(applicationRecord.completed          , false);
+                    assert.equal(applicationRecord.reviewed           , false);
+                    assert.equal(applicationRecord.review             , null);
+                    assert.equal(applicationRecord.currentMilestone   , 1);
+                    assert.equal(applicationRecord.milestoneLog       , null);
+                    assert.equal(applicationRecord.fullyRewarded      , false);
+                    assert.equal(applicationRecord.lastRewardTimestamp, null);
+
+                    // check user record
+                    assert.equal(userRecord.activeBountyCount.toNumber()        , initialActiveBountyCount);
+                    assert.equal(userRecord.currentApplicationCount.toNumber()  , initialCurrentApplicationCount + 1);
+                    assert.equal(appliedBounties.includes(bountyId.toNumber())  , true); // should return true now
+                    assert.equal(activeBounties.includes(bountyId.toNumber())   , false);
+                    assert.equal(groupInvites.includes(bountyId.toNumber())     , false);
+                    assert.equal(groupApplications.includes(bountyId.toNumber()), false);
+                    assert.equal(groupsCreated.includes(bountyId.toNumber())    , false);
+                    assert.equal(groups.includes(bountyId.toNumber())           , false);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('user (mallory) can apply to multiple bounties (bounty with no milstones)', async () => {
+                try {
+
+                    const applicantType                  = "user";
+                    const bountyId                       = bountyWithNoMilestonesId
+
+                    const initialUserRecord              = await bountyStorage.userLedger.get(user);
+                    const initialActiveBountyCount       = initialUserRecord == undefined ? 0 : initialUserRecord.activeBountyCount.toNumber();
+                    const initialCurrentApplicationCount = initialUserRecord == undefined ? 0 : initialUserRecord.currentApplicationCount.toNumber();
+                    
+                    const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                        bountyId,
+                        applicantType,
+                        user
+                    ).send();
+                    await applyForBountyOperation.confirmation();
+
+                    bountyStorage = await bountyInstance.storage();
+
+                    const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
+                    const userRecord        = await bountyStorage.userLedger.get(user);
+                    const appliedBounties   = userRecord.appliedBounties.map(b => b.toNumber());
+                    const activeBounties    = userRecord.activeBounties.map(b => b.toNumber());
+                    const groupInvites      = userRecord.groupInvites.map(b => b.toNumber());
+                    const groupApplications = userRecord.groupApplications.map(b => b.toNumber());
+                    const groupsCreated     = userRecord.groupsCreated.map(b => b.toNumber());
+                    const groups            = userRecord.groups.map(b => b.toNumber());
+
+                    // check applicant record
+                    assert.equal(applicationRecord.status             , 'PENDING');
+                    assert.equal(applicationRecord.completed          , false);
+                    assert.equal(applicationRecord.reviewed           , false);
+                    assert.equal(applicationRecord.review             , null);
+                    assert.equal(applicationRecord.currentMilestone   , null);
+                    assert.equal(applicationRecord.milestoneLog       , null);
+                    assert.equal(applicationRecord.fullyRewarded      , false);
+                    assert.equal(applicationRecord.lastRewardTimestamp, null);
+
+                    // check user record
+                    assert.equal(userRecord.activeBountyCount.toNumber()        , initialActiveBountyCount);
+                    assert.equal(userRecord.currentApplicationCount.toNumber()  , initialCurrentApplicationCount + 1);
+                    assert.equal(appliedBounties.includes(bountyId.toNumber())  , true); // should return true now
+                    assert.equal(activeBounties.includes(bountyId.toNumber())   , false);
+                    assert.equal(groupInvites.includes(bountyId.toNumber())     , false);
+                    assert.equal(groupApplications.includes(bountyId.toNumber()), false);
+                    assert.equal(groupsCreated.includes(bountyId.toNumber())    , false);
+                    assert.equal(groups.includes(bountyId.toNumber())           , false);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+        })
+
+
+        describe('%cancelApplication - applicant: user', function () {
+            
+            beforeEach("Set signer to user (mallory)", async () => {
+                bountyStorage = await bountyInstance.storage()
+                user    = mallory.pkh;
+                userSk  = mallory.sk;
+                await signerFactory(tezos, userSk);
+            });
+
+            it('user (mallory) can cancel her bounty application', async () => {
+                try {
+
+                    const applicantType                  = "user";
+                    const bountyId                       = bountyWithOneMilestoneId
+
+                    const initialUserRecord              = await bountyStorage.userLedger.get(user);
+                    const initialActiveBountyCount       = initialUserRecord == undefined ? 0 : initialUserRecord.activeBountyCount.toNumber();
+                    const initialCurrentApplicationCount = initialUserRecord == undefined ? 0 : initialUserRecord.currentApplicationCount.toNumber();                
+                    
+                    const cancelBountyBountyOperation = await bountyInstance.methods.cancelApplication(
+                        bountyId,
+                        applicantType,
+                        user
+                    ).send();
+                    await cancelBountyBountyOperation.confirmation();
+
+                    bountyStorage = await bountyInstance.storage();
+
+                    const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
+                    const userRecord        = await bountyStorage.userLedger.get(user);
+                    const appliedBounties   = userRecord.appliedBounties.map(b => b.toNumber());
+                    const activeBounties    = userRecord.activeBounties.map(b => b.toNumber());
+                    const groupInvites      = userRecord.groupInvites.map(b => b.toNumber());
+                    const groupApplications = userRecord.groupApplications.map(b => b.toNumber());
+                    const groupsCreated     = userRecord.groupsCreated.map(b => b.toNumber());
+                    const groups            = userRecord.groups.map(b => b.toNumber());
+
+                    // check applicant record
+                    assert.equal(applicationRecord.status             , 'CANCELED');
+                    assert.equal(applicationRecord.completed          , false);
+                    assert.equal(applicationRecord.reviewed           , false);
+                    assert.equal(applicationRecord.review             , null);
+                    assert.equal(applicationRecord.currentMilestone   , 1);
+                    assert.equal(applicationRecord.milestoneLog       , null);
+                    assert.equal(applicationRecord.fullyRewarded      , false);
+                    assert.equal(applicationRecord.lastRewardTimestamp, null);
+
+                    // check user record
+                    assert.equal(userRecord.activeBountyCount.toNumber()        , initialActiveBountyCount);
+                    assert.equal(userRecord.currentApplicationCount.toNumber()  , initialCurrentApplicationCount - 1);
+                    assert.equal(appliedBounties.includes(bountyId.toNumber())  , false); // true to false
+                    assert.equal(activeBounties.includes(bountyId.toNumber())   , false);
+                    assert.equal(groupInvites.includes(bountyId.toNumber())     , false);
+                    assert.equal(groupApplications.includes(bountyId.toNumber()), false);
+                    assert.equal(groupsCreated.includes(bountyId.toNumber())    , false);
+                    assert.equal(groups.includes(bountyId.toNumber())           , false);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('user (mallory) cannot cancel a bounty that has already been canceled', async () => {
+                try {
+
+                    const applicantType                 = "user";
+                    const bountyId                      = bountyWithOneMilestoneId
+
+                    const cancelBountyOperation = await bountyInstance.methods.cancelApplication(
+                        bountyId,
+                        applicantType,
+                        user
+                    );
+                    await chai.expect(cancelBountyOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('user (oscar) cannot cancel a bounty application from another user (mallory)', async () => {
+                try {
+
+                    await signerFactory(tezos, oscar.sk);
+                    
+                    const applicantType                 = "user";
+                    const bountyId                      = bountyWithThreeMilestonesId
+
+                    const cancelBountyOperation = await bountyInstance.methods.cancelApplication(
+                        bountyId,
+                        applicantType,
+                        mallory.pkh
+                    );
+                    await chai.expect(cancelBountyOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+        })
+
+        describe('%applyForBounty - applicant: group', function () {
+            
+            beforeEach("Set signer to user (mallory)", async () => {
+                bountyStorage = await bountyInstance.storage()
+                user    = mallory.pkh;
+                userSk  = mallory.sk;
+                await signerFactory(tezos, userSk);
+            });
+
+            it('group leader (mallory) can apply to a bounty for her group', async () => {
+                try {
+
+                    const applicantType                  = "group";
+                    const groupId                        = firstGroupId;
+                    const bountyId                       = bountyWithOneMilestoneId
+
+                    const initialGroupRecord             = await bountyStorage.groupLedger.get(groupId);
+                    const initialActiveBountyCount       = initialGroupRecord == undefined ? 0 : initialGroupRecord.activeBountyCount.toNumber();
+                    const initialCurrentApplicationCount = initialGroupRecord == undefined ? 0 : initialGroupRecord.currentApplicationCount.toNumber();                
+                    
+                    const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                        bountyId,
+                        applicantType,
+                        groupId
+                    ).send();
+                    await applyForBountyOperation.confirmation();
+
+                    bountyStorage = await bountyInstance.storage();
+
+                    const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "group": groupId}]);
+                    const groupRecord       = await bountyStorage.groupLedger.get(groupId);
+                    const appliedBounties   = groupRecord.appliedBounties.map(b => b.toNumber());
+                    const activeBounties    = groupRecord.activeBounties.map(b => b.toNumber());
+
+                    // check applicant record
+                    assert.equal(applicationRecord.status             , 'PENDING');
+                    assert.equal(applicationRecord.completed          , false);
+                    assert.equal(applicationRecord.reviewed           , false);
+                    assert.equal(applicationRecord.review             , null);
+                    assert.equal(applicationRecord.currentMilestone   , 1);
+                    assert.equal(applicationRecord.milestoneLog       , null);
+                    assert.equal(applicationRecord.fullyRewarded      , false);
+                    assert.equal(applicationRecord.lastRewardTimestamp, null);
+
+                    // check user record
+                    assert.equal(groupRecord.activeBountyCount.toNumber()       , initialActiveBountyCount);
+                    assert.equal(groupRecord.currentApplicationCount.toNumber() , initialCurrentApplicationCount + 1);
+                    assert.equal(appliedBounties.includes(bountyId.toNumber())  , true); // should return true now
+                    assert.equal(activeBounties.includes(bountyId.toNumber())   , false);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('group leader (mallory) cannot apply again to the same bounty for the same group', async () => {
+                try {
+
+                    const applicantType                 = "group";
+                    const groupId                       = firstGroupId;
+                    const bountyId                      = bountyWithOneMilestoneId
+
+                    const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                        bountyId,
+                        applicantType,
+                        groupId
+                    );
+                    await chai.expect(applyForBountyOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('group leader (mallory) cannot apply to an inactive bounty', async () => {
+                try {
+
+                    const applicantType                 = "group";
+                    const groupId                       = firstGroupId;
+                    const bountyId                      = inactiveBountyId
+
+                    const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                        bountyId,
+                        applicantType,
+                        groupId
+                    );
+                    await chai.expect(applyForBountyOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('group leader (mallory) cannot apply to a bounty for a non-existent group', async () => {
+                try {
+
+                    const applicantType                 = "group";
+                    const groupId                       = 999;
+                    const bountyId                      = bountyWithThreeMilestonesId
+
+                    const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                        bountyId,
+                        applicantType,
+                        groupId
+                    );
+                    await chai.expect(applyForBountyOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('group leader (mallory) can apply to multiple bounties (bounty with three milstones)', async () => {
+                try {
+
+                    const applicantType                  = "group";
+                    const groupId                        = firstGroupId;
+                    const bountyId                       = bountyWithThreeMilestonesId
+
+                    const initialGroupRecord             = await bountyStorage.groupLedger.get(groupId);
+                    const initialActiveBountyCount       = initialGroupRecord == undefined ? 0 : initialGroupRecord.activeBountyCount.toNumber();
+                    const initialCurrentApplicationCount = initialGroupRecord == undefined ? 0 : initialGroupRecord.currentApplicationCount.toNumber();
+                    
+                    const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                        bountyId,
+                        applicantType,
+                        groupId
+                    ).send();
+                    await applyForBountyOperation.confirmation();
+
+                    bountyStorage = await bountyInstance.storage();
+
+                    const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "group": groupId}]);
+                    const groupRecord       = await bountyStorage.groupLedger.get(groupId);
+                    const appliedBounties   = groupRecord.appliedBounties.map(b => b.toNumber());
+                    const activeBounties    = groupRecord.activeBounties.map(b => b.toNumber());
+
+                    // check applicant record
+                    assert.equal(applicationRecord.status             , 'PENDING');
+                    assert.equal(applicationRecord.completed          , false);
+                    assert.equal(applicationRecord.reviewed           , false);
+                    assert.equal(applicationRecord.review             , null);
+                    assert.equal(applicationRecord.currentMilestone   , 1);
+                    assert.equal(applicationRecord.milestoneLog       , null);
+                    assert.equal(applicationRecord.fullyRewarded      , false);
+                    assert.equal(applicationRecord.lastRewardTimestamp, null);
+
+                    // check user record
+                    assert.equal(groupRecord.activeBountyCount.toNumber()       , initialActiveBountyCount);
+                    assert.equal(groupRecord.currentApplicationCount.toNumber() , initialCurrentApplicationCount + 1);
+                    assert.equal(appliedBounties.includes(bountyId.toNumber())  , true); // should return true now
+                    assert.equal(activeBounties.includes(bountyId.toNumber())   , false);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('group leader (mallory) can apply to multiple bounties (bounty with no milstones)', async () => {
+                try {
+
+                    const applicantType                  = "group";
+                    const groupId                        = firstGroupId;
+                    const bountyId                       = bountyWithNoMilestonesId
+
+                    const initialGroupRecord             = await bountyStorage.groupLedger.get(groupId);
+                    const initialActiveBountyCount       = initialGroupRecord == undefined ? 0 : initialGroupRecord.activeBountyCount.toNumber();
+                    const initialCurrentApplicationCount = initialGroupRecord == undefined ? 0 : initialGroupRecord.currentApplicationCount.toNumber();
+                    
+                    const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                        bountyId,
+                        applicantType,
+                        groupId
+                    ).send();
+                    await applyForBountyOperation.confirmation();
+
+                    bountyStorage = await bountyInstance.storage();
+
+                    const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "group": groupId}]);
+                    const groupRecord        = await bountyStorage.groupLedger.get(groupId);
+                    const appliedBounties   = groupRecord.appliedBounties.map(b => b.toNumber());
+                    const activeBounties    = groupRecord.activeBounties.map(b => b.toNumber());
+
+                    // check applicant record
+                    assert.equal(applicationRecord.status             , 'PENDING');
+                    assert.equal(applicationRecord.completed          , false);
+                    assert.equal(applicationRecord.reviewed           , false);
+                    assert.equal(applicationRecord.review             , null);
+                    assert.equal(applicationRecord.currentMilestone   , null);
+                    assert.equal(applicationRecord.milestoneLog       , null);
+                    assert.equal(applicationRecord.fullyRewarded      , false);
+                    assert.equal(applicationRecord.lastRewardTimestamp, null);
+
+                    // check user record
+                    assert.equal(groupRecord.activeBountyCount.toNumber()        , initialActiveBountyCount);
+                    assert.equal(groupRecord.currentApplicationCount.toNumber()  , initialCurrentApplicationCount + 1);
+                    assert.equal(appliedBounties.includes(bountyId.toNumber())  , true); // should return true now
+                    assert.equal(activeBounties.includes(bountyId.toNumber())   , false);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
         })
 
     })
@@ -966,12 +1733,17 @@ describe('Test: Bounty Contract', async () => {
     -----------
     Before Bounty Application has been approved: `, function () {
 
+        beforeEach("Set signer to user (mallory)", async () => {
+            bountyStorage = await bountyInstance.storage()
+            user    = mallory.pkh;
+            userSk  = mallory.sk;
+            await signerFactory(tezos, userSk);
+        });
+
         describe('%completeBounty', function () {
             
             beforeEach("Set signer to user (mallory)", async () => {
                 bountyStorage = await bountyInstance.storage()
-                user    = mallory.pkh;
-                userSk  = mallory.sk;
                 await signerFactory(tezos, userSk);
             });
 
@@ -999,8 +1771,6 @@ describe('Test: Bounty Contract', async () => {
             
             beforeEach("Set signer to user (mallory)", async () => {
                 bountyStorage = await bountyInstance.storage()
-                user    = mallory.pkh;
-                userSk  = mallory.sk;
                 await signerFactory(tezos, userSk);
             });
 
@@ -1036,7 +1806,7 @@ describe('Test: Bounty Contract', async () => {
                 await signerFactory(tezos, bountyCreatorSk);
             });
 
-            it('bounty creator (alice) should be able to approve a bounty application', async () => {
+            it('bounty creator (alice) should be able to approve a bounty application (bounty with three milestones)', async () => {
                 try {
 
                     const bountyId      = bountyWithThreeMilestonesId    
@@ -1077,16 +1847,64 @@ describe('Test: Bounty Contract', async () => {
                 }
             })
 
+            it('admin (eve) should be able to approve a bounty application (bounty with no milestones)', async () => {
+                try {
+
+                    await signerFactory(tezos, adminSk);
+
+                    const bountyId      = bountyWithNoMilestonesId    
+                    const applicantType = "user";
+                    const approvalType  = "approve";
+                    
+                    const approveOrRejectOperation  = await bountyInstance.methods.approveOrReject(
+                        bountyId,
+                        applicantType,
+                        user,
+                        approvalType
+                    ).send();
+                    await approveOrRejectOperation.confirmation();
+    
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
         })
 
         describe('%completeBounty', function () {
             
             beforeEach("Set signer to user (mallory)", async () => {
                 bountyStorage = await bountyInstance.storage()
+                user          = mallory.pkh;
                 await signerFactory(tezos, userSk);
             });
 
-            it('user (mallory) should be able to complete a bounty', async () => {
+            it('user (mallory) should be able to complete a bounty (with no milestones)', async () => {
+                try {
+
+                    const bountyId      = bountyWithNoMilestonesId    
+                    const applicantType = "user";
+                    
+                    const approveOrRejectOperation  = await bountyInstance.methods.completeBounty(
+                        bountyId,
+                        applicantType,
+                        user
+                    ).send();
+                    await approveOrRejectOperation.confirmation();
+
+                    const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
+                    
+                    assert.equal(applicationRecord.status       , "REVIEW_PENDING");
+                    assert.equal(applicationRecord.completed    , true);
+                    assert.equal(applicationRecord.reviewed     , false);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('user (mallory) should be able to complete a bounty (with milestones)', async () => {
                 try {
 
                     const bountyId      = bountyWithThreeMilestonesId    
@@ -1100,8 +1918,17 @@ describe('Test: Bounty Contract', async () => {
                     await approveOrRejectOperation.confirmation();
 
                     const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
-                    
+                    const currentMilestone = applicationRecord.currentMilestone;
 
+                    const milestoneLogRecord = await applicationRecord.milestoneLog.get(currentMilestone);
+
+                    // Application Record
+                    assert.equal(applicationRecord.status       , "REVIEW_PENDING")
+
+                    // Milestone Log Record
+                    assert.equal(milestoneLogRecord.status      , "REVIEW_PENDING")
+                    assert.equal(milestoneLogRecord.completed   , true)
+                    assert.equal(milestoneLogRecord.reviewed    , false)
 
                 } catch (e) {
                     console.log(e)
@@ -1221,77 +2048,19 @@ describe('Test: Bounty Contract', async () => {
 
     describe(`
     -----------
-    Groups test: `, function () {
+    Bounty Rewards test: `, function () {
 
-        describe('%formGroup', function () {
+        describe('%sendBountyReward', function () {
             
-            beforeEach("Set signer to user (mallory)", async () => {
+            beforeEach("Set signer to bounty creator (alice)", async () => {
                 bountyStorage = await bountyInstance.storage()
-                await signerFactory(tezos, userSk);
+                await signerFactory(tezos, bountyCreatorSk);
             });
 
-            it('user (mallory) should be able to form a group (no name, desc, image provided)', async () => {
-                try {
 
-                    const groupId = bountyStorage.nextGroupId;
-                    
-                    const formGroupOperation  = await bountyInstance.methods.formGroup().send();
-                    await formGroupOperation.confirmation();
-
-                    bountyStorage       = await bountyInstance.storage()
-                    const groupRecord   = await bountyStorage.groupLedger.get(groupId);
-
-                    assert.equal(groupRecord.creator, user);
-                    assert.equal(groupRecord.status, "ACTIVE");
-                    assert.equal(groupRecord.bountyInProgress, false);
-
-                    assert.equal(groupRecord.name, null);
-                    assert.equal(groupRecord.description, null);
-                    assert.equal(groupRecord.image, null);
-
-                    assert.equal(groupRecord.activeBountyCount, 0);
-                    assert.equal(groupRecord.currentApplicationCount, 0);
-
-                } catch (e) {
-                    console.log(e)
-                }
-            })
-
-            it('user (mallory) should be able to form a group (with name, desc, image provided)', async () => {
-                try {
-
-                    const groupId = bountyStorage.nextGroupId;
-                    const name    = "New Group name 2"
-                    const desc    = "New Group desc 2"
-                    const image   = "Group image 2"
-                    
-                    const formGroupOperation  = await bountyInstance.methods.formGroup(
-                        name,
-                        desc,
-                        image
-                    ).send();
-                    await formGroupOperation.confirmation();
-
-                    bountyStorage       = await bountyInstance.storage()
-                    const groupRecord   = await bountyStorage.groupLedger.get(groupId);
-
-                    assert.equal(groupRecord.creator, user);
-                    assert.equal(groupRecord.status, "ACTIVE");
-                    assert.equal(groupRecord.bountyInProgress, false);
-
-                    assert.equal(groupRecord.name           , name);
-                    assert.equal(groupRecord.description    , desc);
-                    assert.equal(groupRecord.image          , image);
-
-                    assert.equal(groupRecord.activeBountyCount, 0);
-                    assert.equal(groupRecord.currentApplicationCount, 0);
-
-                } catch (e) {
-                    console.log(e)
-                }
-            })
-
+        
         })
+
     })
 
 })

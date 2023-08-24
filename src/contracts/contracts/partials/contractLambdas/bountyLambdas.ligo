@@ -1121,12 +1121,12 @@ block {
 
                 // ---------------------------------------------
 
-                var memberRecord  : userRecordType := getUserRecord(member, s);
+                var memberRecord  : userRecordType := getOrCreateUserRecord(member, s);
 
                 case updateType of [
                     |   Invite(_) -> {
                             
-                            if sender = groupCreator then failwith(error_GROUP_CREATOR_CANNOT_INVITE_HIMSELF) else skip;
+                            if member = groupCreator then failwith(error_GROUP_CREATOR_CANNOT_INVITE_HIMSELF) else skip;
                             memberRecord.groupInvites := Set.add(groupId, memberRecord.groupInvites);
 
                             // update storage
@@ -1134,7 +1134,7 @@ block {
                         }
                     |   Remove(_) -> {
 
-                            if sender = groupCreator then failwith(error_GROUP_CREATOR_CANNOT_REMOVE_HIMSELF) else skip;
+                            if member = groupCreator then failwith(error_GROUP_CREATOR_CANNOT_REMOVE_HIMSELF) else skip;
 
                             // remove member from group
                             groupRecord.members := Set.remove(member, groupRecord.members);
@@ -1189,7 +1189,7 @@ block {
         |   LambdaGroupMembership(groupMembershipActionParams) -> {
 
                 const sender    : address           = Tezos.get_sender();
-                var userRecord  : userRecordType   := getUserRecord(sender, s);
+                var userRecord  : userRecordType   := getOrCreateUserRecord(sender, s);
 
                 case groupMembershipActionParams of [
                     |   ApplyForGroup(_groupId) -> {
@@ -1207,6 +1207,7 @@ block {
                             
                             // update storage
                             s.groupLedger[_groupId]   := group;
+                            s.userLedger[sender]      := userRecord;
 
                         }
                     |   ConfirmGroupMembership(_groupId) -> {
