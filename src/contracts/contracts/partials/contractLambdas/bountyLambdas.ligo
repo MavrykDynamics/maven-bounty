@@ -880,7 +880,7 @@ block {
         |   LambdaSendBountyReward(sendBountyRewardParams) -> {
 
                 const bountyId   : nat                  = sendBountyRewardParams.bountyId;
-                const applicants : set(applicantType)   = sendBountyRewardParams.applicants;
+                const applicant  : applicantType        = sendBountyRewardParams.applicant;
                 const bountyContractAddress : address   = Tezos.get_self_address();
 
                 // get bounty record
@@ -909,7 +909,7 @@ block {
                     const milestoneRewards : rewardsType = bountyMilestone.rewards;
 
                     // send rewards for applicants; loop through applicants in set
-                    for applicant in set applicants block {
+                    // for applicant in set applicants block {
 
                         var applicationRecord : applicationRecordType := getApplicationRecord(bountyId, applicant, s);
                         var applicantMilestoneRecord : milestoneLogRecordType := getApplicantMilestoneRecord(applicationRecord, milestoneId);
@@ -973,12 +973,12 @@ block {
 
                             
                         } else skip
-                    };
+                    // };
 
                 } else block {
 
                     // bounty has no milestones; send rewards for applicants 
-                    for applicant in set applicants block {
+                    // for applicant in set applicants block {
 
                         var applicationRecord : applicationRecordType := getApplicationRecord(bountyId, applicant, s);
 
@@ -1024,7 +1024,7 @@ block {
                             
                         } else skip
 
-                    };
+                    // };
 
                 }
 
@@ -1053,7 +1053,7 @@ block {
 
                 const creator : address = Tezos.get_sender();
 
-                var userRecord       : userRecordType       := getUserRecord(creator, s);
+                var userRecord       : userRecordType       := getOrCreateUserRecord(creator, s);
 
                 // ---------------------------------------------
                 // verification checks

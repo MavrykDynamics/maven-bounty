@@ -248,7 +248,7 @@ type reviewBountyActionType is [@layout:comb] record [
 type sendBountyRewardActionType is [@layout:comb] record [
     bountyId     : nat;
     milestoneId  : option(nat);
-    applicants   : set(applicantType);
+    applicant    : applicantType;
 ]
 
 
