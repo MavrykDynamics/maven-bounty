@@ -752,9 +752,6 @@ block {
 
                         // if final status is approved, set applicant record status to approved as well
                         if status = "REVIEW_APPROVED" then {
-                            
-                            applicationRecord.status := status;
-                            applicationRecord.reviewed := True;
 
                             case applicant of [
                                 |   User(_address)  -> {
@@ -803,9 +800,6 @@ block {
                 } else {
                     
                     // bounty has no milestones
-                    applicationRecord.status := status;
-                    applicationRecord.reviewed := True;
-
                     if status = "REVIEW_APPROVED" then {
 
                         case applicant of [
@@ -852,6 +846,9 @@ block {
 
                 };
 
+                applicationRecord.status := status;
+                applicationRecord.reviewed := True;
+
                 // set bounty review text if exists
                 case reviewBountyParams.bountyReview of [
                         Some(_review) -> applicationRecord.review := Some(_review)
@@ -860,7 +857,7 @@ block {
 
                 // update storage
                 s.applicationLedger[(bountyId, applicant)] := applicationRecord;
-                s.bountyLedger[bountyId]                 := bountyRecord;
+                s.bountyLedger[bountyId]                   := bountyRecord;
 
             }
         |   _ -> skip
@@ -1537,13 +1534,14 @@ block {
                         currentMilestone := currentMilestone + 1n;
                     } else skip;
 
-                    milestoneLogRecord.status      := "REVIEW_PENDING";
-                    milestoneLogRecord.completed   := True;
-                    milestoneLogRecord.reviewed    := False;
+                    milestoneLogRecord.status       := "REVIEW_PENDING";
+                    milestoneLogRecord.completed    := True;
+                    milestoneLogRecord.reviewed     := False;
 
                     milestoneLog[currentMilestone]  := milestoneLogRecord;
                     applicationRecord.milestoneLog  := Some(milestoneLog);
                     
+                    applicationRecord.completed     := True;
                     applicationRecord.status        := "REVIEW_PENDING";
 
                 } else {
