@@ -70,6 +70,7 @@
 [@inline] const error_BOUNTY_RECORD_NOT_FOUND                                                                           = 43n;
 [@inline] const error_MILESTONES_FOR_BOUNTY_NOT_FOUND                                                                   = 44n;
 [@inline] const error_APPLICATION_RECORD_NOT_FOUND                                                                      = 45n;
+
 [@inline] const error_USER_RECORD_NOT_FOUND                                                                             = 46n;
 [@inline] const error_GROUP_RECORD_NOT_FOUND                                                                            = 47n;
 [@inline] const error_BOUNTY_CREATOR_RECORD_NOT_FOUND                                                                   = 48n;
@@ -122,3 +123,12 @@
 [@inline] const error_GROUP_CREATOR_CANNOT_APPLY_FOR_HIS_OWN_GROUP                                                      = 91n;
 [@inline] const error_GROUP_CREATOR_CANNOT_INVITE_HIMSELF                                                               = 92n;
 [@inline] const error_GROUP_HAS_A_BOUNTY_IN_PROGRESS                                                                    = 93n;
+
+[@inline] const error_BOUNTY_APPLICATION_NEEDS_TO_BE_APPROVED_FIRST                                                     = 94n;
+[@inline] const error_BOUNTY_APPLICATION_HAS_ALREADY_STOPPED                                                            = 95n;
+[@inline] const error_BOUNTY_APPLICATION_IS_STOPPED_AND_CANNOT_BE_COMPLETED                                             = 96n;
+[@inline] const error_BOUNTY_HAS_ALREADY_BEEN_COMPLETED                                                                 = 97n;
+[@inline] const error_BOUNTY_APPLICATION_IS_ALREADY_PENDING_REVIEW                                                      = 98n;
+[@inline] const error_APPLICATION_IS_CANCELED                                                                           = 98n;
+[@inline] const error_BOUNTY_REVIEW_IS_NOT_APPROVED                                                                     = 98n;
+

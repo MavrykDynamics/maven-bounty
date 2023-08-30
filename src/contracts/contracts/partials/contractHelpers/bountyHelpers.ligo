@@ -288,6 +288,18 @@ block {
 } with unit
 
 
+
+function verifyReviewIsApproved(const status : string) : unit is 
+block {
+
+    if status = "REVIEW_APPROVED" 
+    then skip 
+    else failwith(error_BOUNTY_REVIEW_IS_NOT_APPROVED);
+
+} with unit
+
+
+
 function verifyBountyIsActive(const status : string) : unit is 
 block {
 
@@ -421,29 +433,46 @@ block {
 
 
 
-function verifyUserCanStopBounty(const status : string) : unit is 
+function verifyUserCanStopBounty(const isApproved : bool; const isStopped : bool) : unit is 
 block {
 
-    if status = "APPROVED" or status = "DISPUTED" or status = "COMPLETED"
-    then skip
-    else failwith(error_BOUNTY_CANNOT_BE_STOPPED_BY_USER);
-
-} with unit
-
-
-
-function verifyApplicationCanBeCompleted(const status : string) : unit is 
-block {
-
-    if status = "REVIEW_APPROVED" or status = "REWARDED"
-    then failwith(error_BOUNTY_HAS_ALREADY_BEEN_COMPLETED_AND_APPROVED)
-    else if status = "REJECTED" or status = "CANCELED" or status = "PENDING" or status = "STOPPED"
-    then failwith(error_BOUNTY_CANNOT_BE_COMPLETED)
-    else if status = "REVIEW_PENDING" 
-    then failwith(error_BOUNTY_IS_ALREADY_PENDING_REVIEW)
+    if isApproved = False then failwith(error_BOUNTY_APPLICATION_NEEDS_TO_BE_APPROVED_FIRST)
+    else if isStopped = True then failwith(error_BOUNTY_APPLICATION_HAS_ALREADY_STOPPED)
     else skip;
 
 } with unit
+
+
+
+function verifyApplicationIsNotCanceled(const status : string) : unit is 
+block {
+
+    if status = "CANCELED" then failwith(error_APPLICATION_IS_CANCELED)
+    else skip;
+
+} with unit
+
+
+
+function verifyApplicationCanBeCompleted(const isApproved : bool; const isStopped : bool; const isCompleted : bool; const submitForReview : bool) : unit is 
+block {
+
+    // if status = "REVIEW_APPROVED" or status = "REWARDED"
+    // then failwith(error_BOUNTY_HAS_ALREADY_BEEN_COMPLETED_AND_APPROVED)
+    // else if status = "REJECTED" or status = "CANCELED" or status = "PENDING" or status = "STOPPED"
+    // then failwith(error_BOUNTY_CANNOT_BE_COMPLETED)
+    // else if status = "REVIEW_PENDING" 
+    // then failwith(error_BOUNTY_IS_ALREADY_PENDING_REVIEW)
+    // else skip;
+
+    if isApproved = False then failwith(error_BOUNTY_APPLICATION_NEEDS_TO_BE_APPROVED_FIRST)
+    else if isStopped = True then failwith(error_BOUNTY_APPLICATION_IS_STOPPED_AND_CANNOT_BE_COMPLETED)
+    else if isCompleted = True then failwith(error_BOUNTY_HAS_ALREADY_BEEN_COMPLETED)
+    else if submitForReview = True then failwith(error_BOUNTY_APPLICATION_IS_ALREADY_PENDING_REVIEW)
+    else skip;
+
+} with unit
+
 
 
 function verifyGroupHasNoBountyInProgress(const bountyInProgress : bool) : unit is 
@@ -702,7 +731,12 @@ block {
 
     const applicationRecord : applicationRecordType = record [
         status              = "PENDING";
-        completed           = False;
+
+        isApproved          = False;
+        isStopped           = False;
+        isCompleted         = False;
+
+        submitForReview     = False;
         reviewed            = False;
         review              = (None : option(string));
 
@@ -722,7 +756,9 @@ block {
 
     const milestoneLogRecord : milestoneLogRecordType = record [
         status          = "REVIEW_PENDING";
-        completed       = False;
+        isCompleted     = False;
+
+        submitForReview = False;
         reviewed        = False;
         review          = (None : option(string));
 

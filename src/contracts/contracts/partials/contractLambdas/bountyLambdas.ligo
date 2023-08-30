@@ -596,8 +596,9 @@ block {
                 // update application record
                 case approval of [
                         Approve(_) -> {
-
-                            applicationRecord.status := "APPROVED";
+    
+                            applicationRecord.status        := "APPROVED";
+                            applicationRecord.isApproved    := True;
                             
                             const maxApprovedApplicants      : nat = bountyRecord.maxApprovedApplicants;
                             const currentApprovedApplicants  : nat = Map.size(bountyRecord.currentApprovedApplicants);
@@ -728,8 +729,14 @@ block {
                         |   None          -> failwith(error_MILESTONE_LOG_RECORD_NOT_FOUND_IN_APPLICANT_RECORD)
                     ];
 
-                    milestoneLogRecord.status := status;
-                    milestoneLogRecord.reviewed := True;  
+                    milestoneLogRecord.status           := status;
+                    milestoneLogRecord.reviewed         := True;
+                    milestoneLogRecord.submitForReview  := False;    
+
+                    if status = "REVIEW_APPROVED" then {
+                        milestoneLogRecord.isCompleted  := True;
+                    } else skip;
+
             
                     case reviewBountyParams.milestoneReview of [
                             Some(_review) -> milestoneLogRecord.review := Some(_review)
@@ -744,14 +751,17 @@ block {
                     const numberOfMilestones : nat = Map.size(bountyMilestones);
                     
                     // update milestone log
-                    milestoneLog[currentMilestone] := milestoneLogRecord;
-                    applicationRecord.milestoneLog   := Some(milestoneLog);
+                    milestoneLog[currentMilestone]  := milestoneLogRecord;
+                    applicationRecord.milestoneLog  := Some(milestoneLog);
 
                     // check if all milestones completed in bounty
                     if currentMilestone = numberOfMilestones then {
 
                         // if final status is approved, set applicant record status to approved as well
                         if status = "REVIEW_APPROVED" then {
+
+                            // set isCompleted to true
+                            applicationRecord.isCompleted := True;
 
                             case applicant of [
                                 |   User(_address)  -> {
@@ -802,6 +812,9 @@ block {
                     // bounty has no milestones
                     if status = "REVIEW_APPROVED" then {
 
+                        // set isCompleted to true
+                        applicationRecord.isCompleted := True;
+
                         case applicant of [
                             |   User(_address)  -> {
                                     
@@ -846,8 +859,9 @@ block {
 
                 };
 
-                applicationRecord.status := status;
-                applicationRecord.reviewed := True;
+                applicationRecord.status            := status;
+                applicationRecord.reviewed          := True;
+                applicationRecord.submitForReview   := False;
 
                 // set bounty review text if exists
                 case reviewBountyParams.bountyReview of [
@@ -905,123 +919,126 @@ block {
                     const bountyMilestone : milestoneRecordType = getBountyMilestoneRecord(bountyRecord, milestoneId);
                     const milestoneRewards : rewardsType = bountyMilestone.rewards;
 
-                    // send rewards for applicants; loop through applicants in set
-                    // for applicant in set applicants block {
+                    // get application record and verify it is not canceled
+                    var applicationRecord : applicationRecordType := getApplicationRecord(bountyId, applicant, s);
+                    verifyApplicationIsNotCanceled(applicationRecord.status);
 
-                        var applicationRecord : applicationRecordType := getApplicationRecord(bountyId, applicant, s);
-                        var applicantMilestoneRecord : milestoneLogRecordType := getApplicantMilestoneRecord(applicationRecord, milestoneId);
+                    // get applicant milestone record and verify review is approved
+                    var applicantMilestoneRecord : milestoneLogRecordType := getApplicantMilestoneRecord(applicationRecord, milestoneId);
+                    verifyReviewIsApproved(applicantMilestoneRecord.status);
 
-                        if applicantMilestoneRecord.status = "REVIEW_APPROVED" 
-                        and applicantMilestoneRecord.completed = True 
-                        and applicantMilestoneRecord.reviewed = True
-                        and applicantMilestoneRecord.rewarded = False then {
+                    if applicantMilestoneRecord.isCompleted = True 
+                    and applicantMilestoneRecord.reviewed = True
+                    and applicantMilestoneRecord.status = "REVIEW_APPROVED"
+                    and applicantMilestoneRecord.rewarded = False then {
 
+                        // update applicant milestone record
+                        applicantMilestoneRecord.rewarded           := True;
+                        applicantMilestoneRecord.rewardTimestamp    := Some(Tezos.get_now());
+                        applicantMilestoneRecord.status             := "REWARDED";
+
+                        // check if last milestone of bounty
+                        if milestoneId = numberOfMilestones then {
                             // update applicant milestone record
-                            applicantMilestoneRecord.rewarded           := True;
-                            applicantMilestoneRecord.rewardTimestamp    := Some(Tezos.get_now());
-                            applicantMilestoneRecord.status             := "REWARDED";
+                            applicationRecord.fullyRewarded := True;
+                        } else skip;
 
-                            // check if last milestone of bounty
-                            if milestoneId = numberOfMilestones then {
-                                // update applicant milestone record
-                                applicationRecord.fullyRewarded := True;
-                            } else skip;
+                        applicationRecord.lastRewardTimestamp         := Some(Tezos.get_now());
 
-                            applicationRecord.lastRewardTimestamp         := Some(Tezos.get_now());
+                        // update storage
+                        var milestoneLog : milestoneLogType := case applicationRecord.milestoneLog of [
+                                Some(_log) -> _log
+                            |   None       -> failwith(error_MILESTONE_LOG_RECORD_NOT_FOUND_IN_APPLICANT_RECORD)
+                        ];
 
-                            // update storage
-                            var milestoneLog : milestoneLogType := case applicationRecord.milestoneLog of [
-                                    Some(_log) -> _log
-                                |   None       -> failwith(error_MILESTONE_LOG_RECORD_NOT_FOUND_IN_APPLICANT_RECORD)
-                            ];
+                        milestoneLog[milestoneId]                   := applicantMilestoneRecord;
+                        applicationRecord.milestoneLog                := Some(milestoneLog);
+                        s.applicationLedger[(bountyId, applicant)]    := applicationRecord;
+                        
+                        // loop through milestone rewards and create operations to send rewards
+                        case applicant of [
+                            |   User(_address) -> {
 
-                            milestoneLog[milestoneId]                   := applicantMilestoneRecord;
-                            applicationRecord.milestoneLog                := Some(milestoneLog);
-                            s.applicationLedger[(bountyId, applicant)]    := applicationRecord;
-                            
-                            // loop through milestone rewards and create operations to send rewards
-                            case applicant of [
-                                |   User(_address) -> {
+                                    for _tokenName -> reward in map milestoneRewards block {
+                                        operations := case reward.rewardTokenType of [
+                                            |   Tez                     -> transferTez((Tezos.get_contract_with_error(_address, "Error. Tez could not be send to address.") : contract(unit)), reward.amount * 1mutez) # operations
+                                            |   Fa12(fa12TokenAddress)  -> transferFa12Token(bountyContractAddress, _address, reward.amount, fa12TokenAddress) # operations
+                                            |   Fa2(fa2Token)           -> transferFa2Token(bountyContractAddress, _address, reward.amount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
+                                        ];
+                                    };
 
-                                        for _tokenName -> reward in map milestoneRewards block {
-                                            operations := case reward.rewardTokenType of [
-                                                |   Tez                     -> transferTez((Tezos.get_contract_with_error(_address, "Error. Tez could not be send to address.") : contract(unit)), reward.amount * 1mutez) # operations
-                                                |   Fa12(fa12TokenAddress)  -> transferFa12Token(bountyContractAddress, _address, reward.amount, fa12TokenAddress) # operations
-                                                |   Fa2(fa2Token)           -> transferFa2Token(bountyContractAddress, _address, reward.amount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
-                                            ];
-                                        };
+                                }
+                            |   Group(_groupId) -> {
 
-                                    }
-                                |   Group(_groupId) -> {
+                                    const groupRecord : groupRecordType = getGroupRecord(_groupId, s);
+                                    const groupCreator : address = groupRecord.creator;
 
-                                        const groupRecord : groupRecordType = getGroupRecord(_groupId, s);
-                                        const groupCreator : address = groupRecord.creator;
+                                    for _tokenName -> reward in map milestoneRewards block {
+                                        operations := case reward.rewardTokenType of [
+                                            |   Tez                     -> transferTez((Tezos.get_contract_with_error(groupCreator, "Error. Tez could not be send to address.") : contract(unit)), reward.amount * 1mutez) # operations
+                                            |   Fa12(fa12TokenAddress)  -> transferFa12Token(bountyContractAddress, groupCreator, reward.amount, fa12TokenAddress) # operations
+                                            |   Fa2(fa2Token)           -> transferFa2Token(bountyContractAddress, groupCreator, reward.amount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
+                                        ];
+                                    };
 
-                                        for _tokenName -> reward in map milestoneRewards block {
-                                            operations := case reward.rewardTokenType of [
-                                                |   Tez                     -> transferTez((Tezos.get_contract_with_error(groupCreator, "Error. Tez could not be send to address.") : contract(unit)), reward.amount * 1mutez) # operations
-                                                |   Fa12(fa12TokenAddress)  -> transferFa12Token(bountyContractAddress, groupCreator, reward.amount, fa12TokenAddress) # operations
-                                                |   Fa2(fa2Token)           -> transferFa2Token(bountyContractAddress, groupCreator, reward.amount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
-                                            ];
-                                        };
+                                }
+                        ]
 
-                                    }
-                            ]
-
-                            
-                        } else skip
-                    // };
+                        
+                    } else skip
 
                 } else block {
 
                     // bounty has no milestones; send rewards for applicants 
-                    // for applicant in set applicants block {
 
-                        var applicationRecord : applicationRecordType := getApplicationRecord(bountyId, applicant, s);
+                    // get application record 
+                    var applicationRecord : applicationRecordType := getApplicationRecord(bountyId, applicant, s);
 
-                        if applicationRecord.status = "REVIEW_APPROVED" 
-                        and applicationRecord.completed = True 
-                        and applicationRecord.reviewed = True
-                        and applicationRecord.fullyRewarded = False then {
+                    // verify it is not canceled and review is approved
+                    verifyApplicationIsNotCanceled(applicationRecord.status);
+                    verifyReviewIsApproved(applicationRecord.status);
 
-                            // update applicant milestone record
-                            applicationRecord.status                 := "REWARDED";
-                            applicationRecord.fullyRewarded          := True;
-                            applicationRecord.lastRewardTimestamp    := Some(Tezos.get_now());
+                    if applicationRecord.isCompleted = True 
+                    and applicationRecord.reviewed = True
+                    and applicationRecord.status = "REVIEW_APPROVED"
+                    and applicationRecord.fullyRewarded = False then {
 
-                            // update storage
-                            s.applicationLedger[(bountyId, applicant)]    := applicationRecord;
+                        // update applicant milestone record
+                        applicationRecord.status                 := "REWARDED";
+                        applicationRecord.fullyRewarded          := True;
+                        applicationRecord.lastRewardTimestamp    := Some(Tezos.get_now());
 
-                            // loop through bounty rewards
-                            case applicant of [
-                                |   User(_address) -> {
-                                        for _tokenName -> reward in map bountyRecord.totalRewards block {
-                                            operations := case reward.rewardTokenType of [
-                                                |   Tez                     -> transferTez((Tezos.get_contract_with_error(_address, "Error. Tez could not be send to address.") : contract(unit)), reward.amount * 1mutez) # operations
-                                                |   Fa12(fa12TokenAddress)  -> transferFa12Token(bountyContractAddress, _address, reward.amount, fa12TokenAddress) # operations
-                                                |   Fa2(fa2Token)           -> transferFa2Token(bountyContractAddress, _address, reward.amount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
-                                            ];
-                                        };
-                                    }
-                                |   Group(_groupId) -> {
+                        // update storage
+                        s.applicationLedger[(bountyId, applicant)]    := applicationRecord;
 
-                                        const groupRecord : groupRecordType = getGroupRecord(_groupId, s);
-                                        const groupCreator : address = groupRecord.creator;
+                        // loop through bounty rewards
+                        case applicant of [
+                            |   User(_address) -> {
+                                    for _tokenName -> reward in map bountyRecord.totalRewards block {
+                                        operations := case reward.rewardTokenType of [
+                                            |   Tez                     -> transferTez((Tezos.get_contract_with_error(_address, "Error. Tez could not be send to address.") : contract(unit)), reward.amount * 1mutez) # operations
+                                            |   Fa12(fa12TokenAddress)  -> transferFa12Token(bountyContractAddress, _address, reward.amount, fa12TokenAddress) # operations
+                                            |   Fa2(fa2Token)           -> transferFa2Token(bountyContractAddress, _address, reward.amount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
+                                        ];
+                                    };
+                                }
+                            |   Group(_groupId) -> {
 
-                                        for _tokenName -> reward in map bountyRecord.totalRewards block {
-                                            operations := case reward.rewardTokenType of [
-                                                |   Tez                     -> transferTez((Tezos.get_contract_with_error(groupCreator, "Error. Tez could not be send to address.") : contract(unit)), reward.amount * 1mutez) # operations
-                                                |   Fa12(fa12TokenAddress)  -> transferFa12Token(bountyContractAddress, groupCreator, reward.amount, fa12TokenAddress) # operations
-                                                |   Fa2(fa2Token)           -> transferFa2Token(bountyContractAddress, groupCreator, reward.amount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
-                                            ];
-                                        };
+                                    const groupRecord : groupRecordType = getGroupRecord(_groupId, s);
+                                    const groupCreator : address = groupRecord.creator;
 
-                                    }
-                            ];
-                            
-                        } else skip
+                                    for _tokenName -> reward in map bountyRecord.totalRewards block {
+                                        operations := case reward.rewardTokenType of [
+                                            |   Tez                     -> transferTez((Tezos.get_contract_with_error(groupCreator, "Error. Tez could not be send to address.") : contract(unit)), reward.amount * 1mutez) # operations
+                                            |   Fa12(fa12TokenAddress)  -> transferFa12Token(bountyContractAddress, groupCreator, reward.amount, fa12TokenAddress) # operations
+                                            |   Fa2(fa2Token)           -> transferFa2Token(bountyContractAddress, groupCreator, reward.amount, fa2Token.tokenId, fa2Token.tokenContractAddress) # operations
+                                        ];
+                                    };
 
-                    // };
+                                }
+                        ];
+                        
+                    } else skip
 
                 }
 
@@ -1029,7 +1046,7 @@ block {
         |   _ -> skip
     ];
 
-} with (noOperations, s)
+} with (operations, s)
 
 // ------------------------------------------------------------------------------
 // Bounty Admin Lambdas End
@@ -1478,7 +1495,7 @@ block {
 
                 verifyBountyIsNotPaused(bountyRecord.isPaused);
 
-                verifyApplicationCanBeCompleted(applicationRecord.status);
+                verifyApplicationCanBeCompleted(applicationRecord.isApproved, applicationRecord.isStopped, applicationRecord.isCompleted, applicationRecord.submitForReview);
 
                 case applicant of [
                     |   User(_address) -> {
@@ -1511,9 +1528,12 @@ block {
                             Some(_record) -> _record
                         |   None -> record [
                                 status          = "REVIEW_PENDING";
-                                completed       = True;
+                                isCompleted     = False;
+
+                                submitForReview = True;
                                 reviewed        = False;
                                 review          = (None : option(string));
+                                
                                 rewarded        = False;
                                 rewardTimestamp = (None : option(timestamp));
                             ]
@@ -1534,22 +1554,22 @@ block {
                         currentMilestone := currentMilestone + 1n;
                     } else skip;
 
-                    milestoneLogRecord.status       := "REVIEW_PENDING";
-                    milestoneLogRecord.completed    := True;
-                    milestoneLogRecord.reviewed     := False;
+                    milestoneLogRecord.status           := "REVIEW_PENDING";
+                    milestoneLogRecord.submitForReview  := True;
+                    milestoneLogRecord.reviewed         := False;
 
-                    milestoneLog[currentMilestone]  := milestoneLogRecord;
-                    applicationRecord.milestoneLog  := Some(milestoneLog);
+                    milestoneLog[currentMilestone]      := milestoneLogRecord;
+                    applicationRecord.milestoneLog      := Some(milestoneLog);
                     
-                    applicationRecord.completed     := True;
-                    applicationRecord.status        := "REVIEW_PENDING";
+                    applicationRecord.submitForReview   := True;
+                    applicationRecord.status            := "REVIEW_PENDING";
 
                 } else {
 
                     // bounty has no milestones
-                    applicationRecord.status      := "REVIEW_PENDING";
-                    applicationRecord.completed   := True;
-                    applicationRecord.reviewed    := False;
+                    applicationRecord.status            := "REVIEW_PENDING";
+                    applicationRecord.submitForReview   := True;
+                    applicationRecord.reviewed          := False;
 
                 };
 
@@ -1583,12 +1603,12 @@ block {
                 // verification checks
                 // ---------------------------------------------
 
-                verifyUserCanStopBounty(applicationRecord.status);
+                verifyUserCanStopBounty(applicationRecord.isApproved, applicationRecord.isStopped);
 
                 // ---------------------------------------------
 
                 // update applicant storage
-                applicationRecord.status                := "STOPPED";
+                applicationRecord.isStopped                := True;
                 s.applicationLedger[(bountyId, applicant)] := applicationRecord;
 
                 case applicant of [

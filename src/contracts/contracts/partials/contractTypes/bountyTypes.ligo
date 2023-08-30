@@ -16,7 +16,9 @@ type bountyConfigType is [@layout:comb] record [
 
 type milestoneLogRecordType is [@layout:comb] record [
     status               : string;               // PENDING / APPROVED / REJECTED / COMPLETED / REVIEW_PENDING / REVIEW_APPROVED / REVIEW_DISPUTED / REVIEW_REJECTED / REWARDED
-    completed            : bool;                 // to be set by applicant
+    isCompleted          : bool;      
+    
+    submitForReview      : bool;                 // to be set to True by applicant on completeBounty
     reviewed             : bool;                 // to be reviewed by bounty creator
     review               : option(string);       // to be set by bounty creator
 
@@ -28,8 +30,14 @@ type milestoneLogType is map(nat, milestoneLogRecordType)
 
 
 type applicationRecordType is [@layout:comb] record [
+    
     status               : string;               // PENDING / APPROVED / REJECTED / CANCELED / STOPPED / REVIEW_PENDING / REVIEW_APPROVED / REVIEW_DISPUTED / REVIEW_REJECTED
-    completed            : bool;                 // set to True by applicant (e.g. when all milestones are completed)
+
+    isApproved           : bool;
+    isStopped            : bool;
+    isCompleted          : bool;                 // set to True if completely done
+
+    submitForReview      : bool;                 // to be set to True by applicant on completeBounty
     reviewed             : bool;                 // to be reviewed by bounty creator
     review               : option(string);       // to be set by bounty creator
     
