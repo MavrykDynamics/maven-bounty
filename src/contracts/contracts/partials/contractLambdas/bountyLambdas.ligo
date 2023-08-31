@@ -732,11 +732,6 @@ block {
                     milestoneLogRecord.status           := status;
                     milestoneLogRecord.reviewed         := True;
                     milestoneLogRecord.submitForReview  := False;    
-
-                    if status = "REVIEW_APPROVED" then {
-                        milestoneLogRecord.isCompleted  := True;
-                    } else skip;
-
             
                     case reviewBountyParams.milestoneReview of [
                             Some(_review) -> milestoneLogRecord.review := Some(_review)
@@ -749,6 +744,17 @@ block {
                         |   None              -> failwith(error_BOUNTY_HAS_NO_MILESTONES)
                     ];
                     const numberOfMilestones : nat = Map.size(bountyMilestones);
+
+                    if status = "REVIEW_APPROVED" then {
+                        milestoneLogRecord.isCompleted  := True;
+
+                        // create new milestone log for next milestone
+                        if currentMilestone < numberOfMilestones then block {
+                            // increment current milestone
+                            applicationRecord.currentMilestone := Some(currentMilestone + 1n);
+                        } else skip;
+
+                    } else skip;
                     
                     // update milestone log
                     milestoneLog[currentMilestone]  := milestoneLogRecord;
@@ -1538,21 +1544,6 @@ block {
                                 rewardTimestamp = (None : option(timestamp));
                             ]
                     ];
-
-                    // get number of bounty milestones
-                    const bountyMilestones : milestonesType = case bountyRecord.milestones of [
-                            Some(_milestones) -> _milestones
-                        |   None              -> failwith(error_BOUNTY_HAS_NO_MILESTONES)
-                    ];
-                    const numberOfMilestones : nat = Map.size(bountyMilestones);
-
-                    // create new milestone log for next milestone
-                    if milestoneLogRecord.status = "REVIEW_APPROVED" and currentMilestone < numberOfMilestones then block {
-                        milestoneLogRecord := createNewMilestoneLog(unit);
-                        
-                        // increment current milestone
-                        currentMilestone := currentMilestone + 1n;
-                    } else skip;
 
                     milestoneLogRecord.status           := "REVIEW_PENDING";
                     milestoneLogRecord.submitForReview  := True;

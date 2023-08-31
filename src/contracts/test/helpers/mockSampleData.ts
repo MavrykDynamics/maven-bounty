@@ -1,12 +1,13 @@
+import { MichelsonMap } from "@taquito/michelson-encoder";
+import { mock } from 'node:test';
+
+import { alice, bob, eve, ivan, mallory, oscar, susie, trudy } from "../../scripts/sandbox/accounts";
 // ------------------------------------------------------------------------------
 // Contract Address
 // ------------------------------------------------------------------------------
 
 import contractDeployments from './../contractDeployments.json'
 
-import { MichelsonMap } from "@taquito/michelson-encoder";
-import { alice, bob, eve, mallory, oscar, ivan, trudy, susie } from "../../scripts/sandbox/accounts";
-import { mock } from 'node:test';
 export const mvkTokenDecimals = 9
 
 let mockFa12TokenAddress 
