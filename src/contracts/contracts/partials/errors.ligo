@@ -129,6 +129,6 @@
 [@inline] const error_BOUNTY_APPLICATION_IS_STOPPED_AND_CANNOT_BE_COMPLETED                                             = 96n;
 [@inline] const error_BOUNTY_HAS_ALREADY_BEEN_COMPLETED                                                                 = 97n;
 [@inline] const error_BOUNTY_APPLICATION_IS_ALREADY_PENDING_REVIEW                                                      = 98n;
-[@inline] const error_APPLICATION_IS_CANCELED                                                                           = 98n;
-[@inline] const error_BOUNTY_REVIEW_IS_NOT_APPROVED                                                                     = 98n;
+[@inline] const error_APPLICATION_IS_CANCELED                                                                           = 99n;
+[@inline] const error_BOUNTY_REVIEW_IS_NOT_APPROVED                                                                     = 100n;
 

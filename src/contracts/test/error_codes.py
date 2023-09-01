@@ -127,3 +127,8 @@ error_GROUP_HAS_A_BOUNTY_IN_PROGRESS                                            
 error_BOUNTY_APPLICATION_NEEDS_TO_BE_APPROVED_FIRST                                                     = 94
 error_BOUNTY_APPLICATION_HAS_ALREADY_STOPPED                                                            = 95
 error_BOUNTY_APPLICATION_IS_STOPPED_AND_CANNOT_BE_COMPLETED                                             = 96
+error_BOUNTY_HAS_ALREADY_BEEN_COMPLETED                                                                 = 97
+error_BOUNTY_APPLICATION_IS_ALREADY_PENDING_REVIEW                                                      = 98
+error_APPLICATION_IS_CANCELED                                                                           = 99
+error_BOUNTY_REVIEW_IS_NOT_APPROVED                                                                     = 100
+

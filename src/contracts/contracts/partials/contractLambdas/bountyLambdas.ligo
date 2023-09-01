@@ -946,7 +946,9 @@ block {
                         // check if last milestone of bounty
                         if milestoneId = numberOfMilestones then {
                             // update applicant milestone record
-                            applicationRecord.fullyRewarded := True;
+                            applicationRecord.fullyRewarded  := True;
+                            applicationRecord.status         := "REWARDED";
+
                         } else skip;
 
                         applicationRecord.lastRewardTimestamp         := Some(Tezos.get_now());

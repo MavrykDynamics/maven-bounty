@@ -75,8 +75,10 @@ describe('Test: Bounty Contract', async () => {
     let bountyWithOneMilestoneId
     let bountyWithTwoMilestonesId
     let bountyWithThreeMilestonesId
+    let bountyWithRejectedReview
 
     // reference groups
+    let groupId
     let firstGroupId
     let secondGroupId
     let thirdGroupId
@@ -2207,8 +2209,8 @@ describe('Test: Bounty Contract', async () => {
                     bountyStorage = await bountyInstance.storage();
 
                     const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
-                    const currentMilestone  = applicationRecord.currentMilestone.toNumber();
-
+                    const currentMilestone  = applicationRecord.currentMilestone;
+                    
                     const milestoneLogRecord = await applicationRecord.milestoneLog.get(currentMilestone);
 
                     // Application Record
@@ -2253,40 +2255,7 @@ describe('Test: Bounty Contract', async () => {
                 await signerFactory(tezos, bountyCreatorSk);
             });
 
-            it('bounty creator (alice) should be able to review and approve a completed bounty (status: REVIEW_APPROVED)', async () => {
-                try {
-
-                    const bountyId      = bountyWithThreeMilestonesId    
-                    const applicantType = "user";
-                    const status        = "REVIEW_APPROVED";
-                    
-                    const milestoneReview = "Milestone review text: approved";
-                    const bountyReview    = "Bounty review text: approved";
-                    
-                    const reviewOperation  = await bountyInstance.methods.reviewBounty(
-                        bountyId,
-                        applicantType,
-                        user,
-                        status, 
-                        milestoneReview,
-                        bountyReview
-                    ).send();
-                    await reviewOperation.confirmation();
-
-                    bountyStorage = await bountyInstance.storage();
-
-                    const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
-                    assert.equal(applicationRecord.status             , status);
-                    assert.equal(applicationRecord.submitForReview    , false);
-                    assert.equal(applicationRecord.reviewed           , true);
-                    assert.equal(applicationRecord.review             , bountyReview);
-
-                } catch (e) {
-                    console.log(e)
-                }
-            })
-
-            it('bounty creator (alice) should be able to change a review of a completed bounty (status: REVIEW_REJECTED)', async () => {
+            it('bounty creator (alice) should be able to review and reject a completed bounty (status: REVIEW_PENDING to REVIEW_REJECTED)', async () => {
                 try {
 
                     const bountyId      = bountyWithThreeMilestonesId    
@@ -2296,6 +2265,9 @@ describe('Test: Bounty Contract', async () => {
                     const milestoneReview = "Milestone review text: rejected";
                     const bountyReview    = "Bounty review text: rejected";
                     
+                    let applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
+                    const initialCurrentMilestone = applicationRecord.currentMilestone.toNumber();
+                    
                     const reviewOperation  = await bountyInstance.methods.reviewBounty(
                         bountyId,
                         applicantType,
@@ -2308,11 +2280,51 @@ describe('Test: Bounty Contract', async () => {
 
                     bountyStorage = await bountyInstance.storage();
 
-                    const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
+                    applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
+
                     assert.equal(applicationRecord.status             , status);
                     assert.equal(applicationRecord.submitForReview    , false);
                     assert.equal(applicationRecord.reviewed           , true);
                     assert.equal(applicationRecord.review             , bountyReview);
+                    assert.equal(applicationRecord.currentMilestone   , initialCurrentMilestone);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('bounty creator (alice) should be able to change a review of a completed bounty (status: REVIEW_REJECTED to REVIEW_DISPUTED)', async () => {
+                try {
+
+                    const bountyId      = bountyWithThreeMilestonesId    
+                    const applicantType = "user";
+                    const status        = "REVIEW_DISPUTED";
+                    
+                    const milestoneReview = "Milestone review text: disputed";
+                    const bountyReview    = "Bounty review text: disputed";
+                    
+                    let applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
+                    const initialCurrentMilestone = applicationRecord.currentMilestone.toNumber();
+                    
+                    const reviewOperation  = await bountyInstance.methods.reviewBounty(
+                        bountyId,
+                        applicantType,
+                        user,
+                        status, 
+                        milestoneReview,
+                        bountyReview
+                    ).send();
+                    await reviewOperation.confirmation();
+
+                    bountyStorage = await bountyInstance.storage();
+
+                    applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
+
+                    assert.equal(applicationRecord.status             , status);
+                    assert.equal(applicationRecord.submitForReview    , false);
+                    assert.equal(applicationRecord.reviewed           , true);
+                    assert.equal(applicationRecord.review             , bountyReview);
+                    assert.equal(applicationRecord.currentMilestone   , initialCurrentMilestone);
 
                 } catch (e) {
                     console.log(e)
@@ -2346,18 +2358,19 @@ describe('Test: Bounty Contract', async () => {
                 }
             })
 
-            it('admin (eve) should be able to review a completed bounty (status: REVIEW_REJECTED)', async () => {
+            it('bounty creator (alice) should be able to change a review of a completed bounty (status: REVIEW_DISPUTED to REVIEW_APPROVED)', async () => {
                 try {
 
-                    await signerFactory(tezos, adminSk);
-
-                    const bountyId      = bountyWithNoMilestonesId;
+                    const bountyId      = bountyWithThreeMilestonesId    
                     const applicantType = "user";
-                    const status        = "REVIEW_REJECTED";
+                    const status        = "REVIEW_APPROVED";
                     
-                    const milestoneReview = "Milestone review text: rejected";
-                    const bountyReview    = "Bounty review text: rejected";
+                    const milestoneReview = "Milestone review text: approved";
+                    const bountyReview    = "Bounty review text: approved";
                     
+                    let applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
+                    const initialCurrentMilestone = applicationRecord.currentMilestone.toNumber();
+
                     const reviewOperation  = await bountyInstance.methods.reviewBounty(
                         bountyId,
                         applicantType,
@@ -2369,29 +2382,55 @@ describe('Test: Bounty Contract', async () => {
                     await reviewOperation.confirmation();
 
                     bountyStorage = await bountyInstance.storage();
+                    applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
 
-                    const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
                     assert.equal(applicationRecord.status             , status);
                     assert.equal(applicationRecord.submitForReview    , false);
                     assert.equal(applicationRecord.reviewed           , true);
                     assert.equal(applicationRecord.review             , bountyReview);
+                    assert.equal(applicationRecord.currentMilestone   , initialCurrentMilestone + 1);
 
                 } catch (e) {
                     console.log(e)
                 }
             })
 
-            it('admin (eve) should be able to change a review of a completed bounty (status: REVIEW_APPROVED)', async () => {
+            it('bounty creator (alice) should not be able to change a review after it has been approved', async () => {
+                try {
+
+                    const bountyId      = bountyWithThreeMilestonesId    
+                    const applicantType = "user";
+                    const status        = "REVIEW_REJECTED";
+                    
+                    const milestoneReview = "Milestone review text: should fail";
+                    const bountyReview    = "Bounty review text: should fail";
+                    
+                    const reviewOperation  = await bountyInstance.methods.reviewBounty(
+                        bountyId,
+                        applicantType,
+                        user,
+                        status, 
+                        milestoneReview,
+                        bountyReview
+                    );
+                    await chai.expect(reviewOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('admin (eve) should be able to review a completed bounty (bounty with no milestones | status: REVIEW_REJECTED)', async () => {
                 try {
 
                     await signerFactory(tezos, adminSk);
 
                     const bountyId      = bountyWithNoMilestonesId;
                     const applicantType = "user";
-                    const status        = "REVIEW_APPROVED";
+                    const status        = "REVIEW_REJECTED";
                     
-                    const milestoneReview = "Milestone review text: approved";
-                    const bountyReview    = "Bounty review text: approved";
+                    const milestoneReview = "Milestone review text: rejected";
+                    const bountyReview    = "Bounty review text: rejected";
                     
                     const reviewOperation  = await bountyInstance.methods.reviewBounty(
                         bountyId,
@@ -2439,6 +2478,41 @@ describe('Test: Bounty Contract', async () => {
                         bountyReview
                     );
                     await chai.expect(reviewOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('admin (eve) should be able to set a review of a completed bounty with no milestones (status: REVIEW_APPROVED)', async () => {
+                try {
+
+                    await signerFactory(tezos, adminSk);
+
+                    const bountyId      = bountyWithNoMilestonesId;
+                    const applicantType = "user";
+                    const status        = "REVIEW_APPROVED";
+                    
+                    const milestoneReview = "Milestone review text: approved";
+                    const bountyReview    = "Bounty review text: approved";
+                    
+                    const reviewOperation  = await bountyInstance.methods.reviewBounty(
+                        bountyId,
+                        applicantType,
+                        user,
+                        status, 
+                        milestoneReview,
+                        bountyReview
+                    ).send();
+                    await reviewOperation.confirmation();
+
+                    bountyStorage = await bountyInstance.storage();
+
+                    const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
+                    assert.equal(applicationRecord.status             , status);
+                    assert.equal(applicationRecord.submitForReview    , false);
+                    assert.equal(applicationRecord.reviewed           , true);
+                    assert.equal(applicationRecord.review             , bountyReview);
 
                 } catch (e) {
                     console.log(e)
@@ -2753,9 +2827,7 @@ describe('Test: Bounty Contract', async () => {
                     bountyStorage = await bountyInstance.storage();
 
                     const applicationRecord  = await bountyStorage.applicationLedger.get([bountyId, { "group": groupId}]);
-                    const currentMilestone   = applicationRecord.currentMilestone.toNumber() - 1;
-
-                    console.log(`currentMilestone: ${currentMilestone}`);
+                    const currentMilestone   = applicationRecord.currentMilestone;
 
                     const milestoneLogRecord = await applicationRecord.milestoneLog.get(currentMilestone);
 
@@ -2801,13 +2873,13 @@ describe('Test: Bounty Contract', async () => {
                 await signerFactory(tezos, bountyCreatorSk);
             });
 
-            it('bounty creator (alice) should be able to review and approve a completed bounty (status: REVIEW_APPROVED)', async () => {
+            it('bounty creator (alice) should be able to review and approve a completed bounty (status: REVIEW_PENDING to REVIEW_REJECTED)', async () => {
                 try {
 
                     const bountyId      = bountyWithThreeMilestonesId    
                     const groupId       = firstGroupId;
                     const applicantType = "group";
-                    const status        = "REVIEW_APPROVED";
+                    const status        = "REVIEW_REJECTED";
                     
                     const milestoneReview = "Milestone review text: rejected";
                     const bountyReview    = "Bounty review text: rejected";
@@ -2835,16 +2907,16 @@ describe('Test: Bounty Contract', async () => {
                 }
             })
 
-            it('bounty creator (alice) should be able to change a review of a completed bounty (status: REVIEW_REJECTED)', async () => {
+            it('bounty creator (alice) should be able to change a review of a completed bounty (status: REVIEW_REJECTED to REVIEW_DISPUTED)', async () => {
                 try {
 
                     const bountyId      = bountyWithThreeMilestonesId    
                     const groupId       = firstGroupId;
                     const applicantType = "group";
-                    const status        = "REVIEW_REJECTED";
+                    const status        = "REVIEW_DISPUTED";
                     
-                    const milestoneReview = "Milestone review text: rejected";
-                    const bountyReview    = "Bounty review text: rejected";
+                    const milestoneReview = "Milestone review text: disputed";
+                    const bountyReview    = "Bounty review text: disputed";
                     
                     const reviewOperation  = await bountyInstance.methods.reviewBounty(
                         bountyId,
@@ -2897,6 +2969,168 @@ describe('Test: Bounty Contract', async () => {
                 }
             })
 
+            it('bounty creator (alice) should be able to change a review of a completed bounty (status: REVIEW_DISPUTED to REVIEW_APPROVED)', async () => {
+                try {
+
+                    const bountyId      = bountyWithThreeMilestonesId    
+                    const groupId       = firstGroupId;
+                    const applicantType = "group";
+                    const status        = "REVIEW_APPROVED";
+                    
+                    const milestoneReview = "Milestone review text: approved";
+                    const bountyReview    = "Bounty review text: approved";
+                    
+                    const reviewOperation  = await bountyInstance.methods.reviewBounty(
+                        bountyId,
+                        applicantType,
+                        groupId,
+                        status, 
+                        milestoneReview,
+                        bountyReview
+                    ).send();
+                    await reviewOperation.confirmation();
+
+                    bountyStorage = await bountyInstance.storage();
+
+                    const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "group": groupId}]);
+                    assert.equal(applicationRecord.status             , status);
+                    assert.equal(applicationRecord.submitForReview    , false);
+                    assert.equal(applicationRecord.reviewed           , true);
+                    assert.equal(applicationRecord.review             , bountyReview);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('bounty creator (alice) should not be able to change a review after it has been approved', async () => {
+                try {
+
+                    const bountyId      = bountyWithThreeMilestonesId    
+                    const groupId       = firstGroupId;
+                    const applicantType = "group";
+                    const status        = "REVIEW_REJECTED";
+                    
+                    const milestoneReview = "Milestone review text: should fail";
+                    const bountyReview    = "Bounty review text: should fail";
+                    
+                    const reviewOperation  = await bountyInstance.methods.reviewBounty(
+                        bountyId,
+                        applicantType,
+                        groupId,
+                        status, 
+                        milestoneReview,
+                        bountyReview
+                    );
+                    await chai.expect(reviewOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('admin (eve) should be able to review a completed bounty (bounty with no milestones | status: REVIEW_REJECTED)', async () => {
+                try {
+
+                    await signerFactory(tezos, adminSk);
+
+                    const bountyId      = bountyWithNoMilestonesId;
+                    const groupId       = firstGroupId;
+                    const applicantType = "group";
+                    const status        = "REVIEW_REJECTED";
+                    
+                    const milestoneReview = "Milestone review text: rejected";
+                    const bountyReview    = "Bounty review text: rejected";
+                    
+                    const reviewOperation  = await bountyInstance.methods.reviewBounty(
+                        bountyId,
+                        applicantType,
+                        groupId,
+                        status, 
+                        milestoneReview,
+                        bountyReview
+                    ).send();
+                    await reviewOperation.confirmation();
+
+                    bountyStorage = await bountyInstance.storage();
+
+                    const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "group": groupId}]);
+                    assert.equal(applicationRecord.status             , status);
+                    assert.equal(applicationRecord.submitForReview    , false);
+                    assert.equal(applicationRecord.reviewed           , true);
+                    assert.equal(applicationRecord.review             , bountyReview);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('admin (eve) should not be able to set an non-valid status in a review of a completed bounty (status: REVIEW_DONE)', async () => {
+                try {
+
+                    await signerFactory(tezos, adminSk);
+
+                    const bountyId      = bountyWithNoMilestonesId    
+                    const groupId       = firstGroupId;
+                    const applicantType = "group";
+                    const status        = "REVIEW_DONE";
+
+                    // for reference, valid review statuses are "REVIEW_APPROVED", "REVIEW_DISPUTED", "REVIEW_REJECTED"
+                    
+                    const milestoneReview = "Milestone review text: should fail";
+                    const bountyReview    = "Bounty review text: should fail";
+                    
+                    const reviewOperation  = await bountyInstance.methods.reviewBounty(
+                        bountyId,
+                        applicantType,
+                        groupId,
+                        status, 
+                        milestoneReview,
+                        bountyReview
+                    );
+                    await chai.expect(reviewOperation.send()).to.be.rejected;
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
+            it('admin (eve) should be able to set a review of a completed bounty with no milestones (status: REVIEW_APPROVED)', async () => {
+                try {
+
+                    await signerFactory(tezos, adminSk);
+
+                    const bountyId      = bountyWithNoMilestonesId;
+                    const groupId       = firstGroupId;
+                    const applicantType = "group";
+                    const status        = "REVIEW_APPROVED";
+                    
+                    const milestoneReview = "Milestone review text: approved";
+                    const bountyReview    = "Bounty review text: approved";
+                    
+                    const reviewOperation  = await bountyInstance.methods.reviewBounty(
+                        bountyId,
+                        applicantType,
+                        groupId,
+                        status, 
+                        milestoneReview,
+                        bountyReview
+                    ).send();
+                    await reviewOperation.confirmation();
+
+                    bountyStorage = await bountyInstance.storage();
+
+                    const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "group": groupId}]);
+                    assert.equal(applicationRecord.status             , status);
+                    assert.equal(applicationRecord.submitForReview    , false);
+                    assert.equal(applicationRecord.reviewed           , true);
+                    assert.equal(applicationRecord.review             , bountyReview);
+
+                } catch (e) {
+                    console.log(e)
+                }
+            })
+
         })
 
     })
@@ -2908,12 +3142,16 @@ describe('Test: Bounty Contract', async () => {
 
         describe('applicant type: user', function () {
 
-            before(`set up second bounty`, async() => {
+            before(`set up bounties`, async() => {
 
                 user    = mallory.pkh;
                 userSk  = mallory.sk;
 
-                bountyStorage  = await bountyInstance.storage();
+                // -------------------------------
+                // Bounty with 2 milestones and review approved
+                // -------------------------------
+
+                bountyStorage               = await bountyInstance.storage();
                 const bountyId              = bountyStorage.nextBountyId;
                 bountyWithTwoMilestonesId   = bountyId;
 
@@ -3006,6 +3244,115 @@ describe('Test: Bounty Contract', async () => {
 
             })
 
+            before(`set up more bounties`, async() => {
+
+                user    = mallory.pkh;
+                userSk  = mallory.sk;
+
+                // -------------------------------
+                // Bounty with 2 milestones and review rejected
+                // -------------------------------
+
+                bountyStorage               = await bountyInstance.storage();
+                const bountyId              = bountyStorage.nextBountyId;
+                bountyWithRejectedReview    = bountyId;
+
+                await signerFactory(tezos, bountyCreatorSk);
+
+                const setBountyType         = "createBounty";
+                const whitelisted           = [bob.pkh, alice.pkh, eve.pkh];
+                const name                  = "Bounty 7 Name";
+                const description           = "Bounty 7 Desc (active with whitelisted, image, 2 milestones, and rewards)";
+                const image                 = "Bounty 7 image IPFS link";
+                const status                = "ACTIVE";
+                const maxApprovedApplicants = 2;
+                const milestones : any      = mockMilestoneGroups.milestoneGroupTwo;
+                const totalRewards : any    = mockBountyRewards.bountyTwoReward;
+
+                const mutezRewards          = maxApprovedApplicants * mockBountyRewardAmounts.bountyTwoReward.tez;
+                const mockFa12TokenRewards  = maxApprovedApplicants * mockBountyRewardAmounts.bountyTwoReward.mockFa12;
+
+                // update operators operation to transfer mock FA2 tokens
+                updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, bountyCreator, bountyAddress, tokenId);
+                await updateOperatorsOperation.confirmation();
+
+                // approve operation to transfer mock FA12 tokens
+                approveOperation = await mockFa12TokenInstance.methods.approve(bountyAddress, 0).send();
+                await approveOperation.confirmation();
+
+                approveOperation = await mockFa12TokenInstance.methods.approve(bountyAddress, mockFa12TokenRewards).send();
+                await approveOperation.confirmation();
+                
+                const createBountyOperation  = await bountyInstance.methods.setBounty(
+                    setBountyType, 
+                    whitelisted,
+                    name,
+                    description,
+                    image,
+                    status,
+                    maxApprovedApplicants,
+                    milestones,
+                    totalRewards
+                ).send({ mutez: true, amount : mutezRewards});
+                await createBountyOperation.confirmation();
+
+                await signerFactory(tezos, userSk);
+                const applicantType                  = "user";
+                const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                    bountyId,
+                    applicantType,
+                    user
+                ).send();
+                await applyForBountyOperation.confirmation();
+
+                await signerFactory(tezos, bountyCreatorSk);
+                const approvalType  = "approve";
+                const approveOrRejectOperation  = await bountyInstance.methods.approveOrReject(
+                    bountyId,
+                    applicantType,
+                    user,
+                    approvalType
+                ).send();
+                await approveOrRejectOperation.confirmation();
+
+                bountyStorage = await bountyInstance.storage();
+                const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);                    
+                assert.equal(applicationRecord.status       , "APPROVED");
+                assert.equal(applicationRecord.isApproved   , true);
+
+                await signerFactory(tezos, userSk);
+                const completeBountyOperation  = await bountyInstance.methods.completeBounty(
+                    bountyId,
+                    applicantType,
+                    user
+                ).send();
+                await completeBountyOperation.confirmation();
+
+                await signerFactory(tezos, bountyCreatorSk);
+                const reviewStatus     = "REVIEW_REJECTED";
+                
+                const milestoneReview  = "Milestone review text: rejected";
+                const bountyReview     = "Bounty review text: rejected";
+                
+                const reviewOperation  = await bountyInstance.methods.reviewBounty(
+                    bountyId,
+                    applicantType,
+                    user,
+                    reviewStatus, 
+                    milestoneReview,
+                    bountyReview
+                ).send();
+                await reviewOperation.confirmation();
+
+
+                // -------------------------------
+                // Bounty with 2 milestones and review rejected
+                // -------------------------------
+
+                bountyWithRejectedReview
+
+            })
+
             describe('%sendBountyReward - partial bounty milestone completion', function () {
                 
                 beforeEach("Set signer to bounty creator (alice)", async () => {
@@ -3068,7 +3415,7 @@ describe('Test: Bounty Contract', async () => {
                 it('bounty creator (alice) should not be able to call sendBountyReward for rejected bounty application ', async () => {
                     try {
 
-                        const bountyId      = bountyWithThreeMilestonesId    
+                        const bountyId      = bountyWithRejectedReview    
                         const milestoneId   = 1;
                         const applicantType = "user";   
 
@@ -3127,6 +3474,13 @@ describe('Test: Bounty Contract', async () => {
                         const mockFa2TokenRewards                = mockMilestoneRewardAmounts.milestoneGroupTwo.milestoneOneReward.mockFa2;
                         const mutezRewards                       = mockMilestoneRewardAmounts.milestoneGroupTwo.milestoneOneReward.tez;
 
+                        let applicationRecord                  = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
+                        let milestoneLogRecord                 = await applicationRecord.milestoneLog.get(milestoneId.toString());
+
+                        assert.equal(applicationRecord.status == "REWARDED", false);
+                        assert.equal(milestoneLogRecord.status == "REWARDED", false);
+                        assert.equal(milestoneLogRecord.rewarded, false);
+
                         const sendBountyRewardOperation  = await bountyInstance.methods.sendBountyReward(
                             bountyId,
                             milestoneId,
@@ -3149,6 +3503,13 @@ describe('Test: Bounty Contract', async () => {
                         assert.equal(userUpdatedMockFa12TokenBalance    , userInitialMockFa12TokenBalance + mockFa12TokenRewards);
                         assert.equal(userUpdatedMockFa2TokenBalance     , userInitialMockFa2TokenBalance + mockFa2TokenRewards);
                         assert.equal(almostEqual(userUpdatedTezBalance  , userInitialTezBalance.toNumber() + mutezRewards, 0.001), true);
+
+                        applicationRecord                  = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
+                        milestoneLogRecord                 = await applicationRecord.milestoneLog.get(milestoneId.toString());
+
+                        assert.equal(applicationRecord.status == "REWARDED", false);
+                        assert.equal(milestoneLogRecord.status == "REWARDED", true);
+                        assert.equal(milestoneLogRecord.rewarded, true);
 
                     } catch (e) {
                         console.log(e)
@@ -3247,9 +3608,14 @@ describe('Test: Bounty Contract', async () => {
                         const userInitialMockFa2TokenBalance     = userMockFa2Ledger == undefined ? 0 : userMockFa2Ledger.toNumber();
                         const userInitialTezBalance              = await utils.tezos.tz.getBalance(user);
 
-                        const mockFa12TokenRewards  = mockBountyRewardAmounts.bountyOneReward.mockFa12;
-                        const mockFa2TokenRewards   = mockBountyRewardAmounts.bountyOneReward.mockFa2;
-                        const mutezRewards          = mockBountyRewardAmounts.bountyOneReward.tez;
+                        const mockFa12TokenRewards               = mockBountyRewardAmounts.bountyOneReward.mockFa12;
+                        const mockFa2TokenRewards                = mockBountyRewardAmounts.bountyOneReward.mockFa2;
+                        const mutezRewards                       = mockBountyRewardAmounts.bountyOneReward.tez;
+
+                        let applicationRecord                   = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
+
+                        assert.equal(applicationRecord.status == "REWARDED", false);
+                        assert.equal(applicationRecord.fullyRewarded, false);
 
                         const sendBountyRewardOperation  = await bountyInstance.methods.sendBountyReward(
                             bountyId,
@@ -3273,6 +3639,11 @@ describe('Test: Bounty Contract', async () => {
                         assert.equal(userUpdatedMockFa12TokenBalance    , userInitialMockFa12TokenBalance + mockFa12TokenRewards);
                         assert.equal(userUpdatedMockFa2TokenBalance     , userInitialMockFa2TokenBalance + mockFa2TokenRewards);
                         assert.equal(almostEqual(userUpdatedTezBalance  , userInitialTezBalance.toNumber() + mutezRewards, 0.001), true);
+
+                        applicationRecord                  = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
+
+                        assert.equal(applicationRecord.status == "REWARDED", true);
+                        assert.equal(applicationRecord.fullyRewarded, true);
 
                     } catch (e) {
                         console.log(e)
@@ -3320,9 +3691,17 @@ describe('Test: Bounty Contract', async () => {
                         const userInitialMockFa2TokenBalance     = userMockFa2Ledger == undefined ? 0 : userMockFa2Ledger.toNumber();
                         const userInitialTezBalance              = await utils.tezos.tz.getBalance(user);
 
-                        const mockFa12TokenRewards               = mockMilestoneRewardAmounts.milestoneGroupTwo.milestoneOneReward.mockFa12;
-                        const mockFa2TokenRewards                = mockMilestoneRewardAmounts.milestoneGroupTwo.milestoneOneReward.mockFa2;
-                        const mutezRewards                       = mockMilestoneRewardAmounts.milestoneGroupTwo.milestoneOneReward.tez;
+                        const mockFa12TokenRewards               = mockMilestoneRewardAmounts.milestoneGroupTwo.milestoneTwoReward.mockFa12;
+                        const mockFa2TokenRewards                = mockMilestoneRewardAmounts.milestoneGroupTwo.milestoneTwoReward.mockFa2;
+                        const mutezRewards                       = mockMilestoneRewardAmounts.milestoneGroupTwo.milestoneTwoReward.tez;
+
+                        let applicationRecord                  = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
+                        let milestoneLogRecord                 = await applicationRecord.milestoneLog.get(milestoneId.toString());
+
+                        assert.equal(applicationRecord.status == "REWARDED", false);
+                        assert.equal(applicationRecord.fullyRewarded, false);
+                        assert.equal(milestoneLogRecord.status == "REWARDED", false);
+                        assert.equal(milestoneLogRecord.rewarded, false);
 
                         const sendBountyRewardOperation  = await bountyInstance.methods.sendBountyReward(
                             bountyId,
@@ -3347,6 +3726,66 @@ describe('Test: Bounty Contract', async () => {
                         assert.equal(userUpdatedMockFa2TokenBalance     , userInitialMockFa2TokenBalance + mockFa2TokenRewards);
                         assert.equal(almostEqual(userUpdatedTezBalance  , userInitialTezBalance.toNumber() + mutezRewards, 0.001), true);
 
+                        applicationRecord                  = await bountyStorage.applicationLedger.get([bountyId, { "user": user}]);
+                        milestoneLogRecord                 = await applicationRecord.milestoneLog.get(milestoneId.toString());
+
+                        assert.equal(applicationRecord.status == "REWARDED", true);
+                        assert.equal(applicationRecord.fullyRewarded, true);
+                        assert.equal(milestoneLogRecord.status == "REWARDED", true);
+                        assert.equal(milestoneLogRecord.rewarded, true);
+
+                    } catch (e) {
+                        console.log(e)
+                    }
+                })
+
+                it('bounty creator (alice) should not be able to send further rewards to user (mallory) for completed bounty (with two milestones)', async () => {
+                    try {
+
+                        const bountyId      = bountyWithTwoMilestonesId    
+                        let milestoneId     = 2;
+                        const applicantType = "user";   
+
+                        // get initial balances 
+                        const userMockFa12Ledger                 = await mockFa12TokenStorage.ledger.get(user);            
+                        const userMockFa2Ledger                  = await mockFa2TokenStorage.ledger.get(user);       
+
+                        const userInitialMockFa12TokenBalance    = userMockFa12Ledger == undefined ? 0 : userMockFa12Ledger.balance.toNumber();     
+                        const userInitialMockFa2TokenBalance     = userMockFa2Ledger == undefined ? 0 : userMockFa2Ledger.toNumber();
+                        const userInitialTezBalance              = await utils.tezos.tz.getBalance(user);
+
+                        let sendBountyRewardOperation  = await bountyInstance.methods.sendBountyReward(
+                            bountyId,
+                            milestoneId,
+                            applicantType,
+                            user
+                        );
+                        await chai.expect(sendBountyRewardOperation.send()).to.be.rejected;
+
+                        milestoneId = 3;
+                        sendBountyRewardOperation  = await bountyInstance.methods.sendBountyReward(
+                            bountyId,
+                            milestoneId,
+                            applicantType,
+                            user
+                        );
+                        await chai.expect(sendBountyRewardOperation.send()).to.be.rejected;
+
+                        bountyStorage           = await bountyInstance.storage();
+                        mockFa12TokenStorage    = await mockFa12TokenInstance.storage();
+                        mockFa2TokenStorage     = await mockFa2TokenInstance.storage();
+
+                        const userUpdatedMockFa12Ledger          = await mockFa12TokenStorage.ledger.get(user);            
+                        const userUpdatedMockFa2Ledger           = await mockFa2TokenStorage.ledger.get(user);       
+
+                        const userUpdatedMockFa12TokenBalance    = userUpdatedMockFa12Ledger == undefined ? 0 : userUpdatedMockFa12Ledger.balance.toNumber();     
+                        const userUpdatedMockFa2TokenBalance     = userUpdatedMockFa2Ledger == undefined ? 0 : userUpdatedMockFa2Ledger.toNumber();
+                        const userUpdatedTezBalance              = await utils.tezos.tz.getBalance(user);
+
+                        assert.equal(userUpdatedMockFa12TokenBalance    , userInitialMockFa12TokenBalance);
+                        assert.equal(userUpdatedMockFa2TokenBalance     , userInitialMockFa2TokenBalance);
+                        assert.equal(almostEqual(userUpdatedTezBalance  , userInitialTezBalance.toNumber(), 0.001), true);
+
                     } catch (e) {
                         console.log(e)
                     }
@@ -3355,6 +3794,742 @@ describe('Test: Bounty Contract', async () => {
             })
 
         })
+
+        describe('applicant type: group', function () {
+
+            before(`set up bounties`, async() => {
+
+                user    = mallory.pkh;
+                userSk  = mallory.sk;
+
+                // -------------------------------
+                // Bounty with 2 milestones and review approved
+                // -------------------------------
+
+                bountyStorage               = await bountyInstance.storage();
+                const bountyId              = bountyStorage.nextBountyId;
+                bountyWithTwoMilestonesId   = bountyId;
+
+                await signerFactory(tezos, bountyCreatorSk);
+
+                const setBountyType         = "createBounty";
+                const whitelisted           = [bob.pkh, alice.pkh, eve.pkh];
+                const name                  = "Bounty 6 Name";
+                const description           = "Bounty 6 Desc (active with whitelisted, image, 2 milestones, and rewards)";
+                const image                 = "Bounty 6 image IPFS link";
+                const status                = "ACTIVE";
+                const maxApprovedApplicants = 2;
+                const milestones : any      = mockMilestoneGroups.milestoneGroupTwo;
+                const totalRewards : any    = mockBountyRewards.bountyTwoReward;
+
+                const mutezRewards          = maxApprovedApplicants * mockBountyRewardAmounts.bountyTwoReward.tez;
+                const mockFa12TokenRewards  = maxApprovedApplicants * mockBountyRewardAmounts.bountyTwoReward.mockFa12;
+
+                // update operators operation to transfer mock FA2 tokens
+                updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, bountyCreator, bountyAddress, tokenId);
+                await updateOperatorsOperation.confirmation();
+
+                // approve operation to transfer mock FA12 tokens
+                approveOperation = await mockFa12TokenInstance.methods.approve(bountyAddress, 0).send();
+                await approveOperation.confirmation();
+
+                approveOperation = await mockFa12TokenInstance.methods.approve(bountyAddress, mockFa12TokenRewards).send();
+                await approveOperation.confirmation();
+                
+                const createBountyOperation  = await bountyInstance.methods.setBounty(
+                    setBountyType, 
+                    whitelisted,
+                    name,
+                    description,
+                    image,
+                    status,
+                    maxApprovedApplicants,
+                    milestones,
+                    totalRewards
+                ).send({ mutez: true, amount : mutezRewards});
+                await createBountyOperation.confirmation();
+
+                await signerFactory(tezos, userSk);
+                const applicantType                  = "group";
+                const groupId                        = firstGroupId;
+                const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                    bountyId,
+                    applicantType,
+                    groupId
+                ).send();
+                await applyForBountyOperation.confirmation();
+
+                await signerFactory(tezos, bountyCreatorSk);
+                const approvalType  = "approve";
+                const approveOrRejectOperation  = await bountyInstance.methods.approveOrReject(
+                    bountyId,
+                    applicantType,
+                    groupId,
+                    approvalType
+                ).send();
+                await approveOrRejectOperation.confirmation();
+
+                bountyStorage = await bountyInstance.storage();
+                const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "group": groupId}]);                    
+                assert.equal(applicationRecord.status       , "APPROVED");
+                assert.equal(applicationRecord.isApproved   , true);
+
+                await signerFactory(tezos, userSk);
+                const completeBountyOperation  = await bountyInstance.methods.completeBounty(
+                    bountyId,
+                    applicantType,
+                    groupId
+                ).send();
+                await completeBountyOperation.confirmation();
+
+                await signerFactory(tezos, bountyCreatorSk);
+                const reviewStatus     = "REVIEW_APPROVED";
+                
+                const milestoneReview  = "Milestone review text: approved";
+                const bountyReview     = "Bounty review text: approved";
+                
+                const reviewOperation  = await bountyInstance.methods.reviewBounty(
+                    bountyId,
+                    applicantType,
+                    groupId,
+                    reviewStatus, 
+                    milestoneReview,
+                    bountyReview
+                ).send();
+                await reviewOperation.confirmation();
+
+            })
+
+            before(`set up more bounties`, async() => {
+
+                user    = mallory.pkh;
+                userSk  = mallory.sk;
+
+                // -------------------------------
+                // Bounty with 2 milestones and review rejected
+                // -------------------------------
+
+                bountyStorage               = await bountyInstance.storage();
+                const bountyId              = bountyStorage.nextBountyId;
+                bountyWithRejectedReview    = bountyId;
+
+                await signerFactory(tezos, bountyCreatorSk);
+
+                const setBountyType         = "createBounty";
+                const whitelisted           = [bob.pkh, alice.pkh, eve.pkh];
+                const name                  = "Bounty 7 Name";
+                const description           = "Bounty 7 Desc (active with whitelisted, image, 2 milestones, and rewards)";
+                const image                 = "Bounty 7 image IPFS link";
+                const status                = "ACTIVE";
+                const maxApprovedApplicants = 2;
+                const milestones : any      = mockMilestoneGroups.milestoneGroupTwo;
+                const totalRewards : any    = mockBountyRewards.bountyTwoReward;
+
+                const mutezRewards          = maxApprovedApplicants * mockBountyRewardAmounts.bountyTwoReward.tez;
+                const mockFa12TokenRewards  = maxApprovedApplicants * mockBountyRewardAmounts.bountyTwoReward.mockFa12;
+
+                // update operators operation to transfer mock FA2 tokens
+                updateOperatorsOperation = await updateOperators(mockFa2TokenInstance, bountyCreator, bountyAddress, tokenId);
+                await updateOperatorsOperation.confirmation();
+
+                // approve operation to transfer mock FA12 tokens
+                approveOperation = await mockFa12TokenInstance.methods.approve(bountyAddress, 0).send();
+                await approveOperation.confirmation();
+
+                approveOperation = await mockFa12TokenInstance.methods.approve(bountyAddress, mockFa12TokenRewards).send();
+                await approveOperation.confirmation();
+                
+                const createBountyOperation  = await bountyInstance.methods.setBounty(
+                    setBountyType, 
+                    whitelisted,
+                    name,
+                    description,
+                    image,
+                    status,
+                    maxApprovedApplicants,
+                    milestones,
+                    totalRewards
+                ).send({ mutez: true, amount : mutezRewards});
+                await createBountyOperation.confirmation();
+
+                await signerFactory(tezos, userSk);
+                const applicantType           = "group";
+                const groupId                 = firstGroupId;
+                const applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                    bountyId,
+                    applicantType,
+                    groupId
+                ).send();
+                await applyForBountyOperation.confirmation();
+
+                await signerFactory(tezos, bountyCreatorSk);
+                const approvalType  = "approve";
+                const approveOrRejectOperation  = await bountyInstance.methods.approveOrReject(
+                    bountyId,
+                    applicantType,
+                    groupId,
+                    approvalType
+                ).send();
+                await approveOrRejectOperation.confirmation();
+
+                bountyStorage = await bountyInstance.storage();
+                const applicationRecord = await bountyStorage.applicationLedger.get([bountyId, { "group": groupId}]);                    
+                assert.equal(applicationRecord.status       , "APPROVED");
+                assert.equal(applicationRecord.isApproved   , true);
+
+                await signerFactory(tezos, userSk);
+                const completeBountyOperation  = await bountyInstance.methods.completeBounty(
+                    bountyId,
+                    applicantType,
+                    groupId
+                ).send();
+                await completeBountyOperation.confirmation();
+
+                await signerFactory(tezos, bountyCreatorSk);
+                const reviewStatus     = "REVIEW_REJECTED";
+                
+                const milestoneReview  = "Milestone review text: rejected";
+                const bountyReview     = "Bounty review text: rejected";
+                
+                const reviewOperation  = await bountyInstance.methods.reviewBounty(
+                    bountyId,
+                    applicantType,
+                    groupId,
+                    reviewStatus, 
+                    milestoneReview,
+                    bountyReview
+                ).send();
+                await reviewOperation.confirmation();
+
+
+                // -------------------------------
+                // Bounty with 2 milestones and review rejected
+                // -------------------------------
+
+                bountyWithRejectedReview
+
+            })
+
+            describe('%sendBountyReward - partial bounty milestone completion', function () {
+                
+                beforeEach("Set signer to bounty creator (alice)", async () => {
+                    bountyStorage = await bountyInstance.storage()
+                    user          = mallory.pkh;
+                    groupId       = firstGroupId;
+                    await signerFactory(tezos, bountyCreatorSk);
+                });
+
+                it('bounty creator (alice) should not be able to send rewards for completed bounty (if zero or wrong milestone specified)', async () => {
+                    try {
+
+                        const bountyId      = bountyWithTwoMilestonesId    
+                        let   milestoneId   = 0;
+                        const applicantType = "group";   
+
+                        let failSendBountyRewardOperation  = await bountyInstance.methods.sendBountyReward(
+                            bountyId,
+                            milestoneId,
+                            applicantType,
+                            groupId
+                        );
+                        await chai.expect(failSendBountyRewardOperation.send()).to.be.rejected;
+
+                        milestoneId = 999;
+                        failSendBountyRewardOperation  = await bountyInstance.methods.sendBountyReward(
+                            bountyId,
+                            milestoneId,
+                            applicantType,
+                            groupId
+                        );
+                        await chai.expect(failSendBountyRewardOperation.send()).to.be.rejected;
+
+                    } catch (e) {
+                        console.log(e)
+                    }
+                })
+
+                it('non-bounty creator (oscar) should not be able to send rewards for completed bounty', async () => {
+                    try {
+                        
+                        await signerFactory(tezos, oscar.sk);
+
+                        const bountyId      = bountyWithThreeMilestonesId    
+                        const milestoneId   = 1;
+                        const applicantType = "group";   
+
+                        let failSendBountyRewardOperation  = await bountyInstance.methods.sendBountyReward(
+                            bountyId,
+                            milestoneId,
+                            applicantType,
+                            groupId
+                        );
+                        await chai.expect(failSendBountyRewardOperation.send()).to.be.rejected;
+
+                    } catch (e) {
+                        console.log(e)
+                    }
+                })
+
+                it('bounty creator (alice) should not be able to call sendBountyReward for rejected bounty application ', async () => {
+                    try {
+
+                        const bountyId      = bountyWithRejectedReview    
+                        const milestoneId   = 1;
+                        const applicantType = "group";   
+
+                        // get initial balances
+                        const userMockFa12Ledger                 = await mockFa12TokenStorage.ledger.get(user);            
+                        const userMockFa2Ledger                  = await mockFa2TokenStorage.ledger.get(user);       
+
+                        const userInitialMockFa12TokenBalance    = userMockFa12Ledger == undefined ? 0 : userMockFa12Ledger.balance.toNumber();     
+                        const userInitialMockFa2TokenBalance     = userMockFa2Ledger == undefined ? 0 : userMockFa2Ledger.toNumber();
+                        const userInitialTezBalance              = await utils.tezos.tz.getBalance(user);
+
+                        let applicationRecord                  = await bountyStorage.applicationLedger.get([bountyId, { "group": groupId}]);
+                        let milestoneLogRecord                 = await applicationRecord.milestoneLog.get(milestoneId.toString());
+
+                        assert.equal(applicationRecord.status == "REWARDED", false);
+                        assert.equal(milestoneLogRecord.status == "REWARDED", false);
+                        assert.equal(milestoneLogRecord.rewarded, false);
+
+                        const sendBountyRewardOperation  = await bountyInstance.methods.sendBountyReward(
+                            bountyId,
+                            milestoneId,
+                            applicantType,
+                            groupId
+                        );
+                        await chai.expect(sendBountyRewardOperation.send()).to.be.rejected;
+
+                        bountyStorage           = await bountyInstance.storage();
+                        mockFa12TokenStorage    = await mockFa12TokenInstance.storage();
+                        mockFa2TokenStorage     = await mockFa2TokenInstance.storage();
+
+                        const userUpdatedMockFa12Ledger          = await mockFa12TokenStorage.ledger.get(user);            
+                        const userUpdatedMockFa2Ledger           = await mockFa2TokenStorage.ledger.get(user);       
+
+                        const userUpdatedMockFa12TokenBalance    = userUpdatedMockFa12Ledger == undefined ? 0 : userUpdatedMockFa12Ledger.balance.toNumber();     
+                        const userUpdatedMockFa2TokenBalance     = userUpdatedMockFa2Ledger == undefined ? 0 : userUpdatedMockFa2Ledger.toNumber();
+                        const userUpdatedTezBalance              = await utils.tezos.tz.getBalance(user);
+
+                        assert.equal(userUpdatedMockFa12TokenBalance    , userInitialMockFa12TokenBalance);
+                        assert.equal(userUpdatedMockFa2TokenBalance     , userInitialMockFa2TokenBalance);
+                        assert.equal(almostEqual(userUpdatedTezBalance  , userInitialTezBalance.toNumber(), 0.001), true);
+
+                        applicationRecord                  = await bountyStorage.applicationLedger.get([bountyId, { "group": groupId}]);
+                        milestoneLogRecord                 = await applicationRecord.milestoneLog.get(milestoneId.toString());
+
+                        assert.equal(applicationRecord.status == "REWARDED", false);
+                        assert.equal(milestoneLogRecord.status == "REWARDED", false);
+                        assert.equal(milestoneLogRecord.rewarded, false);
+
+                    } catch (e) {
+                        console.log(e)
+                    }
+                })
+
+                it('bounty creator (alice) should be able to send partial rewards (first milestone) to group leader (mallory) for completed bounty milestone (with two milestones)', async () => {
+                    try {
+
+                        const bountyId      = bountyWithTwoMilestonesId    
+                        const milestoneId   = 1;
+                        const applicantType = "group";   
+
+                        // get initial balances
+                        const userMockFa12Ledger                 = await mockFa12TokenStorage.ledger.get(user);            
+                        const userMockFa2Ledger                  = await mockFa2TokenStorage.ledger.get(user);       
+
+                        const userInitialMockFa12TokenBalance    = userMockFa12Ledger == undefined ? 0 : userMockFa12Ledger.balance.toNumber();     
+                        const userInitialMockFa2TokenBalance     = userMockFa2Ledger == undefined ? 0 : userMockFa2Ledger.toNumber();
+                        const userInitialTezBalance              = await utils.tezos.tz.getBalance(user);
+
+                        const mockFa12TokenRewards               = mockMilestoneRewardAmounts.milestoneGroupTwo.milestoneOneReward.mockFa12;
+                        const mockFa2TokenRewards                = mockMilestoneRewardAmounts.milestoneGroupTwo.milestoneOneReward.mockFa2;
+                        const mutezRewards                       = mockMilestoneRewardAmounts.milestoneGroupTwo.milestoneOneReward.tez;
+
+                        let applicationRecord                  = await bountyStorage.applicationLedger.get([bountyId, { "group": groupId}]);
+                        let milestoneLogRecord                 = await applicationRecord.milestoneLog.get(milestoneId.toString());
+
+                        assert.equal(applicationRecord.status == "REWARDED", false);
+                        assert.equal(milestoneLogRecord.status == "REWARDED", false);
+                        assert.equal(milestoneLogRecord.rewarded, false);
+
+                        const sendBountyRewardOperation  = await bountyInstance.methods.sendBountyReward(
+                            bountyId,
+                            milestoneId,
+                            applicantType,
+                            groupId
+                        ).send();
+                        await sendBountyRewardOperation.confirmation();
+
+                        bountyStorage           = await bountyInstance.storage();
+                        mockFa12TokenStorage    = await mockFa12TokenInstance.storage();
+                        mockFa2TokenStorage     = await mockFa2TokenInstance.storage();
+
+                        const userUpdatedMockFa12Ledger          = await mockFa12TokenStorage.ledger.get(user);            
+                        const userUpdatedMockFa2Ledger           = await mockFa2TokenStorage.ledger.get(user);       
+
+                        const userUpdatedMockFa12TokenBalance    = userUpdatedMockFa12Ledger == undefined ? 0 : userUpdatedMockFa12Ledger.balance.toNumber();     
+                        const userUpdatedMockFa2TokenBalance     = userUpdatedMockFa2Ledger == undefined ? 0 : userUpdatedMockFa2Ledger.toNumber();
+                        const userUpdatedTezBalance              = await utils.tezos.tz.getBalance(user);
+
+                        assert.equal(userUpdatedMockFa12TokenBalance    , userInitialMockFa12TokenBalance + mockFa12TokenRewards);
+                        assert.equal(userUpdatedMockFa2TokenBalance     , userInitialMockFa2TokenBalance + mockFa2TokenRewards);
+                        assert.equal(almostEqual(userUpdatedTezBalance  , userInitialTezBalance.toNumber() + mutezRewards, 0.001), true);
+
+                        applicationRecord                  = await bountyStorage.applicationLedger.get([bountyId, { "group": groupId}]);
+                        milestoneLogRecord                 = await applicationRecord.milestoneLog.get(milestoneId.toString());
+
+                        assert.equal(applicationRecord.status == "REWARDED", false);
+                        assert.equal(milestoneLogRecord.status == "REWARDED", true);
+                        assert.equal(milestoneLogRecord.rewarded, true);
+
+                    } catch (e) {
+                        console.log(e)
+                    }
+                })
+
+                it('bounty creator (alice) should not be able to send partial rewards to group leader (mallory) again for the same completed bounty milestone', async () => {
+                    try {
+
+                        const bountyId      = bountyWithTwoMilestonesId    
+                        const milestoneId   = 1;
+                        const applicantType = "group";   
+
+                        // get initial balances
+                        const userMockFa12Ledger                 = await mockFa12TokenStorage.ledger.get(user);            
+                        const userMockFa2Ledger                  = await mockFa2TokenStorage.ledger.get(user);       
+
+                        const userInitialMockFa12TokenBalance    = userMockFa12Ledger == undefined ? 0 : userMockFa12Ledger.balance.toNumber();     
+                        const userInitialMockFa2TokenBalance     = userMockFa2Ledger == undefined ? 0 : userMockFa2Ledger.toNumber();
+                        const userInitialTezBalance              = await utils.tezos.tz.getBalance(user);
+
+                        const sendBountyRewardOperation  = await bountyInstance.methods.sendBountyReward(
+                            bountyId,
+                            milestoneId,
+                            applicantType,
+                            groupId
+                        );
+                        await chai.expect(sendBountyRewardOperation.send()).to.be.rejected;
+
+                        bountyStorage           = await bountyInstance.storage();
+                        mockFa12TokenStorage    = await mockFa12TokenInstance.storage();
+                        mockFa2TokenStorage     = await mockFa2TokenInstance.storage();
+
+                        const userUpdatedMockFa12Ledger          = await mockFa12TokenStorage.ledger.get(user);            
+                        const userUpdatedMockFa2Ledger           = await mockFa2TokenStorage.ledger.get(user);       
+
+                        const userUpdatedMockFa12TokenBalance    = userUpdatedMockFa12Ledger == undefined ? 0 : userUpdatedMockFa12Ledger.balance.toNumber();     
+                        const userUpdatedMockFa2TokenBalance     = userUpdatedMockFa2Ledger == undefined ? 0 : userUpdatedMockFa2Ledger.toNumber();
+                        const userUpdatedTezBalance              = await utils.tezos.tz.getBalance(user);
+
+                        assert.equal(userUpdatedMockFa12TokenBalance    , userInitialMockFa12TokenBalance);
+                        assert.equal(userUpdatedMockFa2TokenBalance     , userInitialMockFa2TokenBalance);
+                        assert.equal(almostEqual(userUpdatedTezBalance  , userInitialTezBalance.toNumber(), 0.001), true);
+
+                    } catch (e) {
+                        console.log(e)
+                    }
+                })
+
+            })
+
+
+            describe('%sendBountyReward - full bounty completion', function () {
+                
+                beforeEach("Set signer to bounty creator (alice)", async () => {
+                    bountyStorage = await bountyInstance.storage()
+                    user          = mallory.pkh;
+                    groupId       = firstGroupId;
+                    await signerFactory(tezos, bountyCreatorSk);
+                });
+
+                it('non-bounty creator (oscar) should not be able to send rewards for completed bounty', async () => {
+                    try {
+                        
+                        await signerFactory(tezos, oscar.sk);
+
+                        const bountyId      = bountyWithNoMilestonesId    
+                        const milestoneId   = null;
+                        const applicantType = "group";   
+
+                        let failSendBountyRewardOperation  = await bountyInstance.methods.sendBountyReward(
+                            bountyId,
+                            milestoneId,
+                            applicantType,
+                            groupId
+                        );
+                        await chai.expect(failSendBountyRewardOperation.send()).to.be.rejected;
+
+                    } catch (e) {
+                        console.log(e)
+                    }
+                })
+
+                
+                it('bounty creator (alice) should be able to send rewards to group leader (mallory) for completed bounty (no milestones)', async () => {
+                    try {
+
+                        const bountyId      = bountyWithNoMilestonesId    
+                        const milestoneId   = null;
+                        const applicantType = "group";   
+
+                        // get initial balances
+                        const userMockFa12Ledger                 = await mockFa12TokenStorage.ledger.get(user);            
+                        const userMockFa2Ledger                  = await mockFa2TokenStorage.ledger.get(user);       
+
+                        const userInitialMockFa12TokenBalance    = userMockFa12Ledger == undefined ? 0 : userMockFa12Ledger.balance.toNumber();     
+                        const userInitialMockFa2TokenBalance     = userMockFa2Ledger == undefined ? 0 : userMockFa2Ledger.toNumber();
+                        const userInitialTezBalance              = await utils.tezos.tz.getBalance(user);
+
+                        const mockFa12TokenRewards               = mockBountyRewardAmounts.bountyOneReward.mockFa12;
+                        const mockFa2TokenRewards                = mockBountyRewardAmounts.bountyOneReward.mockFa2;
+                        const mutezRewards                       = mockBountyRewardAmounts.bountyOneReward.tez;
+
+                        let applicationRecord                   = await bountyStorage.applicationLedger.get([bountyId, { "group": groupId}]);
+
+                        assert.equal(applicationRecord.status == "REWARDED", false);
+                        assert.equal(applicationRecord.fullyRewarded, false);
+
+                        const sendBountyRewardOperation  = await bountyInstance.methods.sendBountyReward(
+                            bountyId,
+                            milestoneId,
+                            applicantType,
+                            groupId
+                        ).send();
+                        await sendBountyRewardOperation.confirmation();
+
+                        bountyStorage           = await bountyInstance.storage();
+                        mockFa12TokenStorage    = await mockFa12TokenInstance.storage();
+                        mockFa2TokenStorage     = await mockFa2TokenInstance.storage();
+
+                        const userUpdatedMockFa12Ledger          = await mockFa12TokenStorage.ledger.get(user);            
+                        const userUpdatedMockFa2Ledger           = await mockFa2TokenStorage.ledger.get(user);       
+
+                        const userUpdatedMockFa12TokenBalance    = userUpdatedMockFa12Ledger == undefined ? 0 : userUpdatedMockFa12Ledger.balance.toNumber();     
+                        const userUpdatedMockFa2TokenBalance     = userUpdatedMockFa2Ledger == undefined ? 0 : userUpdatedMockFa2Ledger.toNumber();
+                        const userUpdatedTezBalance              = await utils.tezos.tz.getBalance(user);
+
+                        assert.equal(userUpdatedMockFa12TokenBalance    , userInitialMockFa12TokenBalance + mockFa12TokenRewards);
+                        assert.equal(userUpdatedMockFa2TokenBalance     , userInitialMockFa2TokenBalance + mockFa2TokenRewards);
+                        assert.equal(almostEqual(userUpdatedTezBalance  , userInitialTezBalance.toNumber() + mutezRewards, 0.001), true);
+
+                        applicationRecord                  = await bountyStorage.applicationLedger.get([bountyId, { "group": groupId}]);
+
+                        assert.equal(applicationRecord.status == "REWARDED", true);
+                        assert.equal(applicationRecord.fullyRewarded, true);
+
+
+                    } catch (e) {
+                        console.log(e)
+                    }
+                })
+
+                it('bounty creator (alice) should be able to send remaining rewards to group leader (mallory) for completed bounty milestone (with two milestones)', async () => {
+                    try {
+
+                        const bountyId      = bountyWithTwoMilestonesId    
+                        const milestoneId   = 2;
+                        const applicantType = "group";   
+
+                        // let user complete the second milestone
+                        await signerFactory(tezos, userSk);
+                        const completeBountyOperation  = await bountyInstance.methods.completeBounty(
+                            bountyId,
+                            applicantType,
+                            groupId
+                        ).send();
+                        await completeBountyOperation.confirmation();
+
+                        // let bounty creator approve the second milestone
+                        await signerFactory(tezos, bountyCreatorSk);
+                        const reviewStatus     = "REVIEW_APPROVED";
+                        
+                        const milestoneReview  = "Milestone review text: approved";
+                        const bountyReview     = "Bounty review text: approved";
+                        
+                        const reviewOperation  = await bountyInstance.methods.reviewBounty(
+                            bountyId,
+                            applicantType,
+                            groupId,
+                            reviewStatus, 
+                            milestoneReview,
+                            bountyReview
+                        ).send();
+                        await reviewOperation.confirmation();
+
+                        // get initial balances 
+                        const userMockFa12Ledger                 = await mockFa12TokenStorage.ledger.get(user);            
+                        const userMockFa2Ledger                  = await mockFa2TokenStorage.ledger.get(user);       
+
+                        const userInitialMockFa12TokenBalance    = userMockFa12Ledger == undefined ? 0 : userMockFa12Ledger.balance.toNumber();     
+                        const userInitialMockFa2TokenBalance     = userMockFa2Ledger == undefined ? 0 : userMockFa2Ledger.toNumber();
+                        const userInitialTezBalance              = await utils.tezos.tz.getBalance(user);
+
+                        const mockFa12TokenRewards               = mockMilestoneRewardAmounts.milestoneGroupTwo.milestoneTwoReward.mockFa12;
+                        const mockFa2TokenRewards                = mockMilestoneRewardAmounts.milestoneGroupTwo.milestoneTwoReward.mockFa2;
+                        const mutezRewards                       = mockMilestoneRewardAmounts.milestoneGroupTwo.milestoneTwoReward.tez;
+
+                        let applicationRecord                  = await bountyStorage.applicationLedger.get([bountyId, { "group": groupId}]);
+                        let milestoneLogRecord                 = await applicationRecord.milestoneLog.get(milestoneId.toString());
+
+                        assert.equal(applicationRecord.status == "REWARDED", false);
+                        assert.equal(applicationRecord.fullyRewarded, false);
+                        assert.equal(milestoneLogRecord.status == "REWARDED", false);
+                        assert.equal(milestoneLogRecord.rewarded, false);
+
+                        const sendBountyRewardOperation  = await bountyInstance.methods.sendBountyReward(
+                            bountyId,
+                            milestoneId,
+                            applicantType,
+                            groupId
+                        ).send();
+                        await sendBountyRewardOperation.confirmation();
+
+                        bountyStorage           = await bountyInstance.storage();
+                        mockFa12TokenStorage    = await mockFa12TokenInstance.storage();
+                        mockFa2TokenStorage     = await mockFa2TokenInstance.storage();
+
+                        const userUpdatedMockFa12Ledger          = await mockFa12TokenStorage.ledger.get(user);            
+                        const userUpdatedMockFa2Ledger           = await mockFa2TokenStorage.ledger.get(user);       
+
+                        const userUpdatedMockFa12TokenBalance    = userUpdatedMockFa12Ledger == undefined ? 0 : userUpdatedMockFa12Ledger.balance.toNumber();     
+                        const userUpdatedMockFa2TokenBalance     = userUpdatedMockFa2Ledger == undefined ? 0 : userUpdatedMockFa2Ledger.toNumber();
+                        const userUpdatedTezBalance              = await utils.tezos.tz.getBalance(user);
+
+                        assert.equal(userUpdatedMockFa12TokenBalance    , userInitialMockFa12TokenBalance + mockFa12TokenRewards);
+                        assert.equal(userUpdatedMockFa2TokenBalance     , userInitialMockFa2TokenBalance + mockFa2TokenRewards);
+                        assert.equal(almostEqual(userUpdatedTezBalance  , userInitialTezBalance.toNumber() + mutezRewards, 0.001), true);
+
+                        applicationRecord                  = await bountyStorage.applicationLedger.get([bountyId, { "group": groupId}]);
+                        milestoneLogRecord                 = await applicationRecord.milestoneLog.get(milestoneId.toString());
+
+                        assert.equal(applicationRecord.status == "REWARDED", true);
+                        assert.equal(applicationRecord.fullyRewarded, true);
+                        assert.equal(milestoneLogRecord.status == "REWARDED", true);
+                        assert.equal(milestoneLogRecord.rewarded, true);
+
+                    } catch (e) {
+                        console.log(e)
+                    }
+                })
+
+                it('bounty creator (alice) should not be able to send further rewards to group leader (mallory) for completed bounty (with two milestones)', async () => {
+                    try {
+
+                        const bountyId      = bountyWithTwoMilestonesId    
+                        let milestoneId     = 2;
+                        const applicantType = "group";   
+
+                        // get initial balances 
+                        const userMockFa12Ledger                 = await mockFa12TokenStorage.ledger.get(user);            
+                        const userMockFa2Ledger                  = await mockFa2TokenStorage.ledger.get(user);       
+
+                        const userInitialMockFa12TokenBalance    = userMockFa12Ledger == undefined ? 0 : userMockFa12Ledger.balance.toNumber();     
+                        const userInitialMockFa2TokenBalance     = userMockFa2Ledger == undefined ? 0 : userMockFa2Ledger.toNumber();
+                        const userInitialTezBalance              = await utils.tezos.tz.getBalance(user);
+
+                        let sendBountyRewardOperation  = await bountyInstance.methods.sendBountyReward(
+                            bountyId,
+                            milestoneId,
+                            applicantType,
+                            groupId
+                        );
+                        await chai.expect(sendBountyRewardOperation.send()).to.be.rejected;
+
+                        milestoneId = 3;
+                        sendBountyRewardOperation  = await bountyInstance.methods.sendBountyReward(
+                            bountyId,
+                            milestoneId,
+                            applicantType,
+                            groupId
+                        );
+                        await chai.expect(sendBountyRewardOperation.send()).to.be.rejected;
+
+                        bountyStorage           = await bountyInstance.storage();
+                        mockFa12TokenStorage    = await mockFa12TokenInstance.storage();
+                        mockFa2TokenStorage     = await mockFa2TokenInstance.storage();
+
+                        const userUpdatedMockFa12Ledger          = await mockFa12TokenStorage.ledger.get(user);            
+                        const userUpdatedMockFa2Ledger           = await mockFa2TokenStorage.ledger.get(user);       
+
+                        const userUpdatedMockFa12TokenBalance    = userUpdatedMockFa12Ledger == undefined ? 0 : userUpdatedMockFa12Ledger.balance.toNumber();     
+                        const userUpdatedMockFa2TokenBalance     = userUpdatedMockFa2Ledger == undefined ? 0 : userUpdatedMockFa2Ledger.toNumber();
+                        const userUpdatedTezBalance              = await utils.tezos.tz.getBalance(user);
+
+                        assert.equal(userUpdatedMockFa12TokenBalance    , userInitialMockFa12TokenBalance);
+                        assert.equal(userUpdatedMockFa2TokenBalance     , userInitialMockFa2TokenBalance);
+                        assert.equal(almostEqual(userUpdatedTezBalance  , userInitialTezBalance.toNumber(), 0.001), true);
+
+                    } catch (e) {
+                        console.log(e)
+                    }
+                })
+
+            })
+
+        })
+    })
+
+    describe(`
+    -----------
+    After Bounty Rewards: `, function () {
+
+        it('user (mallory) cannot apply again to a completed and fully rewarded bounty', async () => {
+            try {
+
+                user = mallory.pkh;
+
+                const applicantType   = "user";
+                let bountyId          = bountyWithNoMilestonesId
+
+                let applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                    bountyId,
+                    applicantType,
+                    user
+                );
+                await chai.expect(applyForBountyOperation.send()).to.be.rejected;
+
+                bountyId  = bountyWithTwoMilestonesId    
+                applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                    bountyId,
+                    applicantType,
+                    user
+                );
+                await chai.expect(applyForBountyOperation.send()).to.be.rejected;
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
+
+        it('group leader (mallory) cannot apply again to a completed and fully rewarded bounty', async () => {
+            try {
+
+                const applicantType   = "group";
+                const groupId         = firstGroupId;
+                let bountyId          = bountyWithNoMilestonesId
+
+                let applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                    bountyId,
+                    applicantType,
+                    groupId
+                );
+                await chai.expect(applyForBountyOperation.send()).to.be.rejected;
+
+                bountyId  = bountyWithTwoMilestonesId    
+                applyForBountyOperation = await bountyInstance.methods.applyForBounty(
+                    bountyId,
+                    applicantType,
+                    groupId
+                );
+                await chai.expect(applyForBountyOperation.send()).to.be.rejected;
+
+            } catch (e) {
+                console.log(e)
+            }
+        })
+
     })
 
 })
