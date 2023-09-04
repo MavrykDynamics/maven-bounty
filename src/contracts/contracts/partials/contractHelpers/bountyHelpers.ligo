@@ -768,6 +768,40 @@ block {
 
 } with milestoneLogRecord
 
+
+
+function getMilestoneLog(const milestoneLog : milestoneLogType; const currentMilestone : nat) : milestoneLogRecordType is
+block {
+
+    const milestoneLogRecord : milestoneLogRecordType := case milestoneLog[currentMilestone] of [
+            Some(_record) -> _record
+        |   None          -> failwith(error_MILESTONE_LOG_RECORD_NOT_FOUND_IN_APPLICANT_RECORD)
+    ];
+
+} with milestoneLogRecord
+
+
+
+function getOrCreateMilestoneLog(const milestoneLog : milestoneLogType; const currentMilestone : nat) : milestoneLogRecordType is
+block {
+
+    const milestoneLogRecord : milestoneLogRecordType := case milestoneLog[currentMilestone] of [
+            Some(_record) -> _record
+        |   None -> record [
+                status          = "REVIEW_PENDING";
+                isCompleted     = False;
+
+                submitForReview = True;
+                reviewed        = False;
+                review          = (None : option(string));
+                
+                rewarded        = False;
+                rewardTimestamp = (None : option(timestamp));
+            ]
+    ];
+
+} with milestoneLogRecord
+
 // ------------------------------------------------------------------------------
 // Contract Helper Functions End
 // ------------------------------------------------------------------------------

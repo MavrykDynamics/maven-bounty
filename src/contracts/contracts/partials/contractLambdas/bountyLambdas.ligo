@@ -143,40 +143,6 @@ block {
 
 
 
-(*  updateWhitelistContracts lambda *)
-// function lambdaUpdateWhitelistContracts(const bountyLambdaAction : bountyLambdaActionType; var s: bountyStorageType) : return is
-// block {
-
-//     verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
-
-//     case bountyLambdaAction of [
-//         |   LambdaUpdateWhitelistContracts(updateWhitelistContractsParams) -> {
-//                 s.whitelistContracts := updateWhitelistContractsMap(updateWhitelistContractsParams, s.whitelistContracts);
-//             }
-//         |   _ -> skip
-//     ];
-
-// } with (noOperations, s)
-
-
-
-(*  updateGeneralContracts lambda *)
-// function lambdaUpdateGeneralContracts(const bountyLambdaAction : bountyLambdaActionType; var s: bountyStorageType) : return is
-// block {
-
-//     verifySenderIsAdminOrSuperAdmin(s.superAdmin, s.admins); 
-
-//     case bountyLambdaAction of [
-//         |   LambdaUpdateGeneralContracts(updateGeneralContractsParams) -> {
-//                 s.generalContracts := updateGeneralContractsMap(updateGeneralContractsParams, s.generalContracts);
-//             }
-//         |   _ -> skip
-//     ];
-
-// } with (noOperations, s)
-
-
-
 (*  mistaken lambda *)
 function lambdaMistakenTransfer(const bountyLambdaAction : bountyLambdaActionType; var s: bountyStorageType) : return is
 block {
@@ -724,10 +690,7 @@ block {
                         |   None       -> failwith(error_MILESTONE_LOG_NOT_FOUND_IN_APPLICANT_RECORD)
                     ];
 
-                    var milestoneLogRecord : milestoneLogRecordType := case milestoneLog[currentMilestone] of [
-                            Some(_record) -> _record
-                        |   None          -> failwith(error_MILESTONE_LOG_RECORD_NOT_FOUND_IN_APPLICANT_RECORD)
-                    ];
+                    var milestoneLogRecord : milestoneLogRecordType := getMilestoneLog(milestoneLog, currentMilestone);
 
                     milestoneLogRecord.status           := status;
                     milestoneLogRecord.reviewed         := True;
@@ -1179,10 +1142,10 @@ block {
 
                             // remove group id from group invites if it exists
                             if memberRecord.groupInvites contains groupId then {
-                                memberRecord.groupInvites  := Set.remove(groupId, memberRecord.groupInvites);
+                                memberRecord.groupInvites   := Set.remove(groupId, memberRecord.groupInvites);
                             } else skip;
 
-                            memberRecord.groupApplications    := Set.remove(groupId, memberRecord.groupApplications);
+                            memberRecord.groupApplications  := Set.remove(groupId, memberRecord.groupApplications);
 
                             // add member to group
                             memberRecord.groups     := Set.add(groupId, memberRecord.groups);
@@ -1532,20 +1495,7 @@ block {
                         |   None       -> (map[] : milestoneLogType)
                     ];
 
-                    var milestoneLogRecord : milestoneLogRecordType := case milestoneLog[currentMilestone] of [
-                            Some(_record) -> _record
-                        |   None -> record [
-                                status          = "REVIEW_PENDING";
-                                isCompleted     = False;
-
-                                submitForReview = True;
-                                reviewed        = False;
-                                review          = (None : option(string));
-                                
-                                rewarded        = False;
-                                rewardTimestamp = (None : option(timestamp));
-                            ]
-                    ];
+                    var milestoneLogRecord : milestoneLogRecordType := getOrCreateMilestoneLog(milestoneLog, currentMilestone);
 
                     milestoneLogRecord.status           := "REVIEW_PENDING";
                     milestoneLogRecord.submitForReview  := True;
